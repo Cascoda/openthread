@@ -937,6 +937,7 @@ otError MleRouter::HandleLinkAccept(const Message &         aMessage,
 
     case OT_DEVICE_ROLE_CHILD:
         VerifyOrExit(router != NULL);
+        router->SetNextHop(kInvalidRouterId);
         break;
 
     case OT_DEVICE_ROLE_ROUTER:
@@ -986,6 +987,9 @@ otError MleRouter::HandleLinkAccept(const Message &         aMessage,
     router->ResetLinkFailures();
     router->SetState(Neighbor::kStateValid);
     router->SetKeySequence(aKeySequence);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().BuildSecurityTable();
+#endif
 
     Signal(OT_NEIGHBOR_TABLE_EVENT_ROUTER_ADDED, *router);
 
@@ -1588,6 +1592,9 @@ otError MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::Messa
     ChallengeTlv            challenge;
     Router *                leader;
     Child *                 child;
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    ModeTlv mode;
+#endif
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     TimeRequestTlv timeRequest;
 #endif
@@ -1604,6 +1611,15 @@ otError MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::Messa
     // 1. It has no available Child capacity (if Max Child Count minus
     // Child Count would be equal to zero)
     // ==> verified below when allocating a child entry
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    // Verified here for seds
+    SuccessOrExit(error = Tlv::GetTlv(aMessage, Tlv::kMode, sizeof(mode), mode));
+    VerifyOrExit(mode.IsValid(), error = OT_ERROR_PARSE);
+    if (!(mode.GetMode() & ModeTlv::kModeRxOnWhenIdle))
+    {
+        VerifyOrExit(Get<MeshForwarder>().GetRemainingSEDSlotCount() > 0, error = OT_ERROR_DROP);
+    }
+#endif
 
     // 2. It is disconnected from its Partition (that is, it has not
     // received an updated ID sequence number within LEADER_TIMEOUT
@@ -2140,6 +2156,12 @@ otError MleRouter::HandleChildIdRequest(const Message &         aMessage,
     // Mode
     SuccessOrExit(error = Tlv::GetTlv(aMessage, Tlv::kMode, sizeof(mode), mode));
     VerifyOrExit(mode.IsValid(), error = OT_ERROR_PARSE);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    if (!(mode.GetMode() & ModeTlv::kModeRxOnWhenIdle))
+    {
+        VerifyOrExit(Get<MeshForwarder>().GetRemainingSEDSlotCount() > 0, error = OT_ERROR_NO_BUFS);
+    }
+#endif
 
     // Timeout
     SuccessOrExit(error = Tlv::GetTlv(aMessage, Tlv::kTimeout, sizeof(timeout), timeout));
@@ -2194,6 +2216,9 @@ otError MleRouter::HandleChildIdRequest(const Message &         aMessage,
     child->SetDeviceMode(mode.GetMode());
     child->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
     child->SetTimeout(timeout.GetTimeout());
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().UpdateDevice(*child);
+#endif
 
     if (mode.GetMode().IsFullNetworkData())
     {
@@ -2393,7 +2418,16 @@ otError MleRouter::HandleChildUpdateRequest(const Message &         aMessage,
         }
     }
 
-    SendChildUpdateResponse(child, aMessageInfo, tlvs, tlvslength, challenge);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    if (child->IsStateValidOrRestoring() && !child->IsRxOnWhenIdle())
+    {
+        // To handle a child update request from rx-on to sleepy
+        Get<MeshForwarder>().GetSourceMatchController().SetSrcMatchAsShort(*child, true);
+        Get<MeshForwarder>().AllocateSEDSlot(*child);
+    }
+#endif
+
+SendChildUpdateResponse(child, aMessageInfo, tlvs, tlvslength, challenge);
 
 exit:
 
@@ -2473,6 +2507,9 @@ otError MleRouter::HandleChildUpdateResponse(const Message &         aMessage,
     {
         VerifyOrExit(linkFrameCounter.IsValid(), error = OT_ERROR_PARSE);
         child->SetLinkFrameCounter(linkFrameCounter.GetFrameCounter());
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        Get<Mac::Mac>().UpdateDevice(*child);
+#endif
     }
 
     // MLE Frame Counter
@@ -2928,6 +2965,9 @@ otError MleRouter::SendChildIdResponse(Child &aChild)
     if (!aChild.IsRxOnWhenIdle())
     {
         Get<IndirectSender>().SetChildUseShortAddress(aChild, false);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        SuccessOrExit(error = Get<MeshForwarder>().AllocateSEDSlot(aChild));
+#endif
     }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
@@ -3206,6 +3246,9 @@ void MleRouter::RemoveNeighbor(Neighbor &aNeighbor)
 
         Get<IndirectSender>().ClearAllMessagesForSleepyChild(static_cast<Child &>(aNeighbor));
         Get<NetworkData::Leader>().SendServerDataNotification(aNeighbor.GetRloc16());
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+            Get<MeshForwarder>().DeallocateSEDSlot(static_cast<Child &>(aNeighbor));
+#endif
 
         if (aNeighbor.IsFullThreadDevice())
         {
@@ -3573,6 +3616,12 @@ void MleRouter::RestoreChildren(void)
         child->SetRloc16(childInfo.mRloc16);
         child->SetTimeout(childInfo.mTimeout);
         child->SetDeviceMode(DeviceMode(childInfo.mMode));
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        if (!child->IsRxOnWhenIdle() && Get<MeshForwarder>().AllocateSEDSlot(*child) != OT_ERROR_NONE)
+        {
+            continue;
+        }
+#endif
         child->SetState(Neighbor::kStateRestored);
         child->SetLastHeard(TimerMilli::GetNow());
         Get<IndirectSender>().SetChildUseShortAddress(*child, true);

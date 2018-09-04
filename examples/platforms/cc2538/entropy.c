@@ -33,8 +33,7 @@
  */
 
 #include <openthread/platform/entropy.h>
-
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include "platform-cc2538.h"
 #include "utils/code_utils.h"

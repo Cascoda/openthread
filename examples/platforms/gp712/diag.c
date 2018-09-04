@@ -33,7 +33,7 @@
 
 #include <openthread/config.h>
 #include <openthread/platform/alarm-milli.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
 

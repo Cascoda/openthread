@@ -702,7 +702,6 @@ void Interpreter::ProcessChild(int argc, char *argv[])
     mServer->OutputFormat("Age: %d\r\n", childInfo.mAge);
     mServer->OutputFormat("Link Quality In: %d\r\n", childInfo.mLinkQualityIn);
     mServer->OutputFormat("RSSI: %d\r\n", childInfo.mAverageRssi);
-
 exit:
     AppendResult(error);
 }
@@ -2144,7 +2143,7 @@ void Interpreter::ProcessPromiscuous(int argc, char *argv[])
 
     if (argc == 0)
     {
-        if (otLinkIsPromiscuous(mInstance) && otPlatRadioGetPromiscuous(mInstance))
+        if (otLinkIsPromiscuous(mInstance))
         {
             mServer->OutputFormat("Enabled\r\n");
         }

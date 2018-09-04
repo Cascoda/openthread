@@ -37,7 +37,7 @@
 #include "assert.h"
 #include "random_qorvo.h"
 #include <common/code_utils.hpp>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #define GP_COMPONENT_ID GP_COMPONENT_ID_APP
 

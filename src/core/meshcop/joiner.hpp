@@ -109,6 +109,17 @@ public:
      */
     void GetJoinerId(Mac::ExtAddress &aJoinerId) const;
 
+    /**
+     * This method retreives the address of the joiner router being used to join
+     *
+     * @param[out]  aExtAddr  The Extended address of the joiner router being joined to
+     *
+     * @retval otError        OT_ERROR_NONE           aExtAddr successfully populated
+     * @retval otError        OT_ERROR_INVALID_STATE  No counterpart address as joining is not in progress
+     *
+     */
+    otError GetCounterpartAddress(Mac::ExtAddress &aExtAddr) const;
+
 private:
     enum
     {

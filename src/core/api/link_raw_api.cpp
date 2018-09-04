@@ -266,6 +266,16 @@ uint16_t otLinkGetShortAddress(otInstance *aInstance)
     return static_cast<Instance *>(aInstance)->Get<Mac::LinkRaw>().GetShortAddress();
 }
 
+bool otLinkIsPromiscuous(otInstance *aInstance)
+{
+    return otLinkRawGetPromiscuous(aInstance);
+}
+
+otError otLinkSetPromiscuous(otInstance *aInstance, bool aPromiscuous)
+{
+    return otLinkRawSetPromiscuous(aInstance, aPromiscuous);
+}
+
 void otLinkGetFactoryAssignedIeeeEui64(otInstance *aInstance, otExtAddress *aEui64)
 {
     otPlatRadioGetIeeeEui64(aInstance, aEui64->m8);

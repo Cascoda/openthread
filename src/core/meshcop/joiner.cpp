@@ -84,6 +84,21 @@ exit:
     return;
 }
 
+otError Joiner::GetCounterpartAddress(Mac::ExtAddress &aExtAddr) const
+{
+    otError             error        = OT_ERROR_NONE;
+    const JoinerRouter &joinerRouter = mJoinerRouters[mJoinerRouterIndex - 1];
+
+    VerifyOrExit(mState >= OT_JOINER_STATE_CONNECT, error = OT_ERROR_INVALID_STATE);
+    VerifyOrExit(mJoinerRouterIndex <= OT_ARRAY_LENGTH(mJoinerRouters), error = OT_ERROR_INVALID_STATE);
+    VerifyOrExit(joinerRouter.mPriority != 0);
+
+    aExtAddr = joinerRouter.mExtAddr;
+
+exit:
+    return error;
+}
+
 otError Joiner::Start(const char *     aPskd,
                       const char *     aProvisioningUrl,
                       const char *     aVendorName,

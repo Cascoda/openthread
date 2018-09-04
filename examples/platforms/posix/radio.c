@@ -28,6 +28,8 @@
 
 #include "platform-posix.h"
 
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC == 0
+
 #include <errno.h>
 
 #include <openthread/dataset.h>
@@ -35,7 +37,7 @@
 #include <openthread/platform/alarm-micro.h>
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/diag.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 #include <openthread/platform/time.h>
 
 #include "utils/code_utils.h"
@@ -875,3 +877,5 @@ exit:
     return error;
 }
 #endif
+
+#endif // OPENTHREAD_CONFIG_USE_EXTERNAL_MAC == 0

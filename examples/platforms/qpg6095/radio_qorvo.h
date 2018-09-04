@@ -37,7 +37,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 /**
  * This function initializes the radio.

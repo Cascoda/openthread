@@ -111,6 +111,9 @@ otError KeyManager::SetMasterKey(const MasterKey &aKey)
 {
     otError error = OT_ERROR_NONE;
     Router *parent;
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Mac::Mac &mac = Get<Mac::Mac>();
+#endif
 
     SuccessOrExit(
         Get<Notifier>().Update(mMasterKey, aKey, OT_CHANGED_MASTER_KEY | OT_CHANGED_THREAD_KEY_SEQUENCE_COUNTER));
@@ -123,6 +126,9 @@ otError KeyManager::SetMasterKey(const MasterKey &aKey)
     parent->SetKeySequence(0);
     parent->SetLinkFrameCounter(0);
     parent->SetMleFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    mac.UpdateDevice(*routers);
+#endif
 
     // reset router frame counters
     for (RouterTable::Iterator iter(GetInstance()); !iter.IsDone(); iter++)
@@ -130,6 +136,9 @@ otError KeyManager::SetMasterKey(const MasterKey &aKey)
         iter.GetRouter()->SetKeySequence(0);
         iter.GetRouter()->SetLinkFrameCounter(0);
         iter.GetRouter()->SetMleFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        mac.UpdateDevice(*iter.GetRouter());
+#endif
     }
 
     // reset child frame counters
@@ -138,6 +147,9 @@ otError KeyManager::SetMasterKey(const MasterKey &aKey)
         iter.GetChild()->SetKeySequence(0);
         iter.GetChild()->SetLinkFrameCounter(0);
         iter.GetChild()->SetMleFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        mac.UpdateDevice(*iter.GetChild());
+#endif
     }
 
 exit:
@@ -177,8 +189,8 @@ void KeyManager::SetCurrentKeySequence(uint32_t aKeySequence)
     mKeySequence = aKeySequence;
     ComputeKey(mKeySequence, mKey);
 
-    mMacFrameCounter = 0;
-    mMleFrameCounter = 0;
+    SetMacFrameCounter(0);
+    SetMleFrameCounter(0);
 
     Get<Notifier>().Signal(OT_CHANGED_THREAD_KEY_SEQUENCE_COUNTER);
 
@@ -196,6 +208,22 @@ const uint8_t *KeyManager::GetTemporaryMleKey(uint32_t aKeySequence)
 {
     ComputeKey(aKeySequence, mTemporaryKey);
     return mTemporaryKey;
+}
+
+uint32_t KeyManager::GetMacFrameCounter(void)
+{
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    mMacFrameCounter = Get<Mac::Mac>().GetFrameCounter();
+#endif
+    return mMacFrameCounter;
+}
+
+void KeyManager::SetMacFrameCounter(uint32_t aMacFrameCounter)
+{
+    mMacFrameCounter = aMacFrameCounter;
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().SetFrameCounter(mMacFrameCounter);
+#endif
 }
 
 void KeyManager::IncrementMacFrameCounter(void)

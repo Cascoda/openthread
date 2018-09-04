@@ -40,7 +40,7 @@
 #include <openthread-core-config.h>
 #include <openthread/tasklet.h>
 #include <openthread/platform/alarm-milli.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 uint64_t gNodeId = 0;
 

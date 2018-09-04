@@ -34,7 +34,7 @@
 #include <openthread/random_noncrypto.h> /* to seed the CSMA-CA funciton */
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/diag.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include <driverlib/chipinfo.h>
 #include <driverlib/osc.h>

@@ -31,8 +31,8 @@
  *   This file includes definitions for forwarding IPv6 datagrams across the Thread mesh.
  */
 
-#ifndef MESH_FORWARDER_HPP_
-#define MESH_FORWARDER_HPP_
+#ifndef MESH_FORWARDER_FULLMAC_HPP_
+#define MESH_FORWARDER_FULLMAC_HPP_
 
 #include "openthread-core-config.h"
 
@@ -407,8 +407,8 @@ private:
 
     void      HandleReceivedFrame(Mac::RxFrame &aFrame);
     otError   HandleFrameRequest(Mac::TxFrame &aFrame);
-    Neighbor *UpdateNeighborOnSentFrame(Mac::TxFrame &aFrame, otError aError, const Mac::Address &aMacDest);
-    void      HandleSentFrame(Mac::TxFrame &aFrame, otError aError);
+    Neighbor *UpdateNeighborOnSentFrame(bool aAckRequested, otError aError, const Mac::Address &aMacDest);
+    void      HandleSentFrame(bool aAckRequested, otError aError, const Mac::Address &aMacDest);
 
     static void HandleDiscoverTimer(Timer &aTimer);
     void        HandleDiscoverTimer(void);
@@ -540,4 +540,4 @@ private:
 
 } // namespace ot
 
-#endif // MESH_FORWARDER_HPP_
+#endif // MESH_FORWARDER_FULLMAC_HPP_

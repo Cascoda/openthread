@@ -35,7 +35,7 @@
 #include "asf.h"
 
 #include <openthread-core-config.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include "openthread-system.h"
 

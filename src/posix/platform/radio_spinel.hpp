@@ -34,7 +34,7 @@
 #ifndef RADIO_SPINEL_HPP_
 #define RADIO_SPINEL_HPP_
 
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include "hdlc_interface.hpp"
 #include "spinel_interface.hpp"

@@ -738,6 +738,9 @@ int Dtls::HandleMbedtlsExportKeys(const unsigned char *aMasterSecret,
     sha256.Finish(kek);
 
     Get<KeyManager>().SetKek(kek);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().BuildSecurityTable();
+#endif
 
     if (mCipherSuites[0] == MBEDTLS_TLS_ECJPAKE_WITH_AES_128_CCM_8)
     {

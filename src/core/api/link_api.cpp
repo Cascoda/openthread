@@ -41,8 +41,11 @@
 #include "radio/radio.hpp"
 
 using namespace ot;
-
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+static void HandleActiveScanResult(Instance &aInstance, otBeaconNotify *aBeacon);
+#else
 static void HandleActiveScanResult(Instance &aInstance, Mac::RxFrame *aFrame);
+#endif
 static void HandleEnergyScanResult(Instance &aInstance, otEnergyScanResult *aResult);
 
 uint8_t otLinkGetChannel(otInstance *aInstance)
@@ -429,7 +432,23 @@ bool otLinkIsActiveScanInProgress(otInstance *aInstance)
     return instance.Get<Mac::Mac>().IsActiveScanInProgress();
 }
 
-void HandleActiveScanResult(Instance &aInstance, Mac::RxFrame *aFrame)
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+void HandleActiveScanResult(Instance &aInstance, otBeaconNotify *aBeacon)
+{
+    if (aBeacon == NULL)
+    {
+        aInstance.InvokeActiveScanCallback(NULL);
+    }
+    else
+    {
+        otActiveScanResult result;
+
+        aInstance.Get<Mac::Mac>().ConvertBeaconToActiveScanResult(aBeacon, result);
+        aInstance.InvokeActiveScanCallback(&result);
+    }
+}
+#else
+void        HandleActiveScanResult(Instance &aInstance, Mac::RxFrame *aFrame)
 {
     if (aFrame == NULL)
     {
@@ -443,6 +462,7 @@ void HandleActiveScanResult(Instance &aInstance, Mac::RxFrame *aFrame)
         aInstance.InvokeActiveScanCallback(&result);
     }
 }
+#endif
 
 otError otLinkEnergyScan(otInstance *             aInstance,
                          uint32_t                 aScanChannels,
@@ -474,6 +494,15 @@ bool otLinkIsInTransmitState(otInstance *aInstance)
 
     return instance.Get<Mac::Mac>().IsInTransmitState();
 }
+
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+void otLinkSyncExternalMac(otInstance *aInstance)
+{
+    Instance &instance = *static_cast<Instance *>(aInstance);
+
+    instance.Get<Mac::Mac>().Start();
+}
+#endif
 
 otError otLinkOutOfBandTransmitRequest(otInstance *aInstance, otRadioFrame *aOobFrame)
 {

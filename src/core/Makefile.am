@@ -162,7 +162,8 @@ SOURCES_COMMON                             = \
     mac/data_poll_handler.cpp                \
     mac/data_poll_sender.cpp                 \
     mac/link_raw.cpp                         \
-    mac/mac.cpp                              \
+    mac/mac_extern.cpp                       \
+    mac/mac_full.cpp                         \
     mac/mac_filter.cpp                       \
     mac/mac_frame.cpp                        \
     mac/mac_types.cpp                        \
@@ -202,15 +203,17 @@ SOURCES_COMMON                             = \
     thread/announce_begin_server.cpp         \
     thread/announce_sender.cpp               \
     thread/child_table.cpp                   \
-    thread/device_mode.cpp                   \
     thread/energy_scan_server.cpp            \
     thread/indirect_sender.cpp               \
     thread/key_manager.cpp                   \
     thread/link_quality.cpp                  \
     thread/lowpan.cpp                        \
-    thread/mesh_forwarder.cpp                \
-    thread/mesh_forwarder_ftd.cpp            \
-    thread/mesh_forwarder_mtd.cpp            \
+    thread/mesh_forwarder_externmac.cpp      \
+    thread/mesh_forwarder_externmac_ftd.cpp  \
+    thread/mesh_forwarder_externmac_mtd.cpp  \
+    thread/mesh_forwarder_fullmac.cpp        \
+    thread/mesh_forwarder_fullmac_ftd.cpp    \
+    thread/mesh_forwarder_fullmac_mtd.cpp    \
     thread/mle.cpp                           \
     thread/mle_router.cpp                    \
     thread/network_data.cpp                  \
@@ -364,6 +367,7 @@ HEADERS_COMMON                             = \
     mac/data_poll_sender.hpp                 \
     mac/link_raw.hpp                         \
     mac/mac.hpp                              \
+    mac/mac_common.hpp                \
     mac/mac_filter.hpp                       \
     mac/mac_frame.hpp                        \
     mac/mac_types.hpp                        \
@@ -412,6 +416,8 @@ HEADERS_COMMON                             = \
     thread/link_quality.hpp                  \
     thread/lowpan.hpp                        \
     thread/mesh_forwarder.hpp                \
+    thread/mesh_forwarder_fullmac.hpp \
+    thread/mesh_forwarder_externmac.hpp \
     thread/mle.hpp                           \
     thread/mle_constants.hpp                 \
     thread/mle_router.hpp                    \

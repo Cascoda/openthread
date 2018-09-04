@@ -35,7 +35,7 @@
 #include "radio_qorvo.h"
 #include <common/logging.hpp>
 #include <openthread/platform/diag.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 enum
 {

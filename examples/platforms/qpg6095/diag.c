@@ -34,7 +34,7 @@
 #include <sys/time.h>
 
 #include <openthread/config.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 /**
  * Diagnostics mode variables.

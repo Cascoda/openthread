@@ -842,16 +842,15 @@ start:
     return nextOffset;
 }
 
-Neighbor *MeshForwarder::UpdateNeighborOnSentFrame(Mac::TxFrame &aFrame, otError aError, const Mac::Address &aMacDest)
+Neighbor *MeshForwarder::UpdateNeighborOnSentFrame(bool aAckRequested, otError aError, const Mac::Address &aMacDest)
 {
     Neighbor *neighbor = NULL;
 
     VerifyOrExit(mEnabled);
+    VerifyOrExit(aAckRequested);
 
     neighbor = Get<Mle::MleRouter>().GetNeighbor(aMacDest);
     VerifyOrExit(neighbor != NULL);
-
-    VerifyOrExit(aFrame.GetAckRequest());
 
     if (aError == OT_ERROR_NONE)
     {
@@ -872,10 +871,9 @@ exit:
     return neighbor;
 }
 
-void MeshForwarder::HandleSentFrame(Mac::TxFrame &aFrame, otError aError)
+void MeshForwarder::HandleSentFrame(bool aAckRequested, otError aError, const Mac::Address &aMacDest)
 {
-    Neighbor *   neighbor = NULL;
-    Mac::Address macDest;
+    Neighbor *neighbor = NULL;
 
     assert((aError == OT_ERROR_NONE) || (aError == OT_ERROR_CHANNEL_ACCESS_FAILURE) || (aError == OT_ERROR_ABORT) ||
            (aError == OT_ERROR_NO_ACK));
@@ -941,7 +939,7 @@ void MeshForwarder::HandleSentFrame(Mac::TxFrame &aFrame, otError aError)
         }
 #endif
 
-        LogMessage(kMessageTransmit, *mSendMessage, &macDest, txError);
+        LogMessage(kMessageTransmit, *mSendMessage, &aMacDest, txError);
 
         if (mSendMessage->GetType() == Message::kTypeIp6)
         {

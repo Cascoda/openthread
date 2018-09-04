@@ -35,7 +35,7 @@
 #ifndef PLATFORM_BAND_H_
 #define PLATFORM_BAND_H_
 
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include "rail.h"
 #include "rail_config.h"

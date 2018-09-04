@@ -502,6 +502,18 @@ otError otLinkSendDataRequest(otInstance *aInstance);
 bool otLinkIsInTransmitState(otInstance *aInstance);
 
 /**
+ * This function will trigger openthread to synchronise the PIB of an external 802.15.4 MAC
+ *
+ * Openthread will reset the external MAC layer, and fill the PIB with cached values. This is
+ * useful in the case of the MAC sleeping in a way which does not preserve volatile memory,
+ * or if the external MAC control is being transferred.
+ *
+ * @param[in] aInstance A pointer to an OpenThread instance.
+ *
+ */
+void otLinkSyncExternalMac(otInstance *aInstance);
+
+/**
  * This function enqueues an IEEE 802.15.4 out of band Frame for transmission.
  *
  * An Out of Band frame is one that was generated outside of OpenThread.

@@ -36,7 +36,7 @@
 
 #include "phy.h"
 #include "platform-samr21.h"
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 otError otPlatEntropyGet(uint8_t *aOutput, uint16_t aOutputLength)
 {

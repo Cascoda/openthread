@@ -48,7 +48,7 @@
 #include <openthread/platform/alarm-micro.h>
 #include <openthread/platform/diag.h>
 #include <openthread/platform/logging.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 #include <openthread/platform/time.h>
 
 #include "openthread-system.h"

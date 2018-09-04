@@ -33,7 +33,7 @@
 #include <openthread/platform/diag.h>
 #include <openthread/platform/logging.h>
 #include <openthread/platform/misc.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 #include <openthread/platform/settings.h>
 #include <openthread/platform/uart.h>
 
