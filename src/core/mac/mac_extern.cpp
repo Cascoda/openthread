@@ -352,6 +352,7 @@ otError Mac::SendDataPoll(otPollRequest &aPollReq)
 
     ProcessTransmitSecurity(aPollReq.mSecurity);
     error = otPlatMlmePollRequest(&GetInstance(), &aPollReq);
+    error = ProcessTransmitStatus(error);
 
     return error;
 }
@@ -1267,12 +1268,12 @@ void Mac::stateChangedCallback(uint32_t aFlags)
     }
 }
 
-extern "C" void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle, int aMacError)
+extern "C" void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle, otError aError)
 {
     Instance *instance = static_cast<Instance *>(aInstance);
     VerifyOrExit(instance->IsInitialized());
 
-    instance->GetThreadNetif().GetMac().TransmitDoneTask(aMsduHandle, aMacError);
+    instance->GetThreadNetif().GetMac().TransmitDoneTask(aMsduHandle, aError);
 
 exit:
     return;
@@ -1312,24 +1313,19 @@ exit:
     return sender;
 }
 
-void Mac::TransmitDoneTask(uint8_t aMsduHandle, int aMacError)
+otError Mac::ProcessTransmitStatus(otError aTransmitError)
 {
-    otError error      = OT_ERROR_NONE;
-    Sender *sender     = PopSendingSender(aMsduHandle);
+    otError error      = aTransmitError;
     bool    ccaSuccess = true;
 
-    VerifyOrExit(sender != NULL);
-
-    switch (aMacError)
+    switch (error)
     {
-    case OT_MAC_STATUS_CHANNEL_ACCESS_FAILURE:
+    case OT_ERROR_CHANNEL_ACCESS_FAILURE:
         ccaSuccess = false;
         mCounters.mTxErrBusyChannel++;
-	// fall through
-    case OT_MAC_STATUS_NO_ACK:
-        error = OT_ERROR_NO_ACK;
-	// fall through
-    case OT_MAC_STATUS_SUCCESS:
+    // fall through
+    case OT_ERROR_NO_ACK:
+    case OT_ERROR_NONE:
         // TODO: if not on PAN channel skip cca tracking
         if (mCcaSampleCount < kMaxCcaSampleCount)
         {
@@ -1338,20 +1334,27 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, int aMacError)
         mCcaSuccessRateTracker.AddSample(ccaSuccess, mCcaSampleCount);
         break;
 
-    case OT_MAC_STATUS_TRANSACTION_OVERFLOW:
-        mCounters.mTxErrAbort++;
-        error = OT_ERROR_CHANNEL_ACCESS_FAILURE;
-        break;
-
     default:
-        error = OT_ERROR_NO_ACK;
+        mCounters.mTxErrAbort++;
+        error = OT_ERROR_ABORT;
         break;
     }
 
-    if (!ccaSuccess) error = OT_ERROR_CHANNEL_ACCESS_FAILURE;
+    return error;
+}
+
+void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
+{
+    otError error  = aError;
+    Sender *sender = PopSendingSender(aMsduHandle);
+
+    VerifyOrExit(sender != NULL);
+
+    error = ProcessTransmitStatus(aError);
+
     if (error != OT_ERROR_NONE)
     {
-        otLogDebgMac("TX ERR %d", aMacError);
+        otLogDebgMacErr(aError, "Transmit Error");
     }
 
     switch (mOperation)
@@ -1365,10 +1368,8 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, int aMacError)
         break;
 
     default:
-    {
         assert(false);
-    }
-    break;
+        break;
     }
 
 exit:

@@ -630,10 +630,11 @@ otError otPlatMcpsPurge(otInstance *aInstance, uint8_t aMsduHandle);
  *
  * @param[in]  aInstance   The OpenThread instance structure.
  * @param[in]  aMsduHandle The application-defined MSDU handle for the sent frame
- * @param[in]  aError      Error code from the IEEE 802.15.4 spec
+ * @param[in]  aError      Error code eg. OT_ERROR_NONE, OT_ERROR_CHANNEL_ACCESS_FAILURE, OT_ERROR_NO_ACK,
+ *                         OT_ERROR_ABORT
  *
  */
-extern void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle, int aMacError);
+extern void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle, otError aError);
 
 /**
  * Get the radio's transmit power in dBm.

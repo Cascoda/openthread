@@ -601,7 +601,7 @@ public:
      *                         transmission was aborted for other reasons.
      *
      */
-    void TransmitDoneTask(uint8_t aMsduHandle, int aMacError);
+    void TransmitDoneTask(uint8_t aMsduHandle, otError aError);
 
     /**
      * This method returns if a scan is in progress.
@@ -804,6 +804,7 @@ private:
     void    FinishOperation(void);
     void    BuildBeacon(void);
     void    HandleBeginTransmit(void);
+    otError ProcessTransmitStatus(otError aTransmitError);
     otError Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration, void *aContext);
     void    HandleBeginScan(void);
 
