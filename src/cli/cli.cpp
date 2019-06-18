@@ -1017,8 +1017,6 @@ void Interpreter::ProcessDns(int argc, char *argv[])
 
         strcpy(mResolvingHostname, argv[1]);
 
-        messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
-
         if (argc > 2)
         {
             SuccessOrExit(error = messageInfo.GetPeerAddr().FromString(argv[2]));
@@ -2011,7 +2009,6 @@ void Interpreter::ProcessPing(int argc, char *argv[])
     VerifyOrExit(!mPingTimer.IsRunning(), error = OT_ERROR_BUSY);
 
     SuccessOrExit(error = mMessageInfo.GetPeerAddr().FromString(argv[0]));
-    mMessageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 
     mLength   = 8;
     mCount    = 1;
@@ -2944,8 +2941,6 @@ void Interpreter::ProcessSntp(int argc, char *argv[])
     if (strcmp(argv[0], "query") == 0)
     {
         VerifyOrExit(!mSntpQueryingInProgress, error = OT_ERROR_BUSY);
-
-        messageInfo.mInterfaceId = OT_NETIF_INTERFACE_ID_THREAD;
 
         if (argc > 1)
         {
