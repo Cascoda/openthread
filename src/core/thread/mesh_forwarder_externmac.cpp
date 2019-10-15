@@ -1662,8 +1662,7 @@ otError MeshForwarder::HandleDatagram(Message &               aMessage,
     LogIp6Message(kMessageReceive, aMessage, &aMacSource, OT_ERROR_NONE);
     mIpCounters.mRxSuccess++;
 
-    return Get<Ip6::Ip6>().HandleDatagram(aMessage, &Get<ThreadNetif>(), Get<ThreadNetif>().GetInterfaceId(),
-                                          &aLinkInfo, false);
+    return Get<Ip6::Ip6>().HandleDatagram(aMessage, &Get<ThreadNetif>(), &aLinkInfo, false);
 }
 
 void MeshForwarder::HandleDataPollTimeout(Mac::Receiver &aReceiver)
