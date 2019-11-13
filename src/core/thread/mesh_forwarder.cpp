@@ -505,7 +505,6 @@ otError MeshForwarder::HandleFrameRequest(Mac::TxFrame &aFrame)
             ExitNow();
         }
 
-        assert(aFrame.GetLength() != 7);
         break;
 
 #if OPENTHREAD_FTD
@@ -882,11 +881,7 @@ void MeshForwarder::HandleSentFrame(bool aAckRequested, otError aError, const Ma
 
     VerifyOrExit(mEnabled);
 
-    if (!aFrame.IsEmpty())
-    {
-        aFrame.GetDstAddr(macDest);
-        neighbor = UpdateNeighborOnSentFrame(aFrame, aError, macDest);
-    }
+    neighbor = UpdateNeighborOnSentFrame(aAckRequested, aError, aMacDest);
 
     VerifyOrExit(mSendMessage != NULL);
     assert(mSendMessage->GetDirectTransmission());

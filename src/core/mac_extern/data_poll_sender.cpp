@@ -123,7 +123,6 @@ otError DataPollSender::SendDataPoll(void)
     pollReq.mSecurity.mKeyIdMode     = 1;
 
     VerifyOrExit(error = Get<Mac::Mac>().SendDataPoll(pollReq));
-#endif
 
 exit:
 
@@ -224,7 +223,7 @@ void DataPollSender::HandlePollSent(Mac::TxFrame &aFrame, otError aError)
     VerifyOrExit(mEnabled);
 
     aFrame.GetDstAddr(macDest);
-    Get<MeshForwarder>().UpdateNeighborOnSentFrame(aFrame.GetAckRequest(), aError, macDest);
+    Get<MeshForwarder>().UpdateNeighborOnSentFrame(true, aError, macDest);
 
     if (Get<Mle::MleRouter>().GetParentCandidate()->GetState() == Neighbor::kStateInvalid)
     {

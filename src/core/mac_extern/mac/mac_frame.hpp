@@ -41,11 +41,8 @@
 
 #include "utils/wrap_string.h"
 
-#include <openthread/link.h>
-#include <openthread/platform/radio-mac.h>
-
 #include "common/encoding.hpp"
-#include "common/string.hpp"
+#include "mac/mac_types.hpp"
 
 namespace ot {
 
@@ -57,540 +54,6 @@ namespace Mac {
  * @{
  *
  */
-
-enum
-{
-    kShortAddrBroadcast = 0xffff,
-    kShortAddrInvalid   = 0xfffe,
-    kPanIdBroadcast     = 0xffff,
-};
-
-/**
- * This type represents the IEEE 802.15.4 PAN ID.
- *
- */
-typedef otPanId PanId;
-
-/**
- * This type represents the IEEE 802.15.4 Short Address.
- *
- */
-typedef otShortAddress ShortAddress;
-
-/**
- * This structure represents an IEEE 802.15.4 Extended Address.
- *
- */
-OT_TOOL_PACKED_BEGIN
-class ExtAddress : public otExtAddress
-{
-public:
-    enum
-    {
-        kInfoStringSize = 17, // Max chars for the info string (`ToString()`).
-    };
-
-    /**
-     * This type defines the fixed-length `String` object returned from `ToString()`.
-     *
-     */
-    typedef String<kInfoStringSize> InfoString;
-
-    /**
-     * This enumeration type specifies the copy byte order when Extended Address is being copied to/from a buffer.
-     *
-     */
-    enum CopyByteOrder
-    {
-        kNormalByteOrder,  // Copy address bytes in normal order (as provided in array buffer).
-        kReverseByteOrder, // Copy address bytes in reverse byte order.
-    };
-
-    /**
-     * This method generates a random IEEE 802.15.4 Extended Address.
-     *
-     */
-    void GenerateRandom(void);
-
-    /**
-     * This method sets the Extended Address from a given byte array.
-     *
-     * @param[in] aBuffer    Pointer to an array containing the Extended Address. `OT_EXT_ADDRESS_SIZE` bytes from
-     *                       buffer are copied to form the Extended Address.
-     * @param[in] aByteOrder The byte order to use when copying the address.
-     *
-     */
-    void Set(const uint8_t *aBuffer, CopyByteOrder aByteOrder = kNormalByteOrder)
-    {
-        CopyAddress(m8, aBuffer, aByteOrder);
-    }
-
-    /**
-     * This method indicates whether or not the Group bit is set.
-     *
-     * @retval TRUE   If the group bit is set.
-     * @retval FALSE  If the group bit is not set.
-     *
-     */
-    bool IsGroup(void) const { return (m8[0] & kGroupFlag) != 0; }
-
-    /**
-     * This method sets the Group bit.
-     *
-     * @param[in]  aGroup  TRUE if group address, FALSE otherwise.
-     *
-     */
-    void SetGroup(bool aGroup)
-    {
-        if (aGroup)
-        {
-            m8[0] |= kGroupFlag;
-        }
-        else
-        {
-            m8[0] &= ~kGroupFlag;
-        }
-    }
-
-    /**
-     * This method toggles the Group bit.
-     *
-     */
-    void ToggleGroup(void) { m8[0] ^= kGroupFlag; }
-
-    /**
-     * This method indicates whether or not the Local bit is set.
-     *
-     * @retval TRUE   If the local bit is set.
-     * @retval FALSE  If the local bit is not set.
-     *
-     */
-    bool IsLocal(void) const { return (m8[0] & kLocalFlag) != 0; }
-
-    /**
-     * This method sets the Local bit.
-     *
-     * @param[in]  aLocal  TRUE if locally administered, FALSE otherwise.
-     *
-     */
-    void SetLocal(bool aLocal)
-    {
-        if (aLocal)
-        {
-            m8[0] |= kLocalFlag;
-        }
-        else
-        {
-            m8[0] &= ~kLocalFlag;
-        }
-    }
-
-    /**
-     * This method toggles the Local bit.
-     *
-     */
-    void ToggleLocal(void) { m8[0] ^= kLocalFlag; }
-
-    /**
-     * This method copies the Extended Address into a given buffer.
-     *
-     * @param[out] aBuffer     A pointer to a buffer to copy the Extended Address into.
-     * @param[in]  aByteOrder  The byte order to copy the address.
-     *
-     */
-    void CopyTo(uint8_t *aBuffer, CopyByteOrder aByteOrder = kNormalByteOrder) const
-    {
-        CopyAddress(aBuffer, m8, aByteOrder);
-    }
-
-    /**
-     * This method evaluates whether or not the Extended Addresses match.
-     *
-     * @param[in]  aOther  The Extended Address to compare.
-     *
-     * @retval TRUE   If the Extended Addresses match.
-     * @retval FALSE  If the Extended Addresses do not match.
-     *
-     */
-    bool operator==(const ExtAddress &aOther) const;
-
-    /**
-     * This method evaluates whether or not the Extended Addresses match.
-     *
-     * @param[in]  aOther  The Extended Address to compare.
-     *
-     * @retval TRUE   If the Extended Addresses do not match.
-     * @retval FALSE  If the Extended Addresses match.
-     *
-     */
-    bool operator!=(const ExtAddress &aOther) const { return !(*this == aOther); }
-
-    /**
-     * This method converts an address to a string.
-     *
-     * @returns An `InfoString` containing the string representation of the Extended Address.
-     *
-     */
-    InfoString ToString(void) const;
-
-private:
-    static void CopyAddress(uint8_t *aDst, const uint8_t *aSrc, CopyByteOrder aByteOrder);
-
-    enum
-    {
-        kGroupFlag = 1 << 0,
-        kLocalFlag = 1 << 1,
-    };
-} OT_TOOL_PACKED_END;
-
-/**
- * This class represents an IEEE 802.15.4 Short or Extended Address.
- *
- */
-class Address
-{
-public:
-    /**
-     * This type defines the fixed-length `String` object returned from `ToString()`.
-     *
-     */
-    typedef ExtAddress::InfoString InfoString;
-
-    /**
-     * This enumeration specifies the IEEE 802.15.4 Address type.
-     *
-     */
-    enum Type
-    {
-        kTypeNone     = 0, ///< No address.
-        kTypeShort    = 2, ///< IEEE 802.15.4 Short Address.
-        kTypeExtended = 3, ///< IEEE 802.15.4 Extended Address.
-    };
-
-    /**
-     * This constructor initializes an Address.
-     *
-     */
-    Address(void)
-        : mType(kTypeNone)
-    {
-    }
-
-    /**
-     * This method gets the address type (Short Address, Extended Address, or none).
-     *
-     * @returns The address type.
-     *
-     */
-    Type GetType(void) const { return mType; }
-
-    /**
-     * This method indicates whether or not there is an address.
-     *
-     * @returns TRUE if there is no address (i.e. address type is `kTypeNone`), FALSE otherwise.
-     *
-     */
-    bool IsNone(void) const { return (mType == kTypeNone); }
-
-    /**
-     * This method indicates whether or not the Address is a Short Address.
-     *
-     * @returns TRUE if it is a Short Address, FALSE otherwise.
-     *
-     */
-    bool IsShort(void) const { return (mType == kTypeShort); }
-
-    /**
-     * This method indicates whether or not the Address is an Extended Address.
-     *
-     * @returns TRUE if it is an Extended Address, FALSE otherwise.
-     *
-     */
-    bool IsExtended(void) const { return (mType == kTypeExtended); }
-
-    /**
-     * This method gets the address as a Short Address.
-     *
-     * This method MUST be used only if the address type is Short Address.
-     *
-     * @returns The Short Address.
-     *
-     */
-    ShortAddress GetShort(void) const { return mShared.mShortAddress; }
-
-    /**
-     * This method gets the address as an Extended Address.
-     *
-     * This method MUST be used only if the address type is Extended Address.
-     *
-     * @returns A constant reference to the Extended Address.
-     *
-     */
-    const ExtAddress &GetExtended(void) const { return mShared.mExtAddress; }
-
-    /**
-     * This method gets the address as an Extended Address.
-     *
-     * This method MUST be used only if the address type is Extended Address.
-     *
-     * @returns A reference to the Extended Address.
-     *
-     */
-    ExtAddress &GetExtended(void) { return mShared.mExtAddress; }
-
-    /**
-     * This method gets the address with an Extended Address as byte array.
-     *
-     * This method MUST be used only if the address type is Extended Address.
-     *
-     * @param[out]  aBuffer  Pointer to a array to be filled with the Extended Address. `OT_EXT_ADDRESS_SIZE` bytes
-     *                       from Extended Address are copied into the buffer
-     * @param[in]  aReverse  If `true` then `OT_EXT_ADDRESS_SIZE` bytes from the Extended address are copied in
-     *                       reverse order, otherwise they are copied as stored internally.
-     *
-     */
-    void GetExtended(uint8_t *aBuffer, bool aReverse) const;
-
-    /**
-     * This method sets the address to none (i.e., clears the address).
-     *
-     * Address type will be updated to `kTypeNone`.
-     *
-     */
-    void SetNone(void) { mType = kTypeNone; }
-
-    /**
-     * This method sets the address with a Short Address.
-     *
-     * The type is also updated to indicate that address is Short.
-     *
-     * @param[in]  aShortAddress  A Short Address
-     *
-     */
-    void SetShort(ShortAddress aShortAddress)
-    {
-        mShared.mShortAddress = aShortAddress;
-        mType                 = kTypeShort;
-    }
-
-    /**
-     * This method sets the address with an Extended Address.
-     *
-     * The type is also updated to indicate that the address is Extended.
-     *
-     * @param[in]  aExtAddress  An Extended Address
-     *
-     */
-    void SetExtended(const ExtAddress &aExtAddress)
-    {
-        mShared.mExtAddress = aExtAddress;
-        mType               = kTypeExtended;
-    }
-
-    /**
-     * This method sets the address with an Extended Address given as a byte array.
-     *
-     * The type is also updated to indicate that the address is Extended.
-     *
-     * @param[in] aBuffer    Pointer to an array containing the Extended Address. `OT_EXT_ADDRESS_SIZE` bytes from
-     *                       buffer are copied to form the Extended Address.
-     * @param[in] aByteOrder The byte order to copy the address from @p aBuffer.
-     *
-     */
-    void SetExtended(const uint8_t *aBuffer, ExtAddress::CopyByteOrder aByteOrder = ExtAddress::kNormalByteOrder)
-    {
-        mShared.mExtAddress.Set(aBuffer, aByteOrder);
-        mType = kTypeExtended;
-    }
-
-    /**
-     * This method indicates whether or not the address is a Short Broadcast Address.
-     *
-     * @returns TRUE if address is Short Broadcast Address, FALSE otherwise.
-     *
-     */
-    bool IsBroadcast(void) const { return ((mType == kTypeShort) && (GetShort() == kShortAddrBroadcast)); }
-
-    /**
-     * This method indicates whether or not the address is a Short Invalid Address.
-     *
-     * @returns TRUE if address is Short Invalid Address, FALSE otherwise.
-     *
-     */
-    bool IsShortAddrInvalid(void) const { return ((mType == kTypeShort) && (GetShort() == kShortAddrInvalid)); }
-
-    /**
-     * This method converts an address to a null-terminated string
-     *
-     * @returns A `String` representing the address.
-     *
-     */
-    InfoString ToString(void) const;
-
-private:
-    union
-    {
-        ShortAddress mShortAddress; ///< The IEEE 802.15.4 Short Address.
-        ExtAddress   mExtAddress;   ///< The IEEE 802.15.4 Extended Address.
-    } mShared;
-
-    Type mType; ///< The address type (Short, Extended, or none).
-};
-
-/**
- * This structure represents an IEEE 802.15.4 Extended PAN Identifier.
- *
- */
-OT_TOOL_PACKED_BEGIN
-class ExtendedPanId : public otExtendedPanId
-{
-public:
-    enum
-    {
-        kInfoStringSize = 17, // Max chars for the info string (`ToString()`).
-    };
-
-    /**
-     * This type defines the fixed-length `String` object returned from `ToString()`.
-     *
-     */
-    typedef String<kInfoStringSize> InfoString;
-
-    /**
-     * This method evaluates whether or not the Extended PAN Identifiers match.
-     *
-     * @param[in]  aOther  The Extended PAN Id to compare.
-     *
-     * @retval TRUE   If the Extended PAN Identifiers match.
-     * @retval FALSE  If the Extended PAN Identifiers do not match.
-     *
-     */
-    bool operator==(const ExtendedPanId &aOther) const;
-
-    /**
-     * This method evaluates whether or not the Extended PAN Identifiers match.
-     *
-     * @param[in]  aOther  The Extended PAN Id to compare.
-     *
-     * @retval TRUE   If the Extended Addresses do not match.
-     * @retval FALSE  If the Extended Addresses match.
-     *
-     */
-    bool operator!=(const ExtendedPanId &aOther) const { return !(*this == aOther); }
-
-    /**
-     * This method converts an address to a string.
-     *
-     * @returns An `InfoString` containing the string representation of the Extended PAN Identifier.
-     *
-     */
-    InfoString ToString(void) const;
-
-} OT_TOOL_PACKED_END;
-
-/**
- * This structure represents an IEEE802.15.4 Network Name.
- *
- */
-class NetworkName : public otNetworkName
-{
-public:
-    enum
-    {
-        kMaxSize = OT_NETWORK_NAME_MAX_SIZE, // Maximum number of chars in Network Name (excludes null char).
-    };
-
-    /**
-     * This class represents an IEEE802.15.4 Network Name as Data (pointer to a char buffer along with a length).
-     *
-     * @note The char array does NOT need to be null terminated.
-     *
-     */
-    class Data
-    {
-    public:
-        /**
-         * This constructor initializes the Data object.
-         *
-         * @param[in] aBuffer   A pointer to a `char` buffer (does not need to be null terminated).
-         * @param[in] aLength   The length (number of chars) in the buffer.
-         *
-         */
-        Data(const char *aBuffer, uint8_t aLength)
-            : mBuffer(aBuffer)
-            , mLength(aLength)
-        {
-        }
-
-        /**
-         * This method returns the pointer to char buffer (not necessarily null terminated).
-         *
-         * @returns The pointer to the char buffer.
-         *
-         */
-        const char *GetBuffer(void) const { return mBuffer; }
-
-        /**
-         * This method returns the length (number of chars in buffer).
-         *
-         * @returns The name length.
-         *
-         */
-        uint8_t GetLength(void) const { return mLength; }
-
-        /**
-         * This method copies the name data into a given char buffer with a given size.
-         *
-         * The given buffer is cleared (`memset` to zero) before copying the Network Name into it. The copied string
-         * in @p aBuffer is NOT necessarily null terminated.
-         *
-         * @param[out] aBuffer   A pointer to a buffer where to copy the Network Name into.
-         * @param[in]  aMaxSize  Size of @p aBuffer (maximum number of chars to write into @p aBuffer).
-         *
-         * @returns The actual number of chars copied into @p aBuffer.
-         *
-         */
-        uint8_t CopyTo(char *aBuffer, uint8_t aMaxSize) const;
-
-    private:
-        const char *mBuffer;
-        uint8_t     mLength;
-    };
-
-    /**
-     * This constructor initializes the IEEE802.15.4 Network Name as an empty string.
-     *
-     */
-    NetworkName(void) { m8[0] = '\0'; }
-
-    /**
-     * This method gets the IEEE802.15.4 Network Name as a null terminated C string.
-     *
-     * @returns The Network Name as a null terminated C string array.
-     *
-     */
-    const char *GetAsCString(void) const { return m8; }
-
-    /**
-     * This method gets the IEEE802.15.4 Network Name as Data.
-     *
-     * @returns The Network Name as Data.
-     *
-     */
-    Data GetAsData(void) const;
-
-    /**
-     * This method sets the IEEE 802.15.4 Network Name.
-     *
-     * @param[in]  aNameData           A reference to name data.
-     *
-     * @retval OT_ERROR_NONE           Successfully set the IEEE 802.15.4 Network Name.
-     * @retval OT_ERROR_ALREADY        The name is already set to the same string.
-     * @retval OT_ERROR_INVALID_ARGS   Given name is too long.
-     *
-     */
-    otError Set(const Data &aNameData);
-};
 
 /**
  * This class implements IEEE 802.15.4 IE (Information Element) generation and parsing.
@@ -783,7 +246,7 @@ class Frame : public otRadioFrame
 public:
     enum
     {
-        kMTU                 = 127,
+        kMtu                 = OT_RADIO_FRAME_MAX_SIZE,
         kFcfSize             = sizeof(uint16_t),
         kDsnSize             = sizeof(uint8_t),
         kSecurityControlSize = sizeof(uint8_t),
@@ -865,22 +328,23 @@ public:
     typedef String<kInfoStringSize> InfoString;
 
     /**
+     * This method indicates whether the frame is empty (no payload).
+     *
+     * @retval TRUE  The frame is empty (no PSDU payload).
+     * @retval FALSE The frame is not empty.
+     *
+     */
+    bool IsEmpty(void) const { return false; }
+
+    /**
      * This method initializes the MAC header.
      *
      * @param[in]  aFcf          The Frame Control field.
      * @param[in]  aSecurityCtl  The Security Control field.
      *
      */
+    // TODO: Move to TxFrame
     void InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl);
-
-    /**
-     * This method validates the frame.
-     *
-     * @retval OT_ERROR_NONE    Successfully parsed the MAC header.
-     * @retval OT_ERROR_PARSE   Failed to parse through the MAC header.
-     *
-     */
-    otError ValidatePsdu(void) const;
 
     /**
      * This method returns the IEEE 802.15.4 Frame Type.
@@ -888,7 +352,7 @@ public:
      * @returns The IEEE 802.15.4 Frame Type.
      *
      */
-    uint8_t GetType(void) const { return GetPsdu()[0] & kFcfFrameTypeMask; }
+    uint8_t GetType(void) const { return kFcfFrameData; }
 
     /**
      * This method returns the IEEE 802.15.4 Frame Version.
@@ -896,7 +360,7 @@ public:
      * @returns The IEEE 802.15.4 Frame Version.
      *
      */
-    uint16_t GetVersion(void) const { return GetFrameControlField() & kFcfFrameVersionMask; }
+    uint16_t GetVersion(void) const { return kFcfFrameVersion2006; }
 
     /**
      * This method indicates whether or not security is enabled.
@@ -905,6 +369,7 @@ public:
      * @retval FALSE  If security is not enabled.
      *
      */
+    // TODO: Move to RxFrame
     bool GetSecurityEnabled(void) const { return (GetPsdu()[0] & kFcfSecurityEnabled) != 0; }
 
     /**
@@ -914,6 +379,7 @@ public:
      * @retval FALSE  If the Frame Pending bit is not set.
      *
      */
+    // TODO: Move to RxFrame
     bool GetFramePending(void) const { return (GetPsdu()[0] & kFcfFramePending) != 0; }
 
     /**
@@ -922,6 +388,7 @@ public:
      * @param[in]  aFramePending  The Frame Pending bit.
      *
      */
+    // TODO: Move to TxFrame
     void SetFramePending(bool aFramePending);
 
     /**
@@ -931,6 +398,7 @@ public:
      * @retval FALSE  If the Ack Request bit is not set.
      *
      */
+    // TODO: Move to TxFrame
     bool GetAckRequest(void) const { return (GetPsdu()[0] & kFcfAckRequest) != 0; }
 
     /**
@@ -939,6 +407,7 @@ public:
      * @param[in]  aAckRequest  The Ack Request bit.
      *
      */
+    // TODO: Move to TxFrame
     void SetAckRequest(bool aAckRequest);
 
     /**
@@ -948,23 +417,7 @@ public:
      * @retval FALSE  If no IE present.
      *
      */
-    bool IsIePresent(void) const { return (GetFrameControlField() & kFcfIePresent) != 0; }
-
-    /**
-     * This method returns the Sequence Number value.
-     *
-     * @returns The Sequence Number value.
-     *
-     */
-    uint8_t GetSequence(void) const { return GetPsdu()[kSequenceIndex]; }
-
-    /**
-     * This method sets the Sequence Number value.
-     *
-     * @param[in]  aSequence  The Sequence Number value.
-     *
-     */
-    void SetSequence(uint8_t aSequence) { GetPsdu()[kSequenceIndex] = aSequence; }
+    bool IsIePresent(void) const { return false; }
 
     /**
      * This method gets the Destination PAN Identifier.
@@ -972,8 +425,10 @@ public:
      * @param[out]  aPanId  The Destination PAN Identifier.
      *
      * @retval OT_ERROR_NONE   Successfully retrieved the Destination PAN Identifier.
+     * @retval OT_ERROR_PARSE  Failed to parse the PAN Identifier.
      *
      */
+    // TODO: Move to TxFrame
     otError GetDstPanId(PanId &aPanId) const;
 
     /**
@@ -982,6 +437,7 @@ public:
      * @param[in]  aPanId  The Destination PAN Identifier.
      *
      */
+    // TODO: Move to TxFrame
     void SetDstPanId(PanId aPanId);
 
     /**
@@ -992,6 +448,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
+    // TODO: Move to both TxFrame and RxFrame
     otError GetDstAddr(Address &aAddress) const;
 
     /**
@@ -1000,6 +457,7 @@ public:
      * @param[in]  aShortAddress  The Destination Address.
      *
      */
+    // TODO: Move to TxFrame
     void SetDstAddr(ShortAddress aShortAddress);
 
     /**
@@ -1008,6 +466,7 @@ public:
      * @param[in]  aExtAddress  The Destination Address.
      *
      */
+    // TODO: Move to TxFrame
     void SetDstAddr(const ExtAddress &aExtAddress);
 
     /**
@@ -1016,15 +475,8 @@ public:
      * @param[in]  aAddress  The Destination Address.
      *
      */
+    // TODO: Move to TxFrame
     void SetDstAddr(const Address &aAddress);
-
-    /**
-     * This method indicates whether or not the Src PanId is present.
-     *
-     * @returns TRUE if the Src PanId is present, FALSE otherwise.
-     *
-     */
-    bool IsSrcPanIdPresent(uint16_t aFcf) const;
 
     /**
      * This method gets the Source PAN Identifier.
@@ -1034,17 +486,8 @@ public:
      * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
      *
      */
+    // TODO: Move to RxFrame
     otError GetSrcPanId(PanId &aPanId) const;
-
-    /**
-     * This method sets the Source PAN Identifier.
-     *
-     * @param[in]  aPanId  The Source PAN Identifier.
-     *
-     * @retval OT_ERROR_NONE   Successfully set the Source PAN Identifier.
-     *
-     */
-    otError SetSrcPanId(PanId aPanId);
 
     /**
      * This method gets the Source Address.
@@ -1054,6 +497,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
      *
      */
+    // TODO: Move to RxFrame
     otError GetSrcAddr(Address &aAddress) const;
 
     /**
@@ -1062,6 +506,7 @@ public:
      * @param[in]  aShortAddress  The Source Address.
      *
      */
+    // TODO: Move to TxFrame & just use to set addressmode
     void SetSrcAddr(ShortAddress aShortAddress);
 
     /**
@@ -1070,6 +515,7 @@ public:
      * @param[in]  aExtAddress  The Source Address.
      *
      */
+    // TODO: Move to TxFrame & just use to set addressmode
     void SetSrcAddr(const ExtAddress &aExtAddress);
 
     /**
@@ -1078,139 +524,8 @@ public:
      * @param[in]  aAddress  The Source Address.
      *
      */
+    // TODO: Move to TxFrame & just use to set addressmode
     void SetSrcAddr(const Address &aAddress);
-
-    /**
-     * This method gets the Security Level Identifier.
-     *
-     * @param[out]  aSecurityLevel  The Security Level Identifier.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Security Level Identifier.
-     *
-     */
-    otError GetSecurityLevel(uint8_t &aSecurityLevel) const;
-
-    /**
-     * This method gets the Key Identifier Mode.
-     *
-     * @param[out]  aSecurityLevel  The Key Identifier Mode.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Key Identifier Mode.
-     *
-     */
-    otError GetKeyIdMode(uint8_t &aKeyIdMode) const;
-
-    /**
-     * This method gets the Frame Counter.
-     *
-     * @param[out]  aFrameCounter  The Frame Counter.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Frame Counter.
-     *
-     */
-    otError GetFrameCounter(uint32_t &aFrameCounter) const;
-
-    /**
-     * This method sets the Frame Counter.
-     *
-     * @param[in]  aFrameCounter  The Frame Counter.
-     *
-     */
-    void SetFrameCounter(uint32_t aFrameCounter);
-
-    /**
-     * This method returns a pointer to the Key Source.
-     *
-     * @returns A pointer to the Key Source.
-     *
-     */
-    const uint8_t *GetKeySource(void) const;
-
-    /**
-     * This method sets the Key Source.
-     *
-     * @param[in]  aKeySource  A pointer to the Key Source value.
-     *
-     */
-    void SetKeySource(const uint8_t *aKeySource);
-
-    /**
-     * This method gets the Key Identifier.
-     *
-     * @param[out]  aKeyId  The Key Identifier.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Key Identifier.
-     *
-     */
-    otError GetKeyId(uint8_t &aKeyId) const;
-
-    /**
-     * This method sets the Key Identifier.
-     *
-     * @param[in]  aKeyId  The Key Identifier.
-     *
-     */
-    void SetKeyId(uint8_t aKeyId);
-
-    /**
-     * This method gets the Command ID.
-     *
-     * @param[out]  aCommandId  The Command ID.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Command ID.
-     *
-     */
-    otError GetCommandId(uint8_t &aCommandId) const;
-
-    /**
-     * This method sets the Command ID.
-     *
-     * @param[in]  aCommandId  The Command ID.
-     *
-     * @retval OT_ERROR_NONE  Successfully set the Command ID.
-     *
-     */
-    otError SetCommandId(uint8_t aCommandId);
-
-    /**
-     * This method indicates whether the frame is a MAC Data Request command (data poll)
-     *
-     * @returns TRUE if frame is a MAC Data Request command, FALSE otherwise.
-     *
-     */
-    bool IsDataRequestCommand(void) const;
-
-    /**
-     * This method returns the MAC Frame Length.
-     *
-     * @returns The MAC Frame Length.
-     *
-     */
-    uint16_t GetLength(void) const { return GetPsduLength(); }
-
-    /**
-     * This method sets the MAC Frame Length.
-     *
-     * @param[in]  aLength  The MAC Frame Length.
-     *
-     */
-    void SetLength(uint16_t aLength) { SetPsduLength(aLength); }
-
-    /**
-     * This method returns the MAC header size.
-     *
-     * @returns The MAC header size.
-     *
-     */
-    uint8_t GetHeaderLength(void) const;
-
-    /**
-     * This method returns the MAC footer size.
-     *
-     * @returns The MAC footer size.
-     *
-     */
-    uint8_t GetFooterLength(void) const;
 
     /**
      * This method returns the current MAC Payload length.
@@ -1218,6 +533,7 @@ public:
      * @returns The current MAC Payload length.
      *
      */
+    // TODO: Move to TxFrame and RxFrame
     uint16_t GetPayloadLength(void) const;
 
     /**
@@ -1226,12 +542,14 @@ public:
      * @returns The maximum MAC Payload length for the given MAC header and footer.
      *
      */
+    // TODO: Move to TxFrame
     uint16_t GetMaxPayloadLength(void) const;
 
     /**
      * This method sets the MAC Payload length.
      *
      */
+    // TODO: Move to TxFrame
     void SetPayloadLength(uint16_t aLength);
 
     /**
@@ -1251,59 +569,12 @@ public:
     void SetChannel(uint8_t aChannel) { mChannel = aChannel; }
 
     /**
-     * This method returns the IEEE 802.15.4 PSDU length.
-     *
-     * @returns The IEEE 802.15.4 PSDU length.
-     *
-     */
-    uint16_t GetPsduLength(void) const { return mLength; }
-
-    /**
-     * This method sets the IEEE 802.15.4 PSDU length.
-     *
-     * @param[in]  aLength  The IEEE 802.15.4 PSDU length.
-     *
-     */
-    void SetPsduLength(uint16_t aLength) { mLength = aLength; }
-
-    /**
-     * This method returns a pointer to the PSDU.
-     *
-     * @returns A pointer to the PSDU.
-     *
-     */
-    uint8_t *GetPsdu(void) { return mPsdu; }
-
-    /**
-     * This const method returns a pointer to the PSDU.
-     *
-     * @returns A pointer to the PSDU.
-     *
-     */
-    const uint8_t *GetPsdu(void) const { return mPsdu; }
-
-    /**
-     * This method returns a pointer to the MAC Header.
-     *
-     * @returns A pointer to the MAC Header.
-     *
-     */
-    uint8_t *GetHeader(void) { return GetPsdu(); }
-
-    /**
-     * This const method returns a pointer to the MAC Header.
-     *
-     * @returns A pointer to the MAC Header.
-     *
-     */
-    const uint8_t *GetHeader(void) const { return GetPsdu(); }
-
-    /**
      * This method returns a pointer to the MAC Payload.
      *
      * @returns A pointer to the MAC Payload.
      *
      */
+    // Todo: Move to both TxFrame and RxFrame
     uint8_t *GetPayload(void) { return const_cast<uint8_t *>(const_cast<const Frame *>(this)->GetPayload()); }
 
     /**
@@ -1312,23 +583,8 @@ public:
      * @returns A pointer to the MAC Payload.
      *
      */
+    // Todo: Move to both TxFrame and RxFrame
     const uint8_t *GetPayload(void) const;
-
-    /**
-     * This method returns a pointer to the MAC Footer.
-     *
-     * @returns A pointer to the MAC Footer.
-     *
-     */
-    uint8_t *GetFooter(void) { return const_cast<uint8_t *>(const_cast<const Frame *>(this)->GetFooter()); }
-
-    /**
-     * This const method returns a pointer to the MAC Footer.
-     *
-     * @returns A pointer to the MAC Footer.
-     *
-     */
-    const uint8_t *GetFooter(void) const;
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
 
@@ -1392,7 +648,7 @@ public:
      * @returns The maximum transmission unit (MTU).
      *
      */
-    uint16_t GetMtu(void) const;
+    uint16_t GetMtu(void) const { return kMtu; }
 
     /**
      * This method returns the FCS size.
@@ -1400,7 +656,7 @@ public:
      * @returns This method returns the FCS size.
      *
      */
-    uint16_t GetFcsSize(void) const;
+    uint16_t GetFcsSize(void) const { return kFcsSize; }
 
     /**
      * This method returns information about the frame object as an `InfoString` object.
@@ -1408,6 +664,7 @@ public:
      * @returns An `InfoString` containing info about the frame.
      *
      */
+    // TODO: Move to TxFrame and RxFrame
     InfoString ToInfoString(void) const;
 
 private:
@@ -1416,20 +673,6 @@ private:
         kInvalidIndex  = 0xff,
         kSequenceIndex = kFcfSize,
     };
-
-    uint16_t GetFrameControlField(void) const;
-    uint8_t  FindDstPanIdIndex(void) const;
-    uint8_t  FindDstAddrIndex(void) const;
-    uint8_t  FindSrcPanIdIndex(void) const;
-    uint8_t  FindSrcAddrIndex(void) const;
-    uint8_t  FindSecurityHeaderIndex(void) const;
-    uint8_t  SkipSecurityHeaderIndex(void) const;
-    uint8_t  FindPayloadIndex(void) const;
-#if OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
-    uint8_t FindHeaderIeIndex(void) const;
-#endif
-
-    static uint8_t GetKeySourceLength(uint8_t aKeyIdMode);
 };
 
 /**
@@ -1472,15 +715,6 @@ public:
     void SetLqi(uint8_t aLqi) { mInfo.mRxInfo.mLqi = aLqi; }
 
     /**
-     * This method indicates whether or not the received frame is acknowledged with frame pending set.
-     *
-     * @retval TRUE   This frame is acknowledged with frame pending set.
-     * @retval FALSE  This frame is acknowledged with frame pending not set.
-     *
-     */
-    bool IsAckedWithFramePending(void) const { return mInfo.mRxInfo.mAckedWithFramePending; }
-
-    /**
      * This method returns the timestamp when the frame was received.
      *
      * @returns The timestamp when the frame was received, in microseconds.
@@ -1518,104 +752,12 @@ class TxFrame : public Frame
 {
 public:
     /**
-     * This constructor initialises a TxFrame, linked to a DataReq structure
-     *
-     */
-    explicit TxFrame(otDataRequest &aDataReq);
-
-    /**
-     * This method returns the maximum number of backoffs the CSMA-CA algorithm will attempt before declaring a channel
-     * access failure.
-     *
-     * Equivalent to macMaxCSMABackoffs in IEEE 802.15.4-2006.
-     *
-     * @returns The maximum number of backoffs the CSMA-CA algorithm will attempt before declaring a channel access
-     *          failure.
-     *
-     */
-    uint8_t GetMaxCsmaBackoffs(void) const { return mInfo.mTxInfo.mMaxCsmaBackoffs; }
-
-    /**
-     * This method sets the maximum number of backoffs the CSMA-CA algorithm will attempt before declaring a channel
-     * access failure.
-     *
-     * Equivalent to macMaxCSMABackoffs in IEEE 802.15.4-2006.
-     *
-     * @param[in]  aMaxCsmaBackoffs  The maximum number of backoffs the CSMA-CA algorithm will attempt before declaring
-     *                               a channel access failure.
-     *
-     */
-    void SetMaxCsmaBackoffs(uint8_t aMaxCsmaBackoffs) { mInfo.mTxInfo.mMaxCsmaBackoffs = aMaxCsmaBackoffs; }
-
-    /**
-     * This method returns the maximum number of retries allowed after a transmission failure.
-     *
-     * Equivalent to macMaxFrameRetries in IEEE 802.15.4-2006.
-     *
-     * @returns The maximum number of retries allowed after a transmission failure.
-     *
-     */
-    uint8_t GetMaxFrameRetries(void) const { return mInfo.mTxInfo.mMaxFrameRetries; }
-
-    /**
-     * This method sets the maximum number of retries allowed after a transmission failure.
-     *
-     * Equivalent to macMaxFrameRetries in IEEE 802.15.4-2006.
-     *
-     * @param[in]  aMaxFrameRetries  The maximum number of retries allowed after a transmission failure.
-     *
-     */
-    void SetMaxFrameRetries(uint8_t aMaxFrameRetries) { mInfo.mTxInfo.mMaxFrameRetries = aMaxFrameRetries; }
-
-    /**
-     * This method indicates whether or not the frame is a retransmission.
-     *
-     * @retval TRUE   Frame is a retransmission
-     * @retval FALSE  This is a new frame and not a retransmission of an earlier frame.
-     *
-     */
-    bool IsARetransmission(void) const { return mInfo.mTxInfo.mIsARetx; }
-
-    /**
      * This method sets the retransmission flag attribute.
      *
      * @param[in]  aIsARetx  TRUE if frame is a retransmission of an earlier frame, FALSE otherwise.
      *
      */
     void SetIsARetransmission(bool aIsARetx) { mInfo.mTxInfo.mIsARetx = aIsARetx; }
-
-    /**
-     * This method indicates whether or not CSMA-CA is enabled.
-     *
-     * @retval TRUE  CSMA-CA is enabled.
-     * @retval FALSE CSMA-CA is not enabled is not enabled.
-     *
-     */
-    bool IsCsmaCaEnabled(void) const { return mInfo.mTxInfo.mCsmaCaEnabled; }
-
-    /**
-     * This method sets the CSMA-CA enabled attribute.
-     *
-     * @param[in]  aCsmaCaEnabled  TRUE if CSMA-CA must be enabled for this packet, FALSE otherwise.
-     *
-     */
-    void SetCsmaCaEnabled(bool aCsmaCaEnabled) { mInfo.mTxInfo.mCsmaCaEnabled = aCsmaCaEnabled; }
-
-    /**
-     * This method returns the key used for frame encryption and authentication (AES CCM).
-     *
-     * @returns The pointer to the key.
-     *
-     */
-    const uint8_t *GetAesKey(void) const { return mInfo.mTxInfo.mAesKey; }
-
-    /**
-     * This method sets the key used for frame encryption and authentication (AES CCM).
-     *
-     * @param[in]  aAesKey  The pointer to the key.
-     *
-     */
-    void SetAesKey(const uint8_t *aAesKey) { mInfo.mTxInfo.mAesKey = aAesKey; }
 
     /**
      * This method copies the PSDU and all attributes from another frame.
@@ -1656,57 +798,7 @@ public:
      */
     void SetTimeSyncSeq(uint8_t aTimeSyncSeq) { mInfo.mTxInfo.mIeInfo->mTimeSyncSeq = aTimeSyncSeq; }
 #endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
-    otDataRequest &GetDataRequest(void) { return mDataReq; }
-
-private:
-    otDataRequest &mDataReq;
 };
-
-class Beacon
-{
-public:
-    enum
-    {
-        kSuperFrameSpec = 0x0fff, ///< Superframe Specification value.
-    };
-
-    /**
-     * This method initializes the Beacon message.
-     *
-     */
-    void Init(void)
-    {
-        mSuperframeSpec     = ot::Encoding::LittleEndian::HostSwap16(kSuperFrameSpec);
-        mGtsSpec            = 0;
-        mPendingAddressSpec = 0;
-    }
-
-    /**
-     * This method indicates whether or not the beacon appears to be a valid Thread Beacon message.
-     *
-     * @retval TRUE  if the beacon appears to be a valid Thread Beacon message.
-     * @retval FALSE if the beacon does not appear to be a valid Thread Beacon message.
-     *
-     */
-    bool IsValid(void) const
-    {
-        return (mSuperframeSpec == ot::Encoding::LittleEndian::HostSwap16(kSuperFrameSpec)) && (mGtsSpec == 0) &&
-               (mPendingAddressSpec == 0);
-    }
-
-    /**
-     * This method returns the pointer to the beacon payload address.
-     *
-     * @retval A pointer to the beacon payload address.
-     *
-     */
-    uint8_t *GetPayload(void) { return reinterpret_cast<uint8_t *>(this) + sizeof(*this); }
-
-private:
-    uint16_t mSuperframeSpec;
-    uint8_t  mGtsSpec;
-    uint8_t  mPendingAddressSpec;
-} OT_TOOL_PACKED_END;
 
 /**
  * This class implements IEEE 802.15.4 Beacon Payload generation and parsing.
