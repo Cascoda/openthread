@@ -381,40 +381,7 @@ public:
 #endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
 
 #if OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
-    /**
-     * This method appends Header IEs to MAC header.
-     *
-     * @param[in]   aIeList  The pointer to the Header IEs array.
-     * @param[in]   aIeCount The number of Header IEs in the array.
-     *
-     * @retval OT_ERROR_NONE    Successfully appended the Header IEs.
-     * @retval OT_ERROR_FAILED  If IE Present bit is not set.
-     *
-     */
-    otError AppendHeaderIe(HeaderIe *aIeList, uint8_t aIeCount);
-
-    /**
-     * This method returns a pointer to the Header IE.
-     *
-     * @param[in] aIeId  The Element Id of the Header IE.
-     *
-     * @returns A pointer to the Header IE, NULL if not found.
-     *
-     */
-    uint8_t *GetHeaderIe(uint8_t aIeId)
-    {
-        return const_cast<uint8_t *>(const_cast<const Frame *>(this)->GetHeaderIe(aIeId));
-    }
-
-    /**
-     * This method returns a pointer to the Header IE.
-     *
-     * @param[in] aIeId  The Element Id of the Header IE.
-     *
-     * @returns A pointer to the Header IE, NULL if not found.
-     *
-     */
-    const uint8_t *GetHeaderIe(uint8_t aIeId) const;
+#error "No header IE support with this MAC"
 #endif // OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
 
     /**
@@ -578,7 +545,6 @@ public:
      * @returns An `InfoString` containing info about the frame.
      *
      */
-    // TODO: Move to TxFrame and RxFrame
     InfoString ToInfoString(void) const;
 
     /**
@@ -587,7 +553,7 @@ public:
      * @returns The timestamp when the frame was received, in microseconds.
      *
      */
-    const uint64_t &GetTimestamp(void) const { return mTimestamp; }
+    const uint64_t &GetTimestamp(void) const { return Encoding::LittleEndian::ReadUint64(mTimeStamp); }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     /**
@@ -609,9 +575,6 @@ public:
      */
     uint8_t ReadTimeSyncSeq(void) const { return GetTimeIe()->GetSequence(); }
 #endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
-private:
-    uint8_t  mChannel;
-    uint64_t mTimestamp;
 };
 
 /**
@@ -653,7 +616,6 @@ public:
      * @param[in]  aSecurityCtl  The Security Control field.
      *
      */
-    // TODO: Move to TxFrame
     void InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl);
 
     /**
@@ -788,7 +750,6 @@ public:
      * @returns The maximum MAC Payload length for the given MAC header and footer.
      *
      */
-    // TODO: Move to TxFrame
     uint16_t GetMaxPayloadLength(void) const;
 
     /**
@@ -819,7 +780,6 @@ public:
      * @returns An `InfoString` containing info about the frame.
      *
      */
-    // TODO: Move to TxFrame and RxFrame
     InfoString ToInfoString(void) const;
 
     /**
@@ -861,8 +821,6 @@ public:
      */
     void SetTimeSyncSeq(uint8_t aTimeSyncSeq) { mInfo.mTxInfo.mIeInfo->mTimeSyncSeq = aTimeSyncSeq; }
 #endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
-private:
-    uint8_t mChannel;
 };
 
 /**

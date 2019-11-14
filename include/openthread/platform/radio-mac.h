@@ -281,6 +281,8 @@ typedef struct otDataRequest
     uint8_t           mTxOptions;                    ///< Tx options bit field
     uint8_t           mMsdu[OT_RADIO_MSDU_MAX_SIZE]; ///< Data
     struct otSecSpec  mSecurity;                     ///< Security information to be used for the generated frame
+    uint8_t           mChannel;                      ///< Openthread specific: channel to tx on
+    uint8_t           mPanIdCompression;             ///< Openthread specific: is pan id compression used?
 } otDataRequest;
 
 /**
@@ -298,6 +300,7 @@ typedef struct otDataIndication
     uint8_t           mTimeStamp[4];                 ///< Timestamp of received frame (optional)
     uint8_t           mMsdu[OT_RADIO_MSDU_MAX_SIZE]; ///< Unsecured MSDU from received frame
     struct otSecSpec  mSecurity;                     ///< Security information of received frame
+    uint8_t           mChannel;                      ///< Openthread specific: channel rx-ed on
 } otDataIndication;
 
 /**

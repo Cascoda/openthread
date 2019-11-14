@@ -41,54 +41,42 @@
 namespace ot {
 namespace Mac {
 
-void Frame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
+void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
 {
-    uint8_t *bytes  = GetPsdu();
-    uint8_t  length = 0;
-
-    // Frame Control Field
-    Encoding::LittleEndian::WriteUint16(aFcf, bytes);
-    length += kFcfSize;
-
-    // Sequence Number
-    length += kDsnSize;
+    SetAckRequest((aFcf & kFcfAckRequest) != 0);
 
     // Destination PAN + Address
     switch (aFcf & kFcfDstAddrMask)
     {
     case kFcfDstAddrNone:
+        mDst.mAddressMode = Address::kTypeNone;
         break;
 
     case kFcfDstAddrShort:
-        length += sizeof(PanId) + sizeof(ShortAddress);
+        mDst.mAddressMode = Address::kTypeShort;
         break;
 
     case kFcfDstAddrExt:
-        length += sizeof(PanId) + sizeof(ExtAddress);
+        mDst.mAddressMode = Address::kTypeExtended;
         break;
 
     default:
         assert(false);
     }
 
-    // Source PAN
-    if (IsSrcPanIdPresent(aFcf))
-    {
-        length += sizeof(PanId);
-    }
-
     // Source Address
     switch (aFcf & kFcfSrcAddrMask)
     {
     case kFcfSrcAddrNone:
+        mSrcAddrMode = Address::kTypeNone;
         break;
 
     case kFcfSrcAddrShort:
-        length += sizeof(ShortAddress);
+        mSrcAddrMode = Address::kTypeShort;
         break;
 
     case kFcfSrcAddrExt:
-        length += sizeof(ExtAddress);
+        mSrcAddrMode = Address::kTypeExtended;
         break;
 
     default:
@@ -98,310 +86,28 @@ void Frame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
     // Security Header
     if (aFcf & kFcfSecurityEnabled)
     {
-        bytes[length] = aSecurityControl;
-
-        if (aSecurityControl & kSecLevelMask)
-        {
-            length += kSecurityControlSize + kFrameCounterSize;
-        }
+        mSecurity.mSecurityLevel = aSecurityControl & kSecLevelMask;
 
         switch (aSecurityControl & kKeyIdModeMask)
         {
         case kKeyIdMode0:
-            length += kKeySourceSizeMode0;
+            mSecurity.mKeyIdMode = 0;
             break;
 
         case kKeyIdMode1:
-            length += kKeySourceSizeMode1 + kKeyIndexSize;
+            mSecurity.mKeyIdMode = 1;
             break;
 
         case kKeyIdMode2:
-            length += kKeySourceSizeMode2 + kKeyIndexSize;
+            mSecurity.mKeyIdMode = 2;
             break;
 
         case kKeyIdMode3:
-            length += kKeySourceSizeMode3 + kKeyIndexSize;
+            mSecurity.mKeyIdMode = 3;
             break;
         }
     }
-
-    // Command ID
-    if ((aFcf & kFcfFrameTypeMask) == kFcfFrameMacCmd)
-    {
-        length += kCommandIdSize;
-    }
-
-    SetPsduLength(length + GetFooterLength());
 }
-
-void Frame::SetAckRequest(bool aAckRequest)
-{
-    if (aAckRequest)
-    {
-        GetPsdu()[0] |= kFcfAckRequest;
-    }
-    else
-    {
-        GetPsdu()[0] &= ~kFcfAckRequest;
-    }
-}
-
-void Frame::SetFramePending(bool aFramePending)
-{
-    if (aFramePending)
-    {
-        GetPsdu()[0] |= kFcfFramePending;
-    }
-    else
-    {
-        GetPsdu()[0] &= ~kFcfFramePending;
-    }
-}
-
-otError Frame::GetDstPanId(PanId &aPanId) const
-{
-    otError error = OT_ERROR_NONE;
-    uint8_t index = FindDstPanIdIndex();
-
-    VerifyOrExit(index != kInvalidIndex, error = OT_ERROR_PARSE);
-    aPanId = Encoding::LittleEndian::ReadUint16(GetPsdu() + index);
-
-exit:
-    return error;
-}
-
-void Frame::SetDstPanId(PanId aPanId)
-{
-    uint8_t index = FindDstPanIdIndex();
-
-    assert(index != kInvalidIndex);
-    Encoding::LittleEndian::WriteUint16(aPanId, GetPsdu() + index);
-}
-
-otError Frame::GetDstAddr(Address &aAddress) const
-{
-    otError error = OT_ERROR_NONE;
-    uint8_t index = FindDstAddrIndex();
-
-    VerifyOrExit(index != kInvalidIndex, error = OT_ERROR_PARSE);
-
-    switch (GetFrameControlField() & kFcfDstAddrMask)
-    {
-    case kFcfDstAddrShort:
-        aAddress.SetShort(Encoding::LittleEndian::ReadUint16(GetPsdu() + index));
-        break;
-
-    case kFcfDstAddrExt:
-        aAddress.SetExtended(GetPsdu() + index, ExtAddress::kReverseByteOrder);
-        break;
-
-    default:
-        aAddress.SetNone();
-        break;
-    }
-
-exit:
-    return error;
-}
-
-void Frame::SetDstAddr(ShortAddress aShortAddress)
-{
-    assert((GetFrameControlField() & kFcfDstAddrMask) == kFcfDstAddrShort);
-    Encoding::LittleEndian::WriteUint16(aShortAddress, GetPsdu() + FindDstAddrIndex());
-}
-
-void Frame::SetDstAddr(const ExtAddress &aExtAddress)
-{
-    uint8_t index = FindDstAddrIndex();
-
-    assert((GetFrameControlField() & kFcfDstAddrMask) == kFcfDstAddrExt);
-    assert(index != kInvalidIndex);
-
-    aExtAddress.CopyTo(GetPsdu() + index, ExtAddress::kReverseByteOrder);
-}
-
-void Frame::SetDstAddr(const Address &aAddress)
-{
-    switch (aAddress.GetType())
-    {
-    case Address::kTypeShort:
-        SetDstAddr(aAddress.GetShort());
-        break;
-
-    case Address::kTypeExtended:
-        SetDstAddr(aAddress.GetExtended());
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
-}
-
-otError Frame::GetSrcPanId(PanId &aPanId) const
-{
-    otError error = OT_ERROR_NONE;
-    uint8_t index = FindSrcPanIdIndex();
-
-    VerifyOrExit(index != kInvalidIndex, error = OT_ERROR_PARSE);
-    aPanId = Encoding::LittleEndian::ReadUint16(GetPsdu() + index);
-
-exit:
-    return error;
-}
-
-otError Frame::GetSrcAddr(Address &aAddress) const
-{
-    otError  error = OT_ERROR_NONE;
-    uint8_t  index = FindSrcAddrIndex();
-    uint16_t fcf   = GetFrameControlField();
-
-    VerifyOrExit(index != kInvalidIndex, error = OT_ERROR_PARSE);
-
-    switch (fcf & kFcfSrcAddrMask)
-    {
-    case kFcfSrcAddrShort:
-        aAddress.SetShort(Encoding::LittleEndian::ReadUint16(GetPsdu() + index));
-        break;
-
-    case kFcfSrcAddrExt:
-        aAddress.SetExtended(GetPsdu() + index, ExtAddress::kReverseByteOrder);
-        break;
-
-    default:
-        aAddress.SetNone();
-        break;
-    }
-
-exit:
-    return error;
-}
-
-void Frame::SetSrcAddr(ShortAddress aShortAddress)
-{
-    uint8_t index = FindSrcAddrIndex();
-
-    assert((GetFrameControlField() & kFcfSrcAddrMask) == kFcfSrcAddrShort);
-    assert(index != kInvalidIndex);
-
-    Encoding::LittleEndian::WriteUint16(aShortAddress, GetPsdu() + index);
-}
-
-void Frame::SetSrcAddr(const ExtAddress &aExtAddress)
-{
-    uint8_t index = FindSrcAddrIndex();
-
-    assert((GetFrameControlField() & kFcfSrcAddrMask) == kFcfSrcAddrExt);
-    assert(index != kInvalidIndex);
-
-    aExtAddress.CopyTo(GetPsdu() + index, ExtAddress::kReverseByteOrder);
-}
-
-void Frame::SetSrcAddr(const Address &aAddress)
-{
-    switch (aAddress.GetType())
-    {
-    case Address::kTypeShort:
-        SetSrcAddr(aAddress.GetShort());
-        break;
-
-    case Address::kTypeExtended:
-        SetSrcAddr(aAddress.GetExtended());
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
-}
-
-uint16_t Frame::GetMaxPayloadLength(void) const
-{
-    return GetMtu() - (GetHeaderLength() + GetFooterLength());
-}
-
-uint16_t Frame::GetPayloadLength(void) const
-{
-    return GetPsduLength() - (GetHeaderLength() + GetFooterLength());
-}
-
-void Frame::SetPayloadLength(uint16_t aLength)
-{
-    SetPsduLength(GetHeaderLength() + GetFooterLength() + aLength);
-}
-
-const uint8_t *Frame::GetPayload(void) const
-{
-    uint8_t        index   = FindPayloadIndex();
-    const uint8_t *payload = GetPsdu() + index;
-
-    VerifyOrExit(index != kInvalidIndex, payload = NULL);
-
-exit:
-    return payload;
-}
-
-#if OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
-otError Frame::AppendHeaderIe(HeaderIe *aIeList, uint8_t aIeCount)
-{
-    otError  error = OT_ERROR_NONE;
-    uint8_t  index = FindHeaderIeIndex();
-    uint8_t *cur;
-    uint8_t *base;
-
-    VerifyOrExit(index != kInvalidIndex, error = OT_ERROR_FAILED);
-    cur  = GetPsdu() + index;
-    base = cur;
-
-    for (uint8_t i = 0; i < aIeCount; i++)
-    {
-        memcpy(cur, &aIeList[i], sizeof(HeaderIe));
-        cur += sizeof(HeaderIe);
-        cur += aIeList[i].GetLength();
-    }
-
-    SetPsduLength(GetPsduLength() + static_cast<uint8_t>(cur - base));
-
-exit:
-    return error;
-}
-
-const uint8_t *Frame::GetHeaderIe(uint8_t aIeId) const
-{
-    uint8_t        index   = FindHeaderIeIndex();
-    const uint8_t *cur     = NULL;
-    const uint8_t *payload = GetPayload();
-
-    VerifyOrExit(index != kInvalidIndex);
-
-    cur = GetPsdu() + index;
-
-    while (cur + sizeof(HeaderIe) <= payload)
-    {
-        const HeaderIe *ie  = reinterpret_cast<const HeaderIe *>(cur);
-        uint8_t         len = static_cast<uint8_t>(ie->GetLength());
-
-        if (ie->GetId() == aIeId)
-        {
-            break;
-        }
-
-        cur += sizeof(HeaderIe);
-
-        VerifyOrExit(cur + len <= payload, cur = NULL);
-
-        cur += len;
-    }
-
-    if (cur == payload)
-    {
-        cur = NULL;
-    }
-
-exit:
-    return cur;
-}
-#endif // OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
 const TimeIe *Frame::GetTimeIe(void) const
@@ -428,18 +134,7 @@ exit:
 
 void TxFrame::CopyFrom(const TxFrame &aFromFrame)
 {
-    uint8_t *      psduBuffer   = mPsdu;
-    otRadioIeInfo *ieInfoBuffer = mInfo.mTxInfo.mIeInfo;
-
-    memcpy(this, &aFromFrame, sizeof(Frame));
-
-    // Set the original buffer pointers back on the frame
-    // which were overwritten by above `memcpy()`.
-
-    mPsdu                 = psduBuffer;
-    mInfo.mTxInfo.mIeInfo = ieInfoBuffer;
-
-    memcpy(mPsdu, aFromFrame.mPsdu, aFromFrame.GetPsduLength());
+    memcpy(this, &aFromFrame, sizeof(*this));
 
     // mIeInfo may be null when TIME_SYNC is not enabled.
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
@@ -447,55 +142,111 @@ void TxFrame::CopyFrom(const TxFrame &aFromFrame)
 #endif
 }
 
+uint16_t TxFrame::GetMaxPayloadLength(void) const
+{
+    size_t maxLen = OT_RADIO_FRAME_MAX_SIZE;
+    size_t footerLen, headerLen;
+
+    // Table 95 to calculate auth tag length
+    footerLen = 2 << (mSecurity.mSecurityLevel % 4);
+    footerLen = footerLen == 2 ? 0 : footerLen;
+    footerLen += Mac::Frame::kFcsSize;
+
+    headerLen = Mac::Frame::kFcfSize + Mac::Frame::kDsnSize;
+    if (mSrcAddrMode == OT_MAC_ADDRESS_MODE_SHORT)
+    {
+        headerLen += sizeof(otShortAddress);
+    }
+    else if (mSrcAddrMode == OT_MAC_ADDRESS_MODE_EXT)
+    {
+        headerLen += sizeof(otExtAddress);
+    }
+
+    if (mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT)
+    {
+        headerLen += sizeof(otShortAddress);
+    }
+    else if (mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT)
+    {
+        headerLen += sizeof(otExtAddress);
+    }
+
+    headerLen += sizeof(otPanId); // DstPanId
+    if (!mPanIdCompression)
+    {
+        headerLen += sizeof(otPanId); // SrcPanId
+    }
+
+    if (mSecurity.mSecurityLevel != 0)
+    {
+        headerLen += Mac::Frame::kSecurityControlSize + Mac::Frame::kMic32Size;
+
+        switch (mSecurity.mKeyIdMode)
+        {
+        case 1:
+            headerLen += Mac::Frame::kKeySourceSizeMode1 + Mac::Frame::kKeyIndexSize;
+            break;
+
+        case 2:
+            headerLen += Mac::Frame::kKeySourceSizeMode2 + Mac::Frame::kKeyIndexSize;
+            break;
+
+        case 3:
+            headerLen += Mac::Frame::kKeySourceSizeMode3 + Mac::Frame::kKeyIndexSize;
+            break;
+        }
+    }
+
+    return (maxLen - footerLen - headerLen);
+}
+
 // LCOV_EXCL_START
 
 #if (OPENTHREAD_CONFIG_LOG_LEVEL >= OT_LOG_LEVEL_NOTE) && (OPENTHREAD_CONFIG_LOG_MAC == 1)
 
-Frame::InfoString Frame::ToInfoString(void) const
+Frame::InfoString TxFrame::ToInfoString(void) const
 {
     InfoString string;
     uint8_t    commandId, type;
     Address    src, dst;
 
-    string.Append("len:%d, seqnum:%d, type:", GetLength(), GetSequence());
+    string.Append("paylen:%d, type:", GetPayloadLength());
 
     type = GetType();
 
     switch (type)
     {
-    case kFcfFrameBeacon:
-        string.Append("Beacon");
-        break;
-
     case kFcfFrameData:
         string.Append("Data");
         break;
 
-    case kFcfFrameAck:
-        string.Append("Ack");
+    default:
+        string.Append("%d", type);
         break;
+    }
 
-    case kFcfFrameMacCmd:
-        if (GetCommandId(commandId) != OT_ERROR_NONE)
-        {
-            commandId = 0xff;
-        }
+    GetDstAddr(dst);
 
-        switch (commandId)
-        {
-        case kMacCmdDataRequest:
-            string.Append("Cmd(DataReq)");
-            break;
+    string.Append(", sam:%d, dst:%s, sec:%s, ackreq:%s", mSrcAddrMode, dst.ToString().AsCString(),
+                  mSecurity.mSecurityLevel ? "yes" : "no", GetAckRequest() ? "yes" : "no");
 
-        case kMacCmdBeaconRequest:
-            string.Append("Cmd(BeaconReq)");
-            break;
+    return string;
+}
 
-        default:
-            string.Append("Cmd(%d)", commandId);
-            break;
-        }
+Frame::InfoString RxFrame::ToInfoString(void) const
+{
+    InfoString string;
+    uint8_t    commandId, type;
+    Address    src, dst;
 
+    string.Append("paylen:%d, type:", GetPayloadLength());
+
+    type = GetType();
+
+    switch (type)
+    {
+    case kFcfFrameData:
+        string.Append("Data");
         break;
 
     default:
@@ -506,8 +257,8 @@ Frame::InfoString Frame::ToInfoString(void) const
     GetSrcAddr(src);
     GetDstAddr(dst);
 
-    string.Append(", src:%s, dst:%s, sec:%s, ackreq:%s", src.ToString().AsCString(), dst.ToString().AsCString(),
-                  GetSecurityEnabled() ? "yes" : "no", GetAckRequest() ? "yes" : "no");
+    string.Append(", src:%s, dst:%s, sec:%s", src.ToString().AsCString(), dst.ToString().AsCString(),
+                  GetSecurityEnabled() ? "yes" : "no");
 
     return string;
 }

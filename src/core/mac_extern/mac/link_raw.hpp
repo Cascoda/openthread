@@ -46,7 +46,7 @@ namespace ot {
 namespace Mac {
 
 #if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
-
+#error "link raw not currently enabled for this MAC"
 /**
  * This class defines the raw link-layer object.
  *
