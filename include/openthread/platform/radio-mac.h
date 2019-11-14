@@ -294,6 +294,7 @@ typedef struct otDataIndication
     uint8_t           mMsduLength;                   ///< Length of the received MSDU
     int8_t            mMpduLinkQuality;              ///< LQI of received frame - MUST be RSSI for openthread
     uint8_t           mDSN;                          ///< DSN of received frame
+    uint8_t           mIsFramePending;               ///< Value of 'frame pending' in received frame
     uint8_t           mTimeStamp[4];                 ///< Timestamp of received frame (optional)
     uint8_t           mMsdu[OT_RADIO_MSDU_MAX_SIZE]; ///< Unsecured MSDU from received frame
     struct otSecSpec  mSecurity;                     ///< Security information of received frame
@@ -490,7 +491,6 @@ void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64);
  *
  */
 const char *otPlatRadioGetVersionString(otInstance *aInstance);
-
 
 /**
  * Use the MLME_GET SAP to get an attribute from the MAC PiB

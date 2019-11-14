@@ -241,7 +241,7 @@ private:
  * This class implements IEEE 802.15.4 MAC frame generation and parsing.
  *
  */
-class Frame : public otRadioFrame
+class Frame
 {
 public:
     enum
@@ -337,16 +337,6 @@ public:
     bool IsEmpty(void) const { return false; }
 
     /**
-     * This method initializes the MAC header.
-     *
-     * @param[in]  aFcf          The Frame Control field.
-     * @param[in]  aSecurityCtl  The Security Control field.
-     *
-     */
-    // TODO: Move to TxFrame
-    void InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl);
-
-    /**
      * This method returns the IEEE 802.15.4 Frame Type.
      *
      * @returns The IEEE 802.15.4 Frame Type.
@@ -363,54 +353,6 @@ public:
     uint16_t GetVersion(void) const { return kFcfFrameVersion2006; }
 
     /**
-     * This method indicates whether or not security is enabled.
-     *
-     * @retval TRUE   If security is enabled.
-     * @retval FALSE  If security is not enabled.
-     *
-     */
-    // TODO: Move to RxFrame
-    bool GetSecurityEnabled(void) const { return (GetPsdu()[0] & kFcfSecurityEnabled) != 0; }
-
-    /**
-     * This method indicates whether or not the Frame Pending bit is set.
-     *
-     * @retval TRUE   If the Frame Pending bit is set.
-     * @retval FALSE  If the Frame Pending bit is not set.
-     *
-     */
-    // TODO: Move to RxFrame
-    bool GetFramePending(void) const { return (GetPsdu()[0] & kFcfFramePending) != 0; }
-
-    /**
-     * This method sets the Frame Pending bit.
-     *
-     * @param[in]  aFramePending  The Frame Pending bit.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetFramePending(bool aFramePending);
-
-    /**
-     * This method indicates whether or not the Ack Request bit is set.
-     *
-     * @retval TRUE   If the Ack Request bit is set.
-     * @retval FALSE  If the Ack Request bit is not set.
-     *
-     */
-    // TODO: Move to TxFrame
-    bool GetAckRequest(void) const { return (GetPsdu()[0] & kFcfAckRequest) != 0; }
-
-    /**
-     * This method sets the Ack Request bit.
-     *
-     * @param[in]  aAckRequest  The Ack Request bit.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetAckRequest(bool aAckRequest);
-
-    /**
      * This method indicates whether or not IEs present.
      *
      * @retval TRUE   If IEs present.
@@ -418,173 +360,6 @@ public:
      *
      */
     bool IsIePresent(void) const { return false; }
-
-    /**
-     * This method gets the Destination PAN Identifier.
-     *
-     * @param[out]  aPanId  The Destination PAN Identifier.
-     *
-     * @retval OT_ERROR_NONE   Successfully retrieved the Destination PAN Identifier.
-     * @retval OT_ERROR_PARSE  Failed to parse the PAN Identifier.
-     *
-     */
-    // TODO: Move to TxFrame
-    otError GetDstPanId(PanId &aPanId) const;
-
-    /**
-     * This method sets the Destination PAN Identifier.
-     *
-     * @param[in]  aPanId  The Destination PAN Identifier.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetDstPanId(PanId aPanId);
-
-    /**
-     * This method gets the Destination Address.
-     *
-     * @param[out]  aAddress  The Destination Address.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
-     *
-     */
-    // TODO: Move to both TxFrame and RxFrame
-    otError GetDstAddr(Address &aAddress) const;
-
-    /**
-     * This method sets the Destination Address.
-     *
-     * @param[in]  aShortAddress  The Destination Address.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetDstAddr(ShortAddress aShortAddress);
-
-    /**
-     * This method sets the Destination Address.
-     *
-     * @param[in]  aExtAddress  The Destination Address.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetDstAddr(const ExtAddress &aExtAddress);
-
-    /**
-     * This method sets the Destination Address.
-     *
-     * @param[in]  aAddress  The Destination Address.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetDstAddr(const Address &aAddress);
-
-    /**
-     * This method gets the Source PAN Identifier.
-     *
-     * @param[out]  aPanId  The Source PAN Identifier.
-     *
-     * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
-     *
-     */
-    // TODO: Move to RxFrame
-    otError GetSrcPanId(PanId &aPanId) const;
-
-    /**
-     * This method gets the Source Address.
-     *
-     * @param[out]  aAddress  The Source Address.
-     *
-     * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
-     *
-     */
-    // TODO: Move to RxFrame
-    otError GetSrcAddr(Address &aAddress) const;
-
-    /**
-     * This method sets the Source Address.
-     *
-     * @param[in]  aShortAddress  The Source Address.
-     *
-     */
-    // TODO: Move to TxFrame & just use to set addressmode
-    void SetSrcAddr(ShortAddress aShortAddress);
-
-    /**
-     * This method sets the Source Address.
-     *
-     * @param[in]  aExtAddress  The Source Address.
-     *
-     */
-    // TODO: Move to TxFrame & just use to set addressmode
-    void SetSrcAddr(const ExtAddress &aExtAddress);
-
-    /**
-     * This method sets the Source Address.
-     *
-     * @param[in]  aAddress  The Source Address.
-     *
-     */
-    // TODO: Move to TxFrame & just use to set addressmode
-    void SetSrcAddr(const Address &aAddress);
-
-    /**
-     * This method returns the current MAC Payload length.
-     *
-     * @returns The current MAC Payload length.
-     *
-     */
-    // TODO: Move to TxFrame and RxFrame
-    uint16_t GetPayloadLength(void) const;
-
-    /**
-     * This method returns the maximum MAC Payload length for the given MAC header and footer.
-     *
-     * @returns The maximum MAC Payload length for the given MAC header and footer.
-     *
-     */
-    // TODO: Move to TxFrame
-    uint16_t GetMaxPayloadLength(void) const;
-
-    /**
-     * This method sets the MAC Payload length.
-     *
-     */
-    // TODO: Move to TxFrame
-    void SetPayloadLength(uint16_t aLength);
-
-    /**
-     * This method returns the IEEE 802.15.4 channel used for transmission or reception.
-     *
-     * @returns The IEEE 802.15.4 channel used for transmission or reception.
-     *
-     */
-    uint8_t GetChannel(void) const { return mChannel; }
-
-    /**
-     * This method sets the IEEE 802.15.4 channel used for transmission or reception.
-     *
-     * @param[in]  aChannel  The IEEE 802.15.4 channel used for transmission or reception.
-     *
-     */
-    void SetChannel(uint8_t aChannel) { mChannel = aChannel; }
-
-    /**
-     * This method returns a pointer to the MAC Payload.
-     *
-     * @returns A pointer to the MAC Payload.
-     *
-     */
-    // Todo: Move to both TxFrame and RxFrame
-    uint8_t *GetPayload(void) { return const_cast<uint8_t *>(const_cast<const Frame *>(this)->GetPayload()); }
-
-    /**
-     * This const method returns a pointer to the MAC Payload.
-     *
-     * @returns A pointer to the MAC Payload.
-     *
-     */
-    // Todo: Move to both TxFrame and RxFrame
-    const uint8_t *GetPayload(void) const;
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
 
@@ -658,15 +433,6 @@ public:
      */
     uint16_t GetFcsSize(void) const { return kFcsSize; }
 
-    /**
-     * This method returns information about the frame object as an `InfoString` object.
-     *
-     * @returns An `InfoString` containing info about the frame.
-     *
-     */
-    // TODO: Move to TxFrame and RxFrame
-    InfoString ToInfoString(void) const;
-
 private:
     enum
     {
@@ -679,16 +445,32 @@ private:
  * This class supports received IEEE 802.15.4 MAC frame processing.
  *
  */
-class RxFrame : public Frame
+class RxFrame : public otDataIndication, Frame
 {
 public:
+    /**
+     * This method returns the IEEE 802.15.4 channel used for transmission or reception.
+     *
+     * @returns The IEEE 802.15.4 channel used for transmission or reception.
+     *
+     */
+    uint8_t GetChannel(void) const { return mChannel; }
+
+    /**
+     * This method sets the IEEE 802.15.4 channel used for transmission or reception.
+     *
+     * @param[in]  aChannel  The IEEE 802.15.4 channel used for transmission or reception.
+     *
+     */
+    void SetChannel(uint8_t aChannel) { mChannel = aChannel; }
+
     /**
      * This method returns the RSSI in dBm used for reception.
      *
      * @returns The RSSI in dBm used for reception.
      *
      */
-    int8_t GetRssi(void) const { return mInfo.mRxInfo.mRssi; }
+    int8_t GetRssi(void) const { return mMpduLinkQuality; }
 
     /**
      * This method sets the RSSI in dBm used for reception.
@@ -696,7 +478,7 @@ public:
      * @param[in]  aRssi  The RSSI in dBm used for reception.
      *
      */
-    void SetRssi(int8_t aRssi) { mInfo.mRxInfo.mRssi = aRssi; }
+    void SetRssi(int8_t aRssi) { mMpduLinkQuality = aRssi; }
 
     /**
      * This method returns the receive Link Quality Indicator.
@@ -704,7 +486,7 @@ public:
      * @returns The receive Link Quality Indicator.
      *
      */
-    uint8_t GetLqi(void) const { return mInfo.mRxInfo.mLqi; }
+    uint8_t GetLqi(void) const { return mMpduLinkQuality; }
 
     /**
      * This method sets the receive Link Quality Indicator.
@@ -712,7 +494,92 @@ public:
      * @param[in]  aLqi  The receive Link Quality Indicator.
      *
      */
-    void SetLqi(uint8_t aLqi) { mInfo.mRxInfo.mLqi = aLqi; }
+    void SetLqi(uint8_t aLqi) { mMpduLinkQuality = aLqi; }
+
+    /**
+     * This method indicates whether or not security is enabled.
+     *
+     * @retval TRUE   If security is enabled.
+     * @retval FALSE  If security is not enabled.
+     *
+     */
+    bool GetSecurityEnabled(void) const { return mSecurity.mSecurityLevel != 0; }
+
+    /**
+     * This method indicates whether or not the Frame Pending bit is set.
+     *
+     * @retval TRUE   If the Frame Pending bit is set.
+     * @retval FALSE  If the Frame Pending bit is not set.
+     *
+     */
+    bool GetFramePending(void) const { return mIsFramePending; }
+
+    /**
+     * This method gets the Destination Address.
+     *
+     * @param[out]  aAddress  The Destination Address.
+     *
+     * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
+     *
+     */
+    otError GetDstAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+
+    /**
+     * This method gets the Source PAN Identifier.
+     *
+     * @param[out]  aPanId  The Source PAN Identifier.
+     *
+     * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
+     *
+     */
+    otError GetSrcPanId(PanId &aPanId) const
+    {
+        aPanId = static_cast<FullAddr *>(&mSrc)->GetPanId();
+        return OT_ERROR_NONE;
+    }
+
+    /**
+     * This method gets the Source Address.
+     *
+     * @param[out]  aAddress  The Source Address.
+     *
+     * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
+     *
+     */
+    otError GetSrcAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
+
+    /**
+     * This method returns the current MAC Payload length.
+     *
+     * @returns The current MAC Payload length.
+     *
+     */
+    uint16_t GetPayloadLength(void) const { return mMsduLength; }
+
+    /**
+     * This method returns a pointer to the MAC Payload.
+     *
+     * @returns A pointer to the MAC Payload.
+     *
+     */
+    uint8_t *GetPayload(void) { return mMsdu; }
+
+    /**
+     * This const method returns a pointer to the MAC Payload.
+     *
+     * @returns A pointer to the MAC Payload.
+     *
+     */
+    const uint8_t *GetPayload(void) const { return mMsdu; }
+
+    /**
+     * This method returns information about the frame object as an `InfoString` object.
+     *
+     * @returns An `InfoString` containing info about the frame.
+     *
+     */
+    // TODO: Move to TxFrame and RxFrame
+    InfoString ToInfoString(void) const;
 
     /**
      * This method returns the timestamp when the frame was received.
@@ -720,7 +587,7 @@ public:
      * @returns The timestamp when the frame was received, in microseconds.
      *
      */
-    const uint64_t &GetTimestamp(void) const { return mInfo.mRxInfo.mTimestamp; }
+    const uint64_t &GetTimestamp(void) const { return mTimestamp; }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     /**
@@ -742,22 +609,218 @@ public:
      */
     uint8_t ReadTimeSyncSeq(void) const { return GetTimeIe()->GetSequence(); }
 #endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
+private:
+    uint8_t  mChannel;
+    uint64_t mTimestamp;
 };
 
 /**
  * This class supports IEEE 802.15.4 MAC frame generation for transmission.
  *
  */
-class TxFrame : public Frame
+class TxFrame : public otDataRequest, Frame
 {
 public:
     /**
+     * This method returns the IEEE 802.15.4 channel used for transmission or reception.
+     *
+     * @returns The IEEE 802.15.4 channel used for transmission or reception.
+     *
+     */
+    uint8_t GetChannel(void) const { return mChannel; }
+
+    /**
+     * This method sets the IEEE 802.15.4 channel used for transmission or reception.
+     *
+     * @param[in]  aChannel  The IEEE 802.15.4 channel used for transmission or reception.
+     *
+     */
+    void SetChannel(uint8_t aChannel) { mChannel = aChannel; }
+
+    /**
      * This method sets the retransmission flag attribute.
+     * Not used with hardmac, stub implementation for linking.
      *
      * @param[in]  aIsARetx  TRUE if frame is a retransmission of an earlier frame, FALSE otherwise.
      *
      */
-    void SetIsARetransmission(bool aIsARetx) { mInfo.mTxInfo.mIsARetx = aIsARetx; }
+    void SetIsARetransmission(bool aIsARetx) { (void)aIsARetx; }
+
+    /**
+     * This method initializes the MAC header.
+     *
+     * @param[in]  aFcf          The Frame Control field.
+     * @param[in]  aSecurityCtl  The Security Control field.
+     *
+     */
+    // TODO: Move to TxFrame
+    void InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl);
+
+    /**
+     * This method sets the Frame Pending bit.
+     *
+     * @param[in]  aFramePending  The Frame Pending bit.
+     *
+     */
+    void SetFramePending(bool aFramePending)
+    {
+        if (aFramePending)
+            mTxOptions |= OT_MAC_TX_OPTION_NS_FPEND;
+        else
+            mTxOptions &= ~OT_MAC_TX_OPTION_NS_FPEND;
+    }
+
+    /**
+     * This method indicates whether or not the Ack Request bit is set.
+     *
+     * @retval TRUE   If the Ack Request bit is set.
+     * @retval FALSE  If the Ack Request bit is not set.
+     *
+     */
+    bool GetAckRequest(void) const { return (mTxOptions & OT_MAC_TX_OPTION_ACK_REQ) != 0; }
+
+    /**
+     * This method sets the Ack Request bit.
+     *
+     * @param[in]  aAckRequest  The Ack Request bit.
+     *
+     */
+    void SetAckRequest(bool aAckRequest)
+    {
+        if (aAckRequest)
+            mTxOptions |= OT_MAC_TX_OPTION_ACK_REQ;
+        else
+            mTxOptions &= ~OT_MAC_TX_OPTION_ACK_REQ;
+    }
+
+    /**
+     * This method gets the Destination PAN Identifier.
+     *
+     * @param[out]  aPanId  The Destination PAN Identifier.
+     *
+     * @retval OT_ERROR_NONE   Successfully retrieved the Destination PAN Identifier.
+     * @retval OT_ERROR_PARSE  Failed to parse the PAN Identifier.
+     *
+     */
+    otError GetDstPanId(PanId &aPanId) const
+    {
+        aPanId = static_cast<FullAddr *>(&mDst)->GetPanId();
+        return OT_ERROR_NONE;
+    }
+
+    /**
+     * This method sets the Destination PAN Identifier.
+     *
+     * @param[in]  aPanId  The Destination PAN Identifier.
+     *
+     */
+    void SetDstPanId(PanId aPanId) { static_cast<FullAddr *>(&mDst)->SetPanId(aPanId); }
+
+    /**
+     * This method gets the Destination Address.
+     *
+     * @param[out]  aAddress  The Destination Address.
+     *
+     * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
+     *
+     */
+    otError GetDstAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+
+    /**
+     * This method sets the Destination Address.
+     *
+     * @param[in]  aShortAddress  The Destination Address.
+     *
+     */
+    void SetDstAddr(ShortAddress aShortAddress) { static_cast<FullAddr *>(&mDst)->SetAddress(aShortAddress); }
+
+    /**
+     * This method sets the Destination Address.
+     *
+     * @param[in]  aExtAddress  The Destination Address.
+     *
+     */
+    void SetDstAddr(const ExtAddress &aExtAddress) { static_cast<FullAddr *>(&mDst)->SetAddress(aExtAddress); }
+
+    /**
+     * This method sets the Destination Address.
+     *
+     * @param[in]  aAddress  The Destination Address.
+     *
+     */
+    void SetDstAddr(const Address &aAddress) { static_cast<FullAddr *>(&mDst)->SetAddress(aAddress); }
+
+    /**
+     * This method sets the Source Address.
+     *
+     * @param[in]  aShortAddress  The Source Address.
+     *
+     */
+    void SetSrcAddr(ShortAddress aShortAddress) { mSrcAddrMode = OT_MAC_ADDRESS_MODE_SHORT; }
+
+    /**
+     * This method sets the Source Address.
+     *
+     * @param[in]  aExtAddress  The Source Address.
+     *
+     */
+    void SetSrcAddr(const ExtAddress &aExtAddress) { mSrcAddrMode = OT_MAC_ADDRESS_MODE_EXT; }
+
+    /**
+     * This method sets the Source Address.
+     *
+     * @param[in]  aAddress  The Source Address.
+     *
+     */
+    void SetSrcAddr(const Address &aAddress) { mSrcAddrMode = static_cast<uint8_t>(aAddress.GetType()); }
+
+    /**
+     * This method returns the current MAC Payload length.
+     *
+     * @returns The current MAC Payload length.
+     *
+     */
+    uint16_t GetPayloadLength(void) const { return mMsduLength; }
+
+    /**
+     * This method returns the maximum MAC Payload length for the given MAC header and footer.
+     *
+     * @returns The maximum MAC Payload length for the given MAC header and footer.
+     *
+     */
+    // TODO: Move to TxFrame
+    uint16_t GetMaxPayloadLength(void) const;
+
+    /**
+     * This method sets the MAC Payload length.
+     *
+     */
+    void SetPayloadLength(uint16_t aLength) { mMsduLength = static_cast<uint8_t>(aLength); }
+
+    /**
+     * This method returns a pointer to the MAC Payload.
+     *
+     * @returns A pointer to the MAC Payload.
+     *
+     */
+    uint8_t *GetPayload(void) { return mMsdu; }
+
+    /**
+     * This const method returns a pointer to the MAC Payload.
+     *
+     * @returns A pointer to the MAC Payload.
+     *
+     */
+    const uint8_t *GetPayload(void) const { return mMsdu; }
+
+    /**
+     * This method returns information about the frame object as an `InfoString` object.
+     *
+     * @returns An `InfoString` containing info about the frame.
+     *
+     */
+    // TODO: Move to TxFrame and RxFrame
+    InfoString ToInfoString(void) const;
 
     /**
      * This method copies the PSDU and all attributes from another frame.
@@ -798,6 +861,8 @@ public:
      */
     void SetTimeSyncSeq(uint8_t aTimeSyncSeq) { mInfo.mTxInfo.mIeInfo->mTimeSyncSeq = aTimeSyncSeq; }
 #endif // OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
+private:
+    uint8_t mChannel;
 };
 
 /**

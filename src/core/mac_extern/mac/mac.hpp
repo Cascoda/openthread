@@ -84,13 +84,6 @@ enum
     kBeaconOrderInvalid = 15, ///< Invalid value for beacon order which causes it to be ignored
 };
 
-class FullAddr : public otFullAddr
-{
-public:
-    otError GetAddress(Address &aAddress) const;
-    otError SetAddress(const Address &aAddress);
-};
-
 /**
  * This class implements the IEEE 802.15.4 MAC.
  *
