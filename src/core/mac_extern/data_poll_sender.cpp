@@ -90,8 +90,10 @@ void DataPollSender::StopPolling(void)
 
 otError DataPollSender::SendDataPoll(void)
 {
-    otError   error;
-    Neighbor *parent;
+    otError       error;
+    Neighbor *    parent;
+    otPollRequest pollReq;
+    Mac::Address  macSource;
 
     VerifyOrExit(mEnabled, error = OT_ERROR_INVALID_STATE);
     VerifyOrExit(!Get<Mac::Mac>().GetRxOnWhenIdle(), error = OT_ERROR_INVALID_STATE);
@@ -100,9 +102,6 @@ otError DataPollSender::SendDataPoll(void)
     VerifyOrExit(parent->IsStateValidOrRestoring(), error = OT_ERROR_INVALID_STATE);
 
     mTimer.Stop();
-
-    otPollRequest pollReq;
-    Mac::Address  macSource;
 
     macSource.SetShort(Get<Mac::Mac>().GetShortAddress());
 
@@ -149,7 +148,8 @@ exit:
         break;
     }
 
-    HandlePollSent(error);
+    if (error != OT_ERROR_INVALID_STATE)
+        HandlePollSent(pollReq, error);
 
     return error;
 }
@@ -215,14 +215,14 @@ uint32_t DataPollSender::GetKeepAlivePollPeriod(void) const
     return period;
 }
 
-void DataPollSender::HandlePollSent(Mac::TxFrame &aFrame, otError aError)
+void DataPollSender::HandlePollSent(otPollRequest &aPollReq, otError aError)
 {
-    Mac::Address macDest;
     bool         shouldRecalculatePollPeriod = false;
+    Mac::Address macDest;
 
     VerifyOrExit(mEnabled);
 
-    aFrame.GetDstAddr(macDest);
+    static_cast<Mac::FullAddr *>(&aPollReq.mCoordAddress)->GetAddress(macDest);
     Get<MeshForwarder>().UpdateNeighborOnSentFrame(true, aError, macDest);
 
     if (Get<Mle::MleRouter>().GetParentCandidate()->GetState() == Neighbor::kStateInvalid)
@@ -409,8 +409,8 @@ exit:
 
 void DataPollSender::ScheduleNextPoll(PollPeriodSelector aPollPeriodSelector)
 {
-    uint32_t now;
-    uint32_t oldPeriod = mPollPeriod;
+    TimeMilli now;
+    uint32_t  oldPeriod = mPollPeriod;
 
     if (aPollPeriodSelector == kRecalculatePollPeriod)
     {
@@ -431,7 +431,7 @@ void DataPollSender::ScheduleNextPoll(PollPeriodSelector aPollPeriodSelector)
             // a switch to a shorter poll interval, the first data poll
             // will not be sent too quickly (and possibly before the
             // response is available/prepared on the parent node).
-            if (TimerScheduler::IsStrictlyBefore(mTimerStartTime + mPollPeriod, now + kMinPollPeriod))
+            if (mTimerStartTime + mPollPeriod < now + kMinPollPeriod)
             {
                 mTimer.StartAt(now, kMinPollPeriod);
             }

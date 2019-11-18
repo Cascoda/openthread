@@ -150,11 +150,11 @@ public:
      * In case of transmit failure, the data poll sender may choose to send the next data poll more quickly (up to
      * some fixed number of attempts).
      *
-     * @param[in] aFrame     The data poll frame.
+     * @param[in] aPollReq   The poll request used to send the frame.
      * @param[in] aError     Error status of a data poll message transmission.
      *
      */
-    void HandlePollSent(Mac::TxFrame &aFrame, otError aError);
+    void HandlePollSent(otPollRequest &aPollReq, otError aError);
 
     /**
      * This method informs the data poll sender that a data poll timeout happened, i.e., when the ack in response to
