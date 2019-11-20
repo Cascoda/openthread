@@ -304,6 +304,19 @@ typedef struct otDataIndication
 } otDataIndication;
 
 /**
+ * This structure represents the MLME-Poll.Indication, defined by Cascoda.
+ *
+ */
+typedef struct otPollIndication
+{
+    struct otFullAddr mSrc;      ///< Src Address information of received frame
+    struct otFullAddr mDst;      ///< Src Address information of received frame
+    uint8_t           mLQI;      ///< LQI of received frame - MUST be RSSI for openthread
+    uint8_t           mDSN;      ///< DSN of received frame
+    struct otSecSpec  mSecurity; ///< Security information of received frame
+};
+
+/**
  * This structure represents the MLME-COMM-STATUS.Indication as defined in IEEE 802.15.4-2006.
  *
  */

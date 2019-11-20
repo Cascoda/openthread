@@ -464,6 +464,12 @@ exit:
     return error;
 }
 
+otError Mac::RequestIndirectFrameTransmission(void)
+{
+    // TODO: Transmit the indirect frame ASAP (not while scanning though)
+    return OT_ERROR_NONE;
+}
+
 void Mac::StartOperation(Operation aOperation)
 {
     if (aOperation != kOperationIdle)

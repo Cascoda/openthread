@@ -91,38 +91,19 @@ public:
         friend class DataPollHandler;
 
     private:
-        bool IsDataPollPending(void) const { return mDataPollPending; }
-        void SetDataPollPending(bool aPending) { mDataPollPending = aPending; }
-
-        uint32_t GetIndirectFrameCounter(void) const { return mIndirectFrameCounter; }
-        void     SetIndirectFrameCounter(uint32_t aFrameCounter) { mIndirectFrameCounter = aFrameCounter; }
-
-        uint8_t GetIndirectKeyId(void) const { return mIndirectKeyId; }
-        void    SetIndirectKeyId(uint8_t aKeyId) { mIndirectKeyId = aKeyId; }
-
-        uint8_t GetIndirectTxAttempts(void) const { return mIndirectTxAttempts; }
-        void    SetIndirectTxAttemptsToMax(void) { mIndirectTxAttempts = kMaxPollTriggeredTxAttempts; }
-        void    ResetIndirectTxAttempts(void) { mIndirectTxAttempts = 0; }
-        void    IncrementIndirectTxAttempts(void) { mIndirectTxAttempts++; }
-
-        uint8_t GetIndirectDataSequenceNumber(void) const { return mIndirectDsn; }
-        void    SetIndirectDataSequenceNumber(uint8_t aDsn) { mIndirectDsn = aDsn; }
-
         bool IsFramePurgePending(void) const { return mFramePurgePending; }
         void SetFramePurgePending(bool aPurgePending) { mFramePurgePending = aPurgePending; }
 
         bool IsFrameReplacePending(void) const { return mFrameReplacePending; }
         void SetFrameReplacePending(bool aReplacePending) { mFrameReplacePending = aReplacePending; }
 
-        uint32_t mIndirectFrameCounter;    // Frame counter for current indirect frame (used for retx).
-        uint8_t  mIndirectKeyId;           // Key Id for current indirect frame (used for retx).
-        uint8_t  mIndirectDsn;             // MAC level Data Sequence Number (DSN) for retx attempts.
-        uint8_t  mIndirectTxAttempts : 5;  // Number of data poll triggered tx attempts.
-        bool     mDataPollPending : 1;     // Indicates whether or not a Data Poll was received.
-        bool     mFramePurgePending : 1;   // Indicates a pending purge request for the current indirect frame.
-        bool     mFrameReplacePending : 1; // Indicates a pending replace request for the current indirect frame.
+        uint8_t GetFrameCount(void) const { return mFrameCount; }
+        void    IncrementFrameCount(void) { mFrameCount++; }
+        void    DecrementFrameCount(void) { mFrameCount--; }
 
-        OT_STATIC_ASSERT(kMaxPollTriggeredTxAttempts < (1 << 5), "mIndirectTxAttempts cannot fit max!");
+        bool    mFramePurgePending : 1;   ///< Indicates a pending purge request for the current indirect frame.
+        bool    mFrameReplacePending : 1; ///< Indicates a pending replace request for the current indirect frame.
+        uint8_t mFrameCount : 4;          ///< Count of frames that have been sent to the MAC layer.
     };
 
     /**
@@ -137,10 +118,10 @@ public:
         /**
          * This type defines the frame context associated with a prepared frame.
          *
-         * Data poll handler treats `FrameContext` as an opaque data type. Data poll handler provides the buffer/object
-         * for the context when a new frame is prepared (from the callback `PrepareFrameForChild()`). It ensures
-         * to save the context along with the prepared frame and provide the same context back in the callback
-         * `HandleSentFrameToChild()` when the indirect transmission of the frame is finished.
+         * Data poll handler treats `FrameContext` as an opaque data type. Data poll handler provides the
+         * buffer/object for the context when a new frame is prepared (from the callback `PrepareFrameForChild()`).
+         * It ensures to save the context along with the prepared frame and provide the same context back in the
+         * callback `HandleSentFrameToChild()` when the indirect transmission of the frame is finished.
          *
          */
         typedef IndirectSenderBase::FrameContext FrameContext;
@@ -157,7 +138,8 @@ public:
          * This callback method requests a frame to be prepared for indirect transmission to a given sleepy child.
          *
          * @param[out] aFrame    A reference to a MAC frame where the new frame would be placed.
-         * @prarm[out] aContext  A reference to a `FrameContext` where the context for the new frame would be placed.
+         * @prarm[out] aContext  A reference to a `FrameContext` where the context for the new frame would be
+         * placed.
          * @param[in]  aChild    The child for which to prepare the frame.
          *
          * @retval OT_ERROR_NONE   Frame was prepared successfully
@@ -213,10 +195,10 @@ public:
      * This method informs data poll handler that there is a new frame for a given child.
      *
      * After this call, the data poll handler can use the `Callbacks::PrepareFrameForChild()` method to request the
-     * frame to be prepared. A subsequent call to `Callbacks::PrepareFrameForChild()` should ensure to prepare the same
-     * frame (this is used for retransmissions of frame by data poll handler). If/When the frame transmission is
-     * finished, the data poll handler will invoke the `Callbacks::HandleSentFrameToChild()` to indicate the status of
-     * the frame transmission.
+     * frame to be prepared. A subsequent call to `Callbacks::PrepareFrameForChild()` should ensure to prepare the
+     * same frame (this is used for retransmissions of frame by data poll handler). If/When the frame transmission
+     * is finished, the data poll handler will invoke the `Callbacks::HandleSentFrameToChild()` to indicate the
+     * status of the frame transmission.
      *
      * @param[in]  aChild     The child which has a new frame.
      *
@@ -228,24 +210,25 @@ public:
      *
      * Two types of frame change requests are supported:
      *
-     * 1) "Purge Frame" which indicates that the previous frame should be purged and any ongoing indirect tx aborted.
-     * 2) "Replace Frame" which indicates that the previous frame needs to be replaced with a new higher priority one.
+     * 1) "Purge Frame" which indicates that the previous frame should be purged and any ongoing indirect tx
+     * aborted. 2) "Replace Frame" which indicates that the previous frame needs to be replaced with a new higher
+     * priority one.
      *
-     * If there is no ongoing indirect frame transmission to the child, the request will be handled immediately and the
-     * callback `HandleFrameChangeDone()` is called directly from this method itself. This callback notifies the next
-     * layer that the indirect frame/message for the child can be safely updated.
+     * If there is no ongoing indirect frame transmission to the child, the request will be handled immediately and
+     * the callback `HandleFrameChangeDone()` is called directly from this method itself. This callback notifies the
+     * next layer that the indirect frame/message for the child can be safely updated.
      *
      * If there is an ongoing indirect frame transmission to this child, the request can not be handled immediately.
      * The following options can happen based on the request type:
      *
-     * 1) In case of "purge" request, the ongoing indirect transmission is aborted and upon completion of the abort the
-     *    callback `HandleFrameChangeDone()` is invoked.
+     * 1) In case of "purge" request, the ongoing indirect transmission is aborted and upon completion of the abort
+     * the callback `HandleFrameChangeDone()` is invoked.
      *
      * 2) In case of "replace" request, the ongoing indirect transmission is allowed to finish (current tx attempt).
      *    2.a) If the tx attempt is successful, the `Callbacks::HandleSentFrameToChild()` in invoked which indicates
      *         the "replace" could not happen (in this case the `HandleFrameChangeDone()` is no longer called).
-     *    2.b) If the ongoing tx attempt is unsuccessful, then callback `HandleFrameChangeDone()` is invoked to allow
-     *         the next layer to update the frame/message for the child.
+     *    2.b) If the ongoing tx attempt is unsuccessful, then callback `HandleFrameChangeDone()` is invoked to
+     * allow the next layer to update the frame/message for the child.
      *
      * If there is a pending request, a subsequent call to this method is ignored except for the case where pending
      * request is for "replace frame" and new one is for "purge frame" where the "purge" overrides the "replace"
@@ -259,22 +242,13 @@ public:
 
 private:
     // Callbacks from MAC
-    void    HandleDataPoll(Mac::RxFrame &aFrame);
+    void    HandleDataPoll(Mac::RxPoll &aPollInd);
     otError HandleFrameRequest(Mac::TxFrame &aFrame);
     void    HandleSentFrame(const Mac::TxFrame &aFrame, otError aError);
 
     void HandleSentFrame(const Mac::TxFrame &aFrame, otError aError, Child &aChild);
-    void ProcessPendingPolls(void);
 
-    // In the current implementation of `DataPollHandler`, we can have a
-    // single indirect tx operation active at MAC layer at each point of
-    // time. `mIndirectTxChild` indicates the child being handled (NULL
-    // indicates no active indirect tx). `mFrameContext` tracks the
-    // context for the prepared frame for the current indirect tx.
-
-    Child *                 mIndirectTxChild;
-    Callbacks::FrameContext mFrameContext;
-    Callbacks               mCallbacks;
+    Callbacks mCallbacks;
 };
 
 /**

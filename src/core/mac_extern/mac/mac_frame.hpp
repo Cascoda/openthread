@@ -578,6 +578,73 @@ public:
 };
 
 /**
+ * This class supports received IEEE 802.15.4 MAC poll frame processing.
+ *
+ */
+class RxPoll : public otPollIndication, Frame
+{
+public:
+    /**
+     * This method returns the receive Link Quality Indicator.
+     *
+     * @returns The receive Link Quality Indicator.
+     *
+     */
+    uint8_t GetLqi(void) const { return mLQI; }
+
+    /**
+     * This method sets the receive Link Quality Indicator.
+     *
+     * @param[in]  aLqi  The receive Link Quality Indicator.
+     *
+     */
+    void SetLqi(uint8_t aLqi) { mLQI = aLqi; }
+
+    /**
+     * This method indicates whether or not security is enabled.
+     *
+     * @retval TRUE   If security is enabled.
+     * @retval FALSE  If security is not enabled.
+     *
+     */
+    bool GetSecurityEnabled(void) const { return mSecurity.mSecurityLevel != 0; }
+
+    /**
+     * This method gets the Destination Address.
+     *
+     * @param[out]  aAddress  The Destination Address.
+     *
+     * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
+     *
+     */
+    otError GetDstAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+
+    /**
+     * This method gets the Source PAN Identifier.
+     *
+     * @param[out]  aPanId  The Source PAN Identifier.
+     *
+     * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
+     *
+     */
+    otError GetSrcPanId(PanId &aPanId) const
+    {
+        aPanId = static_cast<FullAddr *>(&mSrc)->GetPanId();
+        return OT_ERROR_NONE;
+    }
+
+    /**
+     * This method gets the Source Address.
+     *
+     * @param[out]  aAddress  The Source Address.
+     *
+     * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
+     *
+     */
+    otError GetSrcAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
+};
+
+/**
  * This class supports IEEE 802.15.4 MAC frame generation for transmission.
  *
  */
@@ -677,6 +744,14 @@ public:
      *
      */
     void SetDstPanId(PanId aPanId) { static_cast<FullAddr *>(&mDst)->SetPanId(aPanId); }
+
+    /**
+     * Stub to set Src pan id - in reality is set by the MAC layer.
+     *
+     * @param[in]  aPanId  The Source PAN Identifier.
+     *
+     */
+    void SetSrcPanId(PanId aPanId) { OT_UNUSED_VARIABLE(aPanId); }
 
     /**
      * This method gets the Destination Address.

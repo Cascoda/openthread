@@ -238,6 +238,16 @@ public:
     otError RequestDirectFrameTransmission(void);
 
     /**
+     * This method requests an indirect data frame transmission.
+     *
+     * @retval OT_ERROR_NONE           Frame transmission request is scheduled successfully.
+     * @retval OT_ERROR_ALREADY        MAC is busy sending earlier transmission request.
+     * @retval OT_ERROR_INVALID_STATE  The MAC layer is not enabled.
+     *
+     */
+    otError RequestIndirectFrameTransmission(void);
+
+    /**
      * This method registers a Out of Band frame for MAC Transmission.
      * An Out of Band frame is one that was generated outside of OpenThread.
      *
@@ -699,7 +709,7 @@ private:
 
     uint8_t mDeviceCurrentKeys[OPENTHREAD_CONFIG_EXTERNAL_MAC_DEVICE_TABLE_SIZE];
 
-    uint8_t mMsduHandles[OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS + OPENTHREAD_CONFIG_EXTERNAL_MAC_FLOATING_SENDERS];
+    uint8_t mMsduHandles[OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS + OPENTHREAD_CONFIG_EXTERNAL_MAC_FLOATING_SENDERS + 1];
 
     Notifier::Callback mNotifierCallback;
 
