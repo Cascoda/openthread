@@ -91,9 +91,6 @@ public:
         friend class DataPollHandler;
 
     private:
-        bool IsFramePurgePending(void) const { return mFramePurgePending; }
-        void SetFramePurgePending(bool aPurgePending) { mFramePurgePending = aPurgePending; }
-
         bool IsFrameReplacePending(void) const { return mFrameReplacePending; }
         void SetFrameReplacePending(bool aReplacePending) { mFrameReplacePending = aReplacePending; }
 
@@ -101,9 +98,8 @@ public:
         void    IncrementFrameCount(void) { mFrameCount++; }
         void    DecrementFrameCount(void) { mFrameCount--; }
 
-        bool    mFramePurgePending : 1;   ///< Indicates a pending purge request for the current indirect frame.
         bool    mFrameReplacePending : 1; ///< Indicates a pending replace request for the current indirect frame.
-        uint8_t mFrameCount : 4;          ///< Count of frames that have been sent to the MAC layer.
+        uint8_t mFrameCount : 7;          ///< Count of frames that are being processed by the MAC layer.
     };
 
     /**
@@ -151,7 +147,6 @@ public:
         /**
          * This callback method notifies the end of indirect frame transmission to a child.
          *
-         * @param[in]  aFrame     The transmitted frame.
          * @param[in]  aContext   The context associated with the frame when it was prepared.
          * @param[in]  aError     OT_ERROR_NONE when the frame was transmitted successfully,
          *                        OT_ERROR_NO_ACK when the frame was transmitted but no ACK was received,
@@ -160,10 +155,7 @@ public:
          * @param[in]  aChild     The child to which the frame was transmitted.
          *
          */
-        void HandleSentFrameToChild(const Mac::TxFrame &aFrame,
-                                    const FrameContext &aContext,
-                                    otError             aError,
-                                    Child &             aChild);
+        void HandleSentFrameToChild(const FrameContext &aContext, otError aError, Child &aChild);
 
         /**
          * This callback method notifies that a requested frame change from `RequestFrameChange()` is processed.
@@ -175,6 +167,37 @@ public:
          *
          */
         void HandleFrameChangeDone(Child &aChild);
+    };
+
+    class FrameCache
+    {
+        friend class DataPollHandler;
+
+    private:
+        bool    IsValid(void) { return mMsduHandle; }
+        uint8_t GetMsduHandle(void) { return mMsduHandle; }
+        Child & GetChild() const { return *mChild; }
+
+        void Allocate(Child &aChild, uint8_t aMsduHandle)
+        {
+            mChild      = &aChild;
+            mMsduHandle = aMsduHandle;
+            aChild.IncrementFrameCount();
+        }
+
+        void Free()
+        {
+            if (!IsValid())
+                return;
+            mMsduHandle = 0;
+            mChild->DecrementFrameCount();
+        }
+
+        IndirectSenderBase::FrameContext &GetContext() const { return mContext; }
+
+        uint8_t                          mMsduHandle;
+        IndirectSenderBase::FrameContext mContext;
+        Child *                          mChild;
     };
 
     /**
@@ -244,11 +267,16 @@ private:
     // Callbacks from MAC
     void    HandleDataPoll(Mac::RxPoll &aPollInd);
     otError HandleFrameRequest(Mac::TxFrame &aFrame);
-    void    HandleSentFrame(const Mac::TxFrame &aFrame, otError aError);
+    void    HandleSentFrame(otError aError, uint8_t aMsduHandle);
 
-    void HandleSentFrame(const Mac::TxFrame &aFrame, otError aError, Child &aChild);
+    void HandleSentFrame(otError aError, FrameCache &aFrameCache);
 
-    Callbacks mCallbacks;
+    FrameCache *GetFrameCache(uint8_t aMsduHandle);
+    FrameCache *GetFrameCache(Child &aChild);
+    FrameCache *GetEmptyFrameCache(void);
+
+    Callbacks  mCallbacks;
+    FrameCache mFrameCache[OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS];
 };
 
 /**

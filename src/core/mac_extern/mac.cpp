@@ -470,6 +470,12 @@ otError Mac::RequestIndirectFrameTransmission(void)
     return OT_ERROR_NONE;
 }
 
+otError PurgeIndirectFrame(uint8_t aMsduHandle)
+{
+    // TODO: PURGE
+    return OT_ERROR_NONE;
+}
+
 void Mac::StartOperation(Operation aOperation)
 {
     if (aOperation != kOperationIdle)

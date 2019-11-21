@@ -248,6 +248,16 @@ public:
     otError RequestIndirectFrameTransmission(void);
 
     /**
+     * This method purges an indirect frame from the MAC.
+     *
+     * @param aMsduHandle The MSDU handle of the frame being purged.
+     *
+     * @retval OT_ERROR_NONE Frame successfully purged from MAC
+     * @retval OT_ERROR_NOT_FOUND Frame not found in MAC
+     */
+    otError PurgeIndirectFrame(uint8_t aMsduHandle);
+
+    /**
      * This method registers a Out of Band frame for MAC Transmission.
      * An Out of Band frame is one that was generated outside of OpenThread.
      *

@@ -209,10 +209,7 @@ private:
 
     // Callbacks from DataPollHandler
     otError PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
-    void    HandleSentFrameToChild(const Mac::TxFrame &aFrame,
-                                   const FrameContext &aContext,
-                                   otError             aError,
-                                   Child &             aChild);
+    void    HandleSentFrameToChild(const FrameContext &aContext, otError aError, Child &aChild);
     void    HandleFrameChangeDone(Child &aChild);
 
     void     UpdateIndirectMessage(Child &aChild);

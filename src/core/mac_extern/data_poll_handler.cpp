@@ -54,12 +54,11 @@ inline otError DataPollHandler::Callbacks::PrepareFrameForChild(Mac::TxFrame &aF
     return Get<IndirectSender>().PrepareFrameForChild(aFrame, aContext, aChild);
 }
 
-inline void DataPollHandler::Callbacks::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
-                                                               const FrameContext &aContext,
+inline void DataPollHandler::Callbacks::HandleSentFrameToChild(const FrameContext &aContext,
                                                                otError             aError,
                                                                Child &             aChild)
 {
-    Get<IndirectSender>().HandleSentFrameToChild(aFrame, aContext, aError, aChild);
+    Get<IndirectSender>().HandleSentFrameToChild(aContext, aError, aChild);
 }
 
 inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
@@ -72,6 +71,7 @@ inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
 DataPollHandler::DataPollHandler(Instance &aInstance)
     : InstanceLocator(aInstance)
     , mCallbacks(aInstance)
+    , mFrameCache()
 {
 }
 
@@ -81,8 +81,15 @@ void DataPollHandler::Clear(void)
     {
         Child &child = *iter.GetChild();
         child.SetFrameReplacePending(false);
-        child.SetFramePurgePending(false);
-        // TODO: Complete clear process - probably have to purge every frame
+    }
+
+    for (FrameCache &fc : mFrameCache)
+    {
+        if (!fc.IsValid())
+            continue;
+
+        Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle());
+        fc.Free();
     }
 }
 
@@ -97,23 +104,25 @@ void DataPollHandler::HandleNewFrame(Child &aChild)
 
 void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild)
 {
-    /* TODO: Implement this. For purge just purge. For Change, purge then replace. */
-    if ((mIndirectTxChild == &aChild))
-    {
-        switch (aChange)
-        {
-        case kReplaceFrame:
-            aChild.SetFrameReplacePending(true);
-            break;
+    FrameCache *frameCache = NULL;
 
-        case kPurgeFrame:
-            aChild.SetFramePurgePending(true);
-            break;
-        }
-    }
-    else
+    while ((frameCache = GetFrameCache(aChild)))
     {
+        otError error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
+
+        if (!error)
+            frameCache->Free();
+    }
+
+    switch (aChange)
+    {
+    case kReplaceFrame:
+        aChild.SetFrameReplacePending(true);
+        HandleNewFrame(aChild);
+        break;
+    case kPurgeFrame:
         mCallbacks.HandleFrameChangeDone(aChild);
+        break;
     }
 }
 
@@ -155,7 +164,14 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 
         if (child.GetFrameCount() == 0 && child.GetIndirectMessageCount())
         {
-            error = mCallbacks.PrepareFrameForChild(aFrame, mFrameContext, child)
+            FrameCache *fc = GetEmptyFrameCache();
+
+            VerifyOrExit(fc != NULL, error = OT_ERROR_NO_BUFS);
+
+            fc->Allocate(child, Get<Mac::Mac>().GetValidMsduHandle());
+            error = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
+            if (error)
+                fc->Free();
         }
     }
 
@@ -163,36 +179,68 @@ exit:
     return error;
 }
 
-void DataPollHandler::HandleSentFrame(const Mac::TxFrame &aFrame, otError aError)
+DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
 {
-    Child *child = NULL;
+    for (FrameCache &fc : mFrameCache)
+    {
+        if (fc.GetMsduHandle() == aMsduHandle)
+            return &fc;
+    }
+    return NULL;
+}
 
-    // TODO: Get Child from list based on the MsduHandle
+DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(Child &aChild)
+{
+    for (FrameCache &fc : mFrameCache)
+    {
+        if (!fc.IsValid())
+            continue;
 
-    VerifyOrExit(child != NULL);
+        if (&(fc.GetChild()) == &aChild)
+            return &fc;
+    }
+    return NULL;
+}
 
-    HandleSentFrame(aFrame, aError, *child);
+DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
+{
+    for (FrameCache &fc : mFrameCache)
+    {
+        if (!fc.IsValid())
+            return &fc;
+    }
+    return NULL;
+}
+
+void DataPollHandler::HandleSentFrame(otError aError, uint8_t aMsduHandle)
+{
+    FrameCache *frameCache = GetFrameCache(aMsduHandle);
+
+    VerifyOrExit(frameCache != NULL);
+
+    HandleSentFrame(aError, *frameCache);
 
 exit:
     return;
 }
 
-void DataPollHandler::HandleSentFrame(const Mac::TxFrame &aFrame, otError aError, Child &aChild)
+void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
 {
-    aChild.DecrementFrameCount();
+    Child &child = aFrameCache.GetChild();
 
-    if (aChild.IsFramePurgePending())
+    child.DecrementFrameCount();
+
+    if (child.IsFrameReplacePending())
     {
-        aChild.SetFramePurgePending(false);
-        aChild.SetFrameReplacePending(false);
-        mCallbacks.HandleFrameChangeDone(aChild);
+        child.SetFrameReplacePending(false);
+        mCallbacks.HandleFrameChangeDone(child);
         ExitNow();
     }
 
     switch (aError)
     {
     case OT_ERROR_NONE:
-        aChild.SetFrameReplacePending(false);
+        child.SetFrameReplacePending(false);
         break;
 
     case OT_ERROR_NO_ACK:
@@ -204,10 +252,10 @@ void DataPollHandler::HandleSentFrame(const Mac::TxFrame &aFrame, otError aError
     case OT_ERROR_CHANNEL_ACCESS_FAILURE:
     case OT_ERROR_ABORT:
 
-        if (aChild.IsFrameReplacePending())
+        if (child.IsFrameReplacePending())
         {
-            aChild.SetFrameReplacePending(false);
-            mCallbacks.HandleFrameChangeDone(aChild);
+            child.SetFrameReplacePending(false);
+            mCallbacks.HandleFrameChangeDone(child);
             ExitNow();
         }
 
@@ -218,9 +266,10 @@ void DataPollHandler::HandleSentFrame(const Mac::TxFrame &aFrame, otError aError
         break;
     }
 
-    mCallbacks.HandleSentFrameToChild(aFrame, mFrameContext, aError, aChild);
+    mCallbacks.HandleSentFrameToChild(aFrameCache.GetContext(), aError, child);
 
 exit:
+    aFrameCache.Free();
     return;
 }
 

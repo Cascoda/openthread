@@ -431,10 +431,7 @@ void IndirectSender::PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool
     aFrame.SetFramePending(false);
 }
 
-void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
-                                            const FrameContext &aContext,
-                                            otError             aError,
-                                            Child &             aChild)
+void IndirectSender::HandleSentFrameToChild(const FrameContext &aContext, otError aError, Child &aChild)
 {
     Message *message    = aChild.GetIndirectMessage();
     uint16_t nextOffset = aContext.mMessageNextOffset;
@@ -515,11 +512,8 @@ void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
         }
 #endif
 
-        if (!aFrame.IsEmpty())
-        {
-            aFrame.GetDstAddr(macDest);
-            Get<MeshForwarder>().LogMessage(MeshForwarder::kMessageTransmit, *message, &macDest, txError);
-        }
+        aChild.GetMacAddress(macDest);
+        Get<MeshForwarder>().LogMessage(MeshForwarder::kMessageTransmit, *message, &macDest, txError);
 
         if (message->GetType() == Message::kTypeIp6)
         {
