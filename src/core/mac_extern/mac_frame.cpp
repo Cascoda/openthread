@@ -100,6 +100,7 @@ void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
 
         case kKeyIdMode2:
             mSecurity.mKeyIdMode = 2;
+            mTxOptions |= OT_MAC_TX_OPTION_NS_NONCE;
             break;
 
         case kKeyIdMode3:

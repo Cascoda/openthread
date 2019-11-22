@@ -78,9 +78,7 @@ Mac::Mac(Instance &aInstance)
     , mNextMsduHandle(1)
     , mDynamicKeyIndex(0)
     , mMode2DevHandle(0)
-    , mJoinerEntrustResponseHandle(0)
-    , mTempChannelMessageHandle(0)
-    , mSupportedChannelMask(otPlatRadioGetSupportedChannelMask(&aInstance))
+    , mSupportedChannelMask(Radio::kSupportedChannels)
     , mDeviceCurrentKeys()
     , mNotifierCallback(aInstance, sStateChangedCallback, this)
     , mScanChannels(0)
@@ -368,16 +366,16 @@ exit:
     return error;
 }
 
-otError Mac::SetTempChannel(uint8_t aChannel, otDataRequest &aDataRequest)
+otError Mac::SetTempChannel(TxFrame &aTxFrame)
 {
-    otError error = OT_ERROR_NONE;
+    otError error   = OT_ERROR_NONE;
+    uint8_t channel = aTxFrame.GetChannel();
 
-    VerifyOrExit(mSupportedChannelMask.ContainsChannel(aChannel), error = OT_ERROR_INVALID_ARGS);
-    VerifyOrExit(mChannel != aChannel);
-    VerifyOrExit(!(aDataRequest.mTxOptions & OT_MAC_TX_OPTION_INDIRECT), error = OT_ERROR_INVALID_ARGS);
+    VerifyOrExit(mSupportedChannelMask.ContainsChannel(channel), error = OT_ERROR_INVALID_ARGS);
+    VerifyOrExit(mChannel != channel);
 
-    mTempChannelMessageHandle = aDataRequest.mMsduHandle;
-    error                     = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &aChannel);
+    VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &channel));
+    mTempChannel = true;
 
 exit:
     return error;
@@ -387,8 +385,10 @@ otError Mac::RestoreChannel()
 {
     otError error = OT_ERROR_NONE;
 
-    error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &mChannel);
+    VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &mChannel));
+    mTempChannel = false;
 
+exit:
     return error;
 }
 
@@ -396,7 +396,7 @@ void Mac::SetSupportedChannelMask(const ChannelMask &aMask)
 {
     ChannelMask newMask = aMask;
 
-    newMask.Intersect(ChannelMask(otPlatRadioGetSupportedChannelMask(&GetInstance())));
+    newMask.Intersect(ChannelMask(&Radio::kSupportedChannels));
     VerifyOrExit(newMask != mSupportedChannelMask, Get<Notifier>().SignalIfFirst(OT_CHANGED_SUPPORTED_CHANNEL_MASK));
 
     mSupportedChannelMask = newMask;
@@ -466,14 +466,21 @@ exit:
 
 otError Mac::RequestIndirectFrameTransmission(void)
 {
-    // TODO: Transmit the indirect frame ASAP (not while scanning though)
-    return OT_ERROR_NONE;
+    otError error = OT_ERROR_NONE;
+
+    VerifyOrExit(mEnabled, error = OT_ERROR_INVALID_STATE);
+    VerifyOrExit(!mPendingTransmitDataIndirect && (mOperation != kOperationTransmitDataIndirect),
+                 error = OT_ERROR_ALREADY);
+
+    StartOperation(kOperationTransmitDataIndirect);
+
+exit:
+    return error;
 }
 
-otError PurgeIndirectFrame(uint8_t aMsduHandle)
+otError Mac::PurgeIndirectFrame(uint8_t aMsduHandle)
 {
-    // TODO: PURGE
-    return OT_ERROR_NONE;
+    return otPlatMcpsPurge(&GetInstance(), aMsduHandle);
 }
 
 void Mac::StartOperation(Operation aOperation)
@@ -531,14 +538,12 @@ void Mac::StartOperation(Operation aOperation)
     else if (mPendingTransmitDataDirect)
     {
         mPendingTransmitDataDirect = false;
-        mOperation                 = kOperationTransmitDataDirect;
-        HandleBeginTransmit();
+        HandleBeginDirect();
     }
     else if (mPendingTransmitDataIndirect)
     {
         mPendingTransmitDataIndirect = false;
-        mOperation                   = kOperationTransmitDataIndirect;
-        // TODO: HandleBeginTransmitIndirect();
+        HandleBeginIndirect();
     }
 
     if (mOperation != kOperationIdle)
@@ -970,6 +975,8 @@ void Mac::HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr)
 
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_KEY_TABLE, mDynamicKeyIndex, sizeof(keyTableEntry),
                   reinterpret_cast<uint8_t *>(&keyTableEntry));
+
+    mJoinerEntrustResponseRequested = true;
 }
 
 void Mac::BuildSecurityTable()
@@ -1074,26 +1081,17 @@ exit:
     return;
 }
 
-void Mac::HandleBeginTransmit(void)
+void Mac::HandleBeginDirect(void)
 {
     TxFrame sendFrame(mDataReq);
     otError error = OT_ERROR_NONE;
-    uint8_t channel;
 
-    otLogDebgMac("Mac::HandleBeginTransmit (Sender %d)", mSendHead->mMeshSender);
+    assert(mOperation == kOperationTransmitDataDirect);
+    otLogDebgMac("Mac::HandleBeginDirect (direct)", mSendHead->mMeshSender);
     memset(&sendFrame, 0, sizeof(sendFrame));
 
-    switch (mOperation)
-    {
-    case kOperationTransmitDataDirect:
-        sendFrame.SetChannel(mChannel);
-        SuccessOrExit(error = Get<MeshForwarder>().HandleFrameRequest(sendFrame));
-        break;
-
-    default:
-        assert(false);
-        break;
-    }
+    sendFrame.SetChannel(mChannel);
+    SuccessOrExit(error = Get<MeshForwarder>().HandleFrameRequest(sendFrame));
 
     if (mDataReq.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
         Encoding::LittleEndian::ReadUint16(mDataReq.mDst.mAddress) == kShortAddrBroadcast)
@@ -1109,7 +1107,8 @@ void Mac::HandleBeginTransmit(void)
     ProcessTransmitSecurity(mDataReq.mSecurity);
 
     // Assign MSDU handle
-    mDataReq.mMsduHandle = GetValidMsduHandle();
+    mDirectMsduHandle    = GetValidMsduHandle();
+    mDataReq.mMsduHandle = mDirectMsduHandle;
 
     if (mDataReq.mSecurity.mSecurityLevel > 0 && mDataReq.mSecurity.mKeyIdMode == 0)
     {
@@ -1125,27 +1124,47 @@ void Mac::HandleBeginTransmit(void)
             // Hotswap the kek descriptor into keytable for joiner entrust response
             assert(mDataReq.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT);
             HotswapJoinerRouterKeyDescriptor(mDataReq.mDst.mAddress);
-            mJoinerEntrustResponseHandle = mDataReq.mMsduHandle;
         }
     }
 
-    if (mDataReq.mSecurity.mSecurityLevel > 0 && mDataReq.mSecurity.mKeyIdMode == 2)
-    {
-        // The 15.4 MAC security should construct the nonce according to Thread1.1
-        // using the mode2 address instead of the extaddress for the nonce
-        mDataReq.mTxOptions |= OT_MAC_TX_OPTION_NS_NONCE;
-    }
-
-    channel = sendFrame.GetChannel();
-    error   = SetTempChannel(channel, mDataReq);
+    error = SetTempChannel(sendFrame);
     assert(error == OT_ERROR_NONE);
-    otLogDebgMac("calling otPlatRadioTransmit (Sender %d)", mSendHead->mMeshSender);
+    otLogDebgMac("calling otPlatRadioTransmit for direct");
     otLogDebgMac("Sam %x; Dam %x; MH %x;", mDataReq.mSrcAddrMode, mDataReq.mDst.mAddressMode, mDataReq.mMsduHandle);
     otDumpDebgMac("Msdu", mDataReq.mMsdu, mDataReq.mMsduLength);
+    mDirectAckRequested = sendFrame.GetAckRequest();
+    sendFrame.GetDstAddr(mDirectDstAddress);
     error = otPlatMcpsDataRequest(&GetInstance(), &mDataReq);
     assert(error == OT_ERROR_NONE);
 
 exit:
+    return;
+}
+
+void Mac::HandleBeginIndirect(void)
+{
+    TxFrame sendFrame(mDataReq);
+    otError error = OT_ERROR_NONE;
+    uint8_t channel;
+
+    otLogDebgMac("Mac::HandleBeginDirect (indirect)");
+    assert(mOperation == kOperationTransmitDataIndirect);
+    memset(&sendFrame, 0, sizeof(sendFrame));
+
+    sendFrame.SetChannel(mChannel);
+    Get<DataPollHandler>().HandleFrameRequest(sendFrame);
+
+    mCounters.mTxUnicast++;
+
+    ProcessTransmitSecurity(mDataReq.mSecurity);
+
+    otLogDebgMac("calling otPlatRadioTransmit for indirect");
+    otLogDebgMac("Sam %x; Dam %x; MH %x;", mDataReq.mSrcAddrMode, mDataReq.mDst.mAddressMode, mDataReq.mMsduHandle);
+    otDumpDebgMac("Msdu", mDataReq.mMsdu, mDataReq.mMsduLength);
+    error = otPlatMcpsDataRequest(&GetInstance(), &mDataReq);
+
+exit:
+    assert(error == OT_ERROR_NONE);
     return;
 }
 
@@ -1208,43 +1227,34 @@ otError Mac::ProcessTransmitStatus(otError aTransmitError)
 
 void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
 {
-    otError error = aError;
+    otError error = ProcessTransmitStatus(aError);
 
     otLogDebgMac("TransmitDoneTask Called");
-
-    if (aMsduHandle == mJoinerEntrustResponseHandle)
-    {
-        mJoinerEntrustResponseHandle = 0;
-        // Restore the mode 2 key after sending the joiner entrust response
-        BuildMode2KeyDescriptor(mDynamicKeyIndex, mMode2DevHandle);
-    }
-    else if (aMsduHandle == mTempChannelMessageHandle)
-    {
-        mTempChannelMessageHandle = 0;
-        RestoreChannel();
-    }
-
-    error = ProcessTransmitStatus(aError);
 
     if (error != OT_ERROR_NONE)
     {
         otLogDebgMacErr(aError, "Transmit Error");
     }
 
-    switch (mOperation)
+    if (aMsduHandle == mDirectMsduHandle)
     {
-    case kOperationTransmitDataDirect:
-        FullAddr &dstFullAddr = static_cast<FullAddr>(mDataReq.mDst);
-        Address   dstAddr;
+        if (mJoinerEntrustResponseRequested)
+        {
+            // Restore the mode 2 key after sending the joiner entrust response
+            mJoinerEntrustResponseRequested = false;
+            BuildMode2KeyDescriptor(mDynamicKeyIndex, mMode2DevHandle);
+        }
+        if (mTempChannel)
+        {
+            // Restore channel after sending frame on alternate channel
+            RestoreChannel();
+        }
 
-        dstFullAddr.GetAddress(dstAddr);
-        Get<MeshForwarder>().HandleSentFrame((mDataReq.mTxOptions & OT_MAC_TX_OPTION_ACK_REQ), error, dstAddr);
-        FinishOperation();
-        break;
-
-    default:
-        assert(false);
-        break;
+        Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
+    }
+    else
+    {
+        Get<DataPollHandler>().HandleSentFrame(aError, aMsduHandle);
     }
 
 exit:
@@ -1333,6 +1343,7 @@ exit:
 
 void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 {
+    RxFrame   dataInd(aDataIndication);
     Address   srcaddr, dstaddr;
     Neighbor *neighbor;
     otError   error = OT_ERROR_NONE;
@@ -1342,8 +1353,8 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 
     assert(aDataIndication != NULL);
 
-    static_cast<FullAddr *>(&aDataIndication->mSrc)->GetAddress(srcaddr);
-    static_cast<FullAddr *>(&aDataIndication->mDst)->GetAddress(dstaddr);
+    dataInd.GetSrcAddr(srcaddr);
+    dataInd.GetDstAddr(dstaddr);
     neighbor = Get<Mle::MleRouter>().GetNeighbor(srcaddr);
 
     if (dstaddr.IsBroadcast())
@@ -1408,9 +1419,9 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 
 #endif // OPENTHREAD_ENABLE_MAC_FILTER
 
-        neighbor->GetLinkInfo().AddRss(GetNoiseFloor(), aDataIndication->mMpduLinkQuality);
+        neighbor->GetLinkInfo().AddRss(GetNoiseFloor(), dataInd.GetRssi());
 
-        if (aDataIndication->mSecurity.mSecurityLevel > 0)
+        if (dataInd.GetSecurityEnabled())
         {
             switch (neighbor->GetState())
             {
@@ -1429,7 +1440,8 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
         }
     }
 
-    // TODO: Receive
+    // Receive
+    Get<MeshForwarder>().HandleReceivedFrame(dataInd);
 
 exit:
 
@@ -1557,27 +1569,29 @@ void Mac::ResetCounters(void)
 
 uint8_t Mac::GetValidMsduHandle(void)
 {
-    if (mNextMsduHandle == 0)
+    bool failed = false;
+
+    while (true)
+    {
         mNextMsduHandle++;
 
-    for (int i = 0; i < sizeof(mMsduHandles) / sizeof(mMsduHandles[0]);)
-    {
-        if (mNextMsduHandle == mMsduHandles[i])
-        {
-            // If the msduhandle would not be unique, change it and try again
-            mNextMsduHandle++;
-            i = 0;
-        }
-        else
-        {
-            i++;
-        }
+        // Invalid Msdu
+        if (mNextMsduHandle == 0)
+            continue;
+
+        // Msdu in use by direct frame
+        if (mNextMsduHandle == mDirectMsduHandle)
+            continue;
+
+        // Msdu in use by indirect frame
+        if (Get<DataPollHandler>().GetFrameCache(mNextMsduHandle))
+            continue;
+
+        break;
     }
 
-    return mNextMsduHandle++;
+    return mNextMsduHandle;
 }
-
-// TEST COMMENT
 
 otError Mac::Start()
 {
@@ -1591,8 +1605,8 @@ otError Mac::Start()
     buf[0] = 1; // Security Enabled
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_SECURITY_ENABLED, 0, 1, buf);
 
-    Encoding::LittleEndian::WriteUint16(
-        0xFFFF, buf); // highest timeout for indirect transmissions (in units of aBaseSuperframeDuration)
+    // highest timeout for indirect transmissions (in units of aBaseSuperframeDuration)
+    Encoding::LittleEndian::WriteUint16(0xFFFF, buf);
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_TRANSACTION_PERSISTENCE_TIME, 0, 2, buf);
 
     // Match PiB to current MAC settings

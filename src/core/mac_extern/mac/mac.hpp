@@ -78,8 +78,9 @@ namespace Mac {
  */
 enum
 {
-    kMaxCSMABackoffs = 4, ///< macMaxCSMABackoffs (IEEE 802.15.4-2006)
-    kMaxFrameRetries = 3, ///< macMaxFrameRetries (IEEE 802.15.4-2006)
+    kMaxCSMABackoffs     = 4,   ///< macMaxCSMABackoffs (IEEE 802.15.4-2006)
+    kMaxFrameRetries     = 3,   ///< macMaxFrameRetries (IEEE 802.15.4-2006)
+    kScanDurationDefault = 300, ///< Default interval between channels (milliseconds).
 
     kBeaconOrderInvalid = 15, ///< Invalid value for beacon order which causes it to be ignored
 };
@@ -661,7 +662,8 @@ private:
     void    StartOperation(Operation aOperation);
     void    FinishOperation(void);
     void    BuildBeacon(void);
-    void    HandleBeginTransmit(void);
+    void    HandleBeginDirect(void);
+    void    HandleBeginIndirect(void);
     otError ProcessTransmitStatus(otError aTransmitError);
     otError Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration);
     void    HandleBeginScan(void);
@@ -678,7 +680,7 @@ private:
     void    BuildMode2KeyDescriptor(uint8_t aIndex, uint8_t aMode2DevHandle);
     void    HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr);
 
-    otError SetTempChannel(uint8_t aChannel, otDataRequest &aDataRequest);
+    otError SetTempChannel(TxFrame &aTxFrame);
     otError RestoreChannel();
 
     otError RadioReceive(uint8_t aChannel);
@@ -700,26 +702,27 @@ private:
     bool mPendingTransmitDataDirect : 1;
     bool mPendingTransmitDataIndirect : 1;
     bool mRxOnWhenIdle : 1;
+    bool mTempChannel : 1;
+    bool mJoinerEntrustResponseRequested : 1;
+    bool mDirectAckRequested : 1;
     bool mBeaconsEnabled : 1;
     bool mEnabled : 1;
 #if OPENTHREAD_CONFIG_STAY_AWAKE_BETWEEN_FRAGMENTS
     bool mDelaySleep : 1;
 #endif
 
+    Address      mDirectDstAddress;
     ExtAddress   mExtAddress;
     ShortAddress mShortAddress;
     PanId        mPanId;
     uint8_t      mChannel;
     uint8_t      mNextMsduHandle;
+    uint8_t      mDirectMsduHandle;
     uint8_t      mDynamicKeyIndex;
     uint8_t      mMode2DevHandle;
-    uint8_t      mJoinerEntrustResponseHandle;
-    uint8_t      mTempChannelMessageHandle;
     ChannelMask  mSupportedChannelMask;
 
     uint8_t mDeviceCurrentKeys[OPENTHREAD_CONFIG_EXTERNAL_MAC_DEVICE_TABLE_SIZE];
-
-    uint8_t mMsduHandles[OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS + OPENTHREAD_CONFIG_EXTERNAL_MAC_FLOATING_SENDERS + 1];
 
     Notifier::Callback mNotifierCallback;
 
