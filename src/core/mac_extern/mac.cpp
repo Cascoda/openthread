@@ -207,6 +207,8 @@ exit:
 
 void Mac::HandleScanConfirm(otScanConfirm *aScanConfirm)
 {
+    uint8_t channel = GetCurrentChannel();
+
     VerifyOrExit(IsScanInProgress());
 
     if (IsActiveScanInProgress())
@@ -238,7 +240,7 @@ void Mac::HandleScanConfirm(otScanConfirm *aScanConfirm)
 
 exit:
     // Restore channel
-    otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &mChannel);
+    otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &channel);
     FinishOperation();
 
     return;
@@ -354,39 +356,96 @@ otError Mac::SetShortAddress(ShortAddress aShortAddress)
 
 otError Mac::SetPanChannel(uint8_t aChannel)
 {
-    otError error = OT_ERROR_NONE;
+    otError error      = OT_ERROR_NONE;
+    uint8_t oldChannel = GetCurrentChannel();
 
     VerifyOrExit(mSupportedChannelMask.ContainsChannel(aChannel), error = OT_ERROR_INVALID_ARGS);
-    VerifyOrExit(mChannel != aChannel);
     mChannel = aChannel;
-    error    = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &mChannel);
+
+    VerifyOrExit(!mUseTempRxChannel && !mUseTempTxChannel);
+    VerifyOrExit(oldChannel != mChannel);
+
+    error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &mChannel);
     mCcaSuccessRateTracker.Reset();
 
 exit:
     return error;
 }
 
-otError Mac::SetTempChannel(TxFrame &aTxFrame)
+otError Mac::SetTemporaryChannel(uint8_t aTempChannel)
 {
-    otError error   = OT_ERROR_NONE;
-    uint8_t channel = aTxFrame.GetChannel();
+    otError error      = OT_ERROR_NONE;
+    uint8_t newChannel = aTempChannel;
+    uint8_t oldChannel = GetCurrentChannel();
 
-    VerifyOrExit(mSupportedChannelMask.ContainsChannel(channel), error = OT_ERROR_INVALID_ARGS);
-    VerifyOrExit(mChannel != channel);
+    mUseTempRxChannel = true;
+    mTempRxChannel    = newChannel;
 
-    VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &channel));
-    mTempChannel = true;
+    VerifyOrExit(newChannel != oldChannel);
+
+    VerifyOrExit(mSupportedChannelMask.ContainsChannel(newChannel), error = OT_ERROR_INVALID_ARGS);
+
+    VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &newChannel));
 
 exit:
     return error;
 }
 
-otError Mac::RestoreChannel()
+otError Mac::SetTempTxChannel(TxFrame &aTxFrame)
 {
-    otError error = OT_ERROR_NONE;
+    otError error      = OT_ERROR_NONE;
+    uint8_t newChannel = aTxFrame.GetChannel();
+    uint8_t oldChannel = GetCurrentChannel();
 
-    VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &mChannel));
-    mTempChannel = false;
+    mUseTempTxChannel = true;
+    mTempTxChannel    = newChannel;
+
+    VerifyOrExit(newChannel != oldChannel);
+
+    VerifyOrExit(mSupportedChannelMask.ContainsChannel(newChannel), error = OT_ERROR_INVALID_ARGS);
+
+    VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &newChannel));
+
+exit:
+    return error;
+}
+
+uint8_t Mac::GetCurrentChannel()
+{
+    if (mUseTempTxChannel)
+        return mTempTxChannel;
+    if (mUseTempRxChannel)
+        return mTempRxChannel;
+    return mChannel;
+}
+
+otError Mac::ClearTemporaryChannel()
+{
+    otError error      = OT_ERROR_NONE;
+    uint8_t curChannel = GetCurrentChannel();
+    uint8_t newChannel;
+
+    mUseTempRxChannel = false;
+    newChannel        = GetCurrentChannel();
+
+    if (newChannel != curChannel)
+        VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &newChannel));
+
+exit:
+    return error;
+}
+
+otError Mac::ClearTempTxChannel()
+{
+    otError error      = OT_ERROR_NONE;
+    uint8_t curChannel = GetCurrentChannel();
+    uint8_t newChannel;
+
+    mUseTempTxChannel = false;
+    newChannel        = GetCurrentChannel();
+
+    if (newChannel != curChannel)
+        VerifyOrExit(error = otPlatMlmeSet(&GetInstance(), OT_PIB_PHY_CURRENT_CHANNEL, 0, 1, &newChannel));
 
 exit:
     return error;
@@ -1127,7 +1186,7 @@ void Mac::HandleBeginDirect(void)
         }
     }
 
-    error = SetTempChannel(sendFrame);
+    error = SetTempTxChannel(sendFrame);
     assert(error == OT_ERROR_NONE);
     otLogDebgMac("calling otPlatRadioTransmit for direct");
     otLogDebgMac("Sam %x; Dam %x; MH %x;", mDataReq.mSrcAddrMode, mDataReq.mDst.mAddressMode, mDataReq.mMsduHandle);
@@ -1244,10 +1303,9 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
             mJoinerEntrustResponseRequested = false;
             BuildMode2KeyDescriptor(mDynamicKeyIndex, mMode2DevHandle);
         }
-        if (mTempChannel)
+        if (mUseTempTxChannel)
         {
-            // Restore channel after sending frame on alternate channel
-            RestoreChannel();
+            ClearTempTxChannel();
         }
 
         Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);

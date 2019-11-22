@@ -334,6 +334,28 @@ public:
     otError SetPanChannel(uint8_t aChannel);
 
     /**
+     * This method sets the temporary IEEE 802.15.4 radio channel.
+     *
+     * This method allows user to temporarily change the radio channel and use a different channel (during receive)
+     * instead of the PAN channel (from `SetPanChannel()`). A call to `ClearTemporaryChannel()` would clear the
+     * temporary channel and adopt the PAN channel again. The `SetTemporaryChannel()` can be used multiple times in row
+     * (before a call to `ClearTemporaryChannel()`) to change the temporary channel.
+     *
+     * @param[in]  aChannel            A IEEE 802.15.4 channel.
+     *
+     * @retval OT_ERROR_NONE           Successfully set the temporary channel
+     * @retval OT_ERROR_INVALID_ARGS   The @p aChannel is not in the supported channel mask.
+     *
+     */
+    otError SetTemporaryChannel(uint8_t aChannel);
+
+    /**
+     * This method clears the use of a previously set temporary channel and adopts the PAN channel.
+     *
+     */
+    otError ClearTemporaryChannel(void);
+
+    /**
      * This method returns the supported channel mask.
      *
      * @returns The supported channel mask.
@@ -680,8 +702,9 @@ private:
     void    BuildMode2KeyDescriptor(uint8_t aIndex, uint8_t aMode2DevHandle);
     void    HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr);
 
-    otError SetTempChannel(TxFrame &aTxFrame);
-    otError RestoreChannel();
+    uint8_t GetCurrentChannel(void);
+    otError SetTempTxChannel(TxFrame &aTxFrame);
+    otError ClearTempTxChannel();
 
     otError RadioReceive(uint8_t aChannel);
 
@@ -702,7 +725,8 @@ private:
     bool mPendingTransmitDataDirect : 1;
     bool mPendingTransmitDataIndirect : 1;
     bool mRxOnWhenIdle : 1;
-    bool mTempChannel : 1;
+    bool mUseTempTxChannel : 1;
+    bool mUseTempRxChannel : 1;
     bool mJoinerEntrustResponseRequested : 1;
     bool mDirectAckRequested : 1;
     bool mBeaconsEnabled : 1;
@@ -716,6 +740,8 @@ private:
     ShortAddress mShortAddress;
     PanId        mPanId;
     uint8_t      mChannel;
+    uint8_t      mTempRxChannel;
+    uint8_t      mTempTxChannel;
     uint8_t      mNextMsduHandle;
     uint8_t      mDirectMsduHandle;
     uint8_t      mDynamicKeyIndex;
