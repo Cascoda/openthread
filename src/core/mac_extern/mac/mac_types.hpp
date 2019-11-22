@@ -43,7 +43,7 @@
 #include <openthread/link.h>
 
 #include "common/string.hpp"
-#include "platform/radio-mac.h"
+#include "openthread/platform/radio-mac.h"
 
 namespace ot {
 namespace Mac {

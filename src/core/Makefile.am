@@ -44,6 +44,7 @@ endif
 
 CPPFLAGS_COMMON                            = \
     -I$(top_srcdir)/include                  \
+    -I$(top_srcdir)/src/core/mac_extern      \
     $(OPENTHREAD_TARGET_DEFINES)             \
     $(NULL)
 
@@ -158,16 +159,6 @@ SOURCES_COMMON                             = \
     crypto/pbkdf2_cmac.cpp                   \
     crypto/sha256.cpp                        \
     diags/factory_diags.cpp                  \
-#    mac/channel_mask.cpp                     \
-#    mac/data_poll_handler.cpp                \
-#    mac/data_poll_sender.cpp                 \
-#    mac/link_raw.cpp                         \
-#    mac/mac.cpp                              \
-#    mac/mac_filter.cpp                       \
-#    mac/mac_frame.cpp                        \
-#    mac/mac_types.cpp                        \
-#    mac/sub_mac.cpp                          \
-#    mac/sub_mac_callbacks.cpp                \
     mac_extern/channel_mask.cpp              \
     mac_extern/data_poll_handler.cpp         \
     mac_extern/data_poll_sender.cpp          \

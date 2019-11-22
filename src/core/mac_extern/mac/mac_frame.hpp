@@ -489,7 +489,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
-    otError GetDstAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+    otError GetDstAddr(Address &aAddress) { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
 
     /**
      * This method gets the Source PAN Identifier.
@@ -499,7 +499,7 @@ public:
      * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
      *
      */
-    otError GetSrcPanId(PanId &aPanId) const
+    otError GetSrcPanId(PanId &aPanId)
     {
         aPanId = static_cast<FullAddr *>(&mSrc)->GetPanId();
         return OT_ERROR_NONE;
@@ -513,7 +513,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
      *
      */
-    otError GetSrcAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
+    otError GetSrcAddr(Address &aAddress) { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
 
     /**
      * This method returns the current MAC Payload length.
@@ -553,7 +553,7 @@ public:
      * @returns The timestamp when the frame was received, in microseconds.
      *
      */
-    const uint64_t &GetTimestamp(void) const { return Encoding::LittleEndian::ReadUint64(mTimeStamp); }
+    uint64_t GetTimestamp(void) { return Encoding::LittleEndian::ReadUint64(mTimeStamp); }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     /**
@@ -617,7 +617,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
-    otError GetDstAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+    otError GetDstAddr(Address &aAddress) { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
 
     /**
      * This method gets the Source PAN Identifier.
@@ -627,7 +627,7 @@ public:
      * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
      *
      */
-    otError GetSrcPanId(PanId &aPanId) const
+    otError GetSrcPanId(PanId &aPanId)
     {
         aPanId = static_cast<FullAddr *>(&mSrc)->GetPanId();
         return OT_ERROR_NONE;
@@ -641,7 +641,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
      *
      */
-    otError GetSrcAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
+    otError GetSrcAddr(Address &aAddress) { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
 };
 
 /**
@@ -731,7 +731,7 @@ public:
      * @retval OT_ERROR_PARSE  Failed to parse the PAN Identifier.
      *
      */
-    otError GetDstPanId(PanId &aPanId) const
+    otError GetDstPanId(PanId &aPanId)
     {
         aPanId = static_cast<FullAddr *>(&mDst)->GetPanId();
         return OT_ERROR_NONE;
@@ -761,7 +761,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
-    otError GetDstAddr(Address &aAddress) const { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+    otError GetDstAddr(Address &aAddress) { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
 
     /**
      * This method sets the Destination Address.
@@ -793,7 +793,11 @@ public:
      * @param[in]  aShortAddress  The Source Address.
      *
      */
-    void SetSrcAddr(ShortAddress aShortAddress) { mSrcAddrMode = OT_MAC_ADDRESS_MODE_SHORT; }
+    void SetSrcAddr(ShortAddress aShortAddress)
+    {
+        OT_UNUSED_VARIABLE(aShortAddress);
+        mSrcAddrMode = OT_MAC_ADDRESS_MODE_SHORT;
+    }
 
     /**
      * This method sets the Source Address.
@@ -801,7 +805,11 @@ public:
      * @param[in]  aExtAddress  The Source Address.
      *
      */
-    void SetSrcAddr(const ExtAddress &aExtAddress) { mSrcAddrMode = OT_MAC_ADDRESS_MODE_EXT; }
+    void SetSrcAddr(const ExtAddress &aExtAddress)
+    {
+        OT_UNUSED_VARIABLE(aExtAddress);
+        mSrcAddrMode = OT_MAC_ADDRESS_MODE_EXT;
+    }
 
     /**
      * This method sets the Source Address.

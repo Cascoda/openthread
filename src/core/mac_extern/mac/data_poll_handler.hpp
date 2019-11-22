@@ -55,6 +55,9 @@ namespace ot {
  */
 
 class Child;
+namespace Mac {
+class Mac;
+}
 
 /**
  * This class implements the data poll (mac data request command) handler.
@@ -178,22 +181,10 @@ public:
         uint8_t GetMsduHandle(void) { return mMsduHandle; }
         Child & GetChild() const { return *mChild; }
 
-        void Allocate(Child &aChild, uint8_t aMsduHandle)
-        {
-            mChild      = &aChild;
-            mMsduHandle = aMsduHandle;
-            aChild.IncrementFrameCount();
-        }
+        void Allocate(Child &aChild, uint8_t aMsduHandle);
+        void Free();
 
-        void Free()
-        {
-            if (!IsValid())
-                return;
-            mMsduHandle = 0;
-            mChild->DecrementFrameCount();
-        }
-
-        IndirectSenderBase::FrameContext &GetContext() const { return mContext; }
+        IndirectSenderBase::FrameContext &GetContext() { return mContext; }
 
         uint8_t                          mMsduHandle;
         IndirectSenderBase::FrameContext mContext;

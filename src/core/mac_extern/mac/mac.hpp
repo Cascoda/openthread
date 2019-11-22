@@ -437,6 +437,43 @@ public:
      */
     otError SetExtendedPanId(const otExtendedPanId &aExtendedPanId);
 
+    /**
+     * This method returns the maximum number of frame retries during direct transmission.
+     *
+     * @returns The maximum number of retries during direct transmission.
+     *
+     */
+    uint8_t GetMaxFrameRetriesDirect(void);
+
+    /**
+     * This method sets the maximum number of frame retries during direct transmission.
+     *
+     * @param[in]  aMaxFrameRetriesDirect  The maximum number of retries during direct transmission.
+     *
+     */
+    void SetMaxFrameRetriesDirect(uint8_t aMaxFrameRetriesDirect);
+
+#if OPENTHREAD_FTD
+    /**
+     * This method returns the maximum number of frame retries during indirect transmission.
+     *
+     * @returns The maximum number of retries during indirect transmission.
+     *
+     */
+    uint8_t GetMaxFrameRetriesIndirect(void) const { return 255; }
+
+    /**
+     * This method sets the maximum number of frame retries during indirect transmission.
+     *
+     * @param[in]  aMaxFrameRetriesIndirect  The maximum number of retries during indirect transmission.
+     *
+     */
+    void SetMaxFrameRetriesIndirect(uint8_t aMaxFrameRetriesIndirect)
+    {
+        OT_UNUSED_VARIABLE(aMaxFrameRetriesIndirect);
+    }
+#endif
+
 #if OPENTHREAD_ENABLE_MAC_FILTER
     /**
      * This method returns the MAC filter.
@@ -777,10 +814,10 @@ private:
     Filter mFilter;
 #endif // OPENTHREAD_ENABLE_MAC_FILTER
 
-    const uint8_t         Mac::sMode2Key[];
-    const otExtAddress    Mac::sMode2ExtAddress;
-    const otExtendedPanId Mac::sExtendedPanidInit;
-    const char            Mac::sNetworkNameInit[];
+    static const uint8_t         sMode2Key[];
+    static const otExtAddress    sMode2ExtAddress;
+    static const otExtendedPanId sExtendedPanidInit;
+    static const char            sNetworkNameInit[];
 };
 
 /**

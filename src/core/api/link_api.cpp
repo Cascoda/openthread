@@ -504,12 +504,14 @@ void otLinkSyncExternalMac(otInstance *aInstance)
 }
 #endif
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 otError otLinkOutOfBandTransmitRequest(otInstance *aInstance, otRadioFrame *aOobFrame)
 {
     Instance &instance = *static_cast<Instance *>(aInstance);
 
     return instance.Get<Mac::Mac>().RequestOutOfBandFrameTransmission(aOobFrame);
 }
+#endif
 
 uint16_t otLinkGetCcaFailureRate(otInstance *aInstance)
 {

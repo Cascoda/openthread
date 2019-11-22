@@ -510,6 +510,18 @@ otError Mac::SetExtendedPanId(const otExtendedPanId &aExtendedPanId)
     return OT_ERROR_NONE;
 }
 
+uint8_t Mac::GetMaxFrameRetriesDirect()
+{
+	uint8_t macMaxRetries = 3;
+	uint8_t len = 1;
+	otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_MAX_FRAME_RETRIES, 0, &len, &macMaxRetries)
+}
+
+void Mac::SetMaxFrameRetriesDirect(uint8_t aMaxFrameRetriesDirect)
+{
+	otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_MAX_FRAME_RETRIES, 0, 1, &aMaxFrameRetriesDirect)
+}
+
 otError Mac::RequestDirectFrameTransmission(void)
 {
     otError error = OT_ERROR_NONE;

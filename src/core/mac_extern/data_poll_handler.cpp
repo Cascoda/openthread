@@ -68,6 +68,23 @@ inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
 
 //---------------------------------------------------------
 
+void FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
+{
+    mChild      = &aChild;
+    mMsduHandle = aMsduHandle;
+    aChild.IncrementFrameCount();
+}
+
+void FrameCache::Free()
+{
+    if (!IsValid())
+        return;
+    mMsduHandle = 0;
+    mChild->DecrementFrameCount();
+}
+
+//---------------------------------------------------------
+
 DataPollHandler::DataPollHandler(Instance &aInstance)
     : InstanceLocator(aInstance)
     , mCallbacks(aInstance)

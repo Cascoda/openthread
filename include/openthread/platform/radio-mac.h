@@ -314,7 +314,7 @@ typedef struct otPollIndication
     uint8_t           mLQI;      ///< LQI of received frame - MUST be RSSI for openthread
     uint8_t           mDSN;      ///< DSN of received frame
     struct otSecSpec  mSecurity; ///< Security information of received frame
-};
+} otPollIndication;
 
 /**
  * This structure represents the MLME-COMM-STATUS.Indication as defined in IEEE 802.15.4-2006.
