@@ -119,6 +119,7 @@ lib_LIBRARIES                      += libopenthread-cli-mtd.a
 endif
 
 CPPFLAGS_COMMON =                     \
+    -I$(top_srcdir)/src/core/mac_extern          \
     -I$(top_srcdir)/include           \
     -I$(top_srcdir)/src               \
     -I$(top_srcdir)/src/core          \

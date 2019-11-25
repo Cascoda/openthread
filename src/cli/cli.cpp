@@ -462,12 +462,14 @@ void Interpreter::ProcessChannel(int argc, char *argv[])
     }
     else if (strcmp(argv[0], "supported") == 0)
     {
-        mServer->OutputFormat("0x%x\r\n", otPlatRadioGetSupportedChannelMask(mInstance));
+        mServer->OutputFormat("0x%x\r\n", otLinkGetSupportedChannelMask(mInstance));
     }
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     else if (strcmp(argv[0], "preferred") == 0)
     {
-        mServer->OutputFormat("0x%x\r\n", otPlatRadioGetPreferredChannelMask(mInstance));
+        mServer->OutputFormat("0x%x\r\n", otLinkGetPreferredChannelMask(mInstance));
     }
+#endif
 #if OPENTHREAD_CONFIG_CHANNEL_MONITOR_ENABLE
     else if (strcmp(argv[0], "monitor") == 0)
     {

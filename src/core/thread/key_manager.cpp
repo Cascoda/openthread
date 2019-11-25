@@ -127,7 +127,7 @@ otError KeyManager::SetMasterKey(const MasterKey &aKey)
     parent->SetLinkFrameCounter(0);
     parent->SetMleFrameCounter(0);
 #if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-    mac.UpdateDevice(*routers);
+    mac.UpdateDevice(*parent);
 #endif
 
     // reset router frame counters

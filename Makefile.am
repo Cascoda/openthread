@@ -44,7 +44,6 @@ SUBDIRS                             = \
     include                           \
     third_party                       \
     src                               \
-    examples                          \
     tests                             \
     tools                             \
     doc                               \

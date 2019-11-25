@@ -435,7 +435,7 @@ private:
     otError GetDestinationRlocByServiceAloc(uint16_t aServiceAloc, uint16_t &aMeshDest);
 
     void LogMessage(MessageAction aAction, const Message &aMessage, const Mac::Address *aAddress, otError aError);
-    void LogFrame(const char *aActionText, const Mac::Frame &aFrame, otError aError);
+    void LogFrame(const char *aActionText, const Mac::RxFrame &aFrame, otError aError);
     void LogFragmentFrameDrop(otError                       aError,
                               uint16_t                      aFrameLength,
                               const Mac::Address &          aMacSource,

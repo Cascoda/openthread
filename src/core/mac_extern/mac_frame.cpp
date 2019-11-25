@@ -31,7 +31,7 @@
  *   This file implements IEEE 802.15.4 header generation and processing.
  */
 
-#include "mac_frame.hpp"
+#include "mac/mac_frame.hpp"
 
 #include <stdio.h>
 
@@ -208,7 +208,7 @@ uint16_t TxFrame::GetMaxPayloadLength(void) const
 Frame::InfoString TxFrame::ToInfoString(void) const
 {
     InfoString string;
-    uint8_t    commandId, type;
+    uint8_t    type;
     Address    src, dst;
 
     string.Append("paylen:%d, type:", GetPayloadLength());
@@ -237,7 +237,7 @@ Frame::InfoString TxFrame::ToInfoString(void) const
 Frame::InfoString RxFrame::ToInfoString(void) const
 {
     InfoString string;
-    uint8_t    commandId, type;
+    uint8_t    type;
     Address    src, dst;
 
     string.Append("paylen:%d, type:", GetPayloadLength());

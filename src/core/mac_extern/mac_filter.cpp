@@ -31,7 +31,7 @@
  *   This file implements Filter IEEE 802.15.4 frame filtering based on MAC address.
  */
 
-#include "mac_filter.hpp"
+#include "mac/mac_filter.hpp"
 
 #include "utils/wrap_string.h"
 

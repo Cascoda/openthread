@@ -412,7 +412,7 @@ private:
  * This class supports received IEEE 802.15.4 MAC frame processing.
  *
  */
-class RxFrame : public otDataIndication, Frame
+class RxFrame : public otDataIndication, public Frame
 {
 public:
     /**
@@ -489,7 +489,11 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
-    otError GetDstAddr(Address &aAddress) { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+    otError GetDstAddr(Address &aAddress) const
+    {
+        static_cast<const FullAddr *>(&mDst)->GetAddress(aAddress);
+        return OT_ERROR_NONE;
+    }
 
     /**
      * This method gets the Source PAN Identifier.
@@ -499,9 +503,9 @@ public:
      * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
      *
      */
-    otError GetSrcPanId(PanId &aPanId)
+    otError GetSrcPanId(PanId &aPanId) const
     {
-        aPanId = static_cast<FullAddr *>(&mSrc)->GetPanId();
+        aPanId = static_cast<const FullAddr *>(&mSrc)->GetPanId();
         return OT_ERROR_NONE;
     }
 
@@ -513,7 +517,11 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
      *
      */
-    otError GetSrcAddr(Address &aAddress) { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
+    otError GetSrcAddr(Address &aAddress) const
+    {
+        static_cast<const FullAddr *>(&mSrc)->GetAddress(aAddress);
+        return OT_ERROR_NONE;
+    }
 
     /**
      * This method returns the current MAC Payload length.
@@ -581,7 +589,7 @@ public:
  * This class supports received IEEE 802.15.4 MAC poll frame processing.
  *
  */
-class RxPoll : public otPollIndication, Frame
+class RxPoll : public otPollIndication, public Frame
 {
 public:
     /**
@@ -617,7 +625,11 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
-    otError GetDstAddr(Address &aAddress) { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+    otError GetDstAddr(Address &aAddress) const
+    {
+        static_cast<const FullAddr *>(&mDst)->GetAddress(aAddress);
+        return OT_ERROR_NONE;
+    }
 
     /**
      * This method gets the Source PAN Identifier.
@@ -627,9 +639,9 @@ public:
      * @retval OT_ERROR_NONE   Successfully retrieved the Source PAN Identifier.
      *
      */
-    otError GetSrcPanId(PanId &aPanId)
+    otError GetSrcPanId(PanId &aPanId) const
     {
-        aPanId = static_cast<FullAddr *>(&mSrc)->GetPanId();
+        aPanId = static_cast<const FullAddr *>(&mSrc)->GetPanId();
         return OT_ERROR_NONE;
     }
 
@@ -641,14 +653,18 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Source Address.
      *
      */
-    otError GetSrcAddr(Address &aAddress) { return static_cast<FullAddr *>(&mSrc)->GetAddress(aAddress); }
+    otError GetSrcAddr(Address &aAddress) const
+    {
+        static_cast<const FullAddr *>(&mSrc)->GetAddress(aAddress);
+        return OT_ERROR_NONE;
+    }
 };
 
 /**
  * This class supports IEEE 802.15.4 MAC frame generation for transmission.
  *
  */
-class TxFrame : public otDataRequest, Frame
+class TxFrame : public otDataRequest, public Frame
 {
 public:
     /**
@@ -731,9 +747,9 @@ public:
      * @retval OT_ERROR_PARSE  Failed to parse the PAN Identifier.
      *
      */
-    otError GetDstPanId(PanId &aPanId)
+    otError GetDstPanId(PanId &aPanId) const
     {
-        aPanId = static_cast<FullAddr *>(&mDst)->GetPanId();
+        aPanId = static_cast<const FullAddr *>(&mDst)->GetPanId();
         return OT_ERROR_NONE;
     }
 
@@ -761,7 +777,11 @@ public:
      * @retval OT_ERROR_NONE  Successfully retrieved the Destination Address.
      *
      */
-    otError GetDstAddr(Address &aAddress) { return static_cast<FullAddr *>(&mDst)->GetAddress(aAddress); }
+    otError GetDstAddr(Address &aAddress) const
+    {
+        static_cast<const FullAddr *>(&mDst)->GetAddress(aAddress);
+        return OT_ERROR_NONE;
+    }
 
     /**
      * This method sets the Destination Address.

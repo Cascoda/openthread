@@ -207,12 +207,9 @@ SOURCES_COMMON                             = \
     thread/key_manager.cpp                   \
     thread/link_quality.cpp                  \
     thread/lowpan.cpp                        \
-    thread/mesh_forwarder_externmac.cpp      \
-    thread/mesh_forwarder_externmac_ftd.cpp  \
-    thread/mesh_forwarder_externmac_mtd.cpp  \
-    thread/mesh_forwarder_fullmac.cpp        \
-    thread/mesh_forwarder_fullmac_ftd.cpp    \
-    thread/mesh_forwarder_fullmac_mtd.cpp    \
+    thread/mesh_forwarder.cpp                \
+    thread/mesh_forwarder_ftd.cpp            \
+    thread/mesh_forwarder_mtd.cpp            \
     thread/mle.cpp                           \
     thread/mle_router.cpp                    \
     thread/network_data.cpp                  \
@@ -361,16 +358,15 @@ HEADERS_COMMON                             = \
     crypto/pbkdf2_cmac.h                     \
     crypto/sha256.hpp                        \
     diags/factory_diags.hpp                  \
-    mac/channel_mask.hpp                     \
-    mac/data_poll_handler.hpp                \
-    mac/data_poll_sender.hpp                 \
-    mac/link_raw.hpp                         \
-    mac/mac.hpp                              \
-    mac/mac_common.hpp                       \
-    mac/mac_filter.hpp                       \
-    mac/mac_frame.hpp                        \
-    mac/mac_types.hpp                        \
-    mac/sub_mac.hpp                          \
+    mac_extern/mac/channel_mask.hpp                     \
+    mac_extern/mac/data_poll_handler.hpp                \
+    mac_extern/mac/data_poll_sender.hpp                 \
+    mac_extern/mac/link_raw.hpp                         \
+    mac_extern/mac/mac.hpp                              \
+    mac_extern/mac/mac_filter.hpp                       \
+    mac_extern/mac/mac_frame.hpp                        \
+    mac_extern/mac/mac_types.hpp                        \
+    mac_extern/mac/sub_mac.hpp                          \
     meshcop/announce_begin_client.hpp        \
     meshcop/border_agent.hpp                 \
     meshcop/commissioner.hpp                 \
@@ -415,8 +411,6 @@ HEADERS_COMMON                             = \
     thread/link_quality.hpp                  \
     thread/lowpan.hpp                        \
     thread/mesh_forwarder.hpp                \
-    thread/mesh_forwarder_fullmac.hpp \
-    thread/mesh_forwarder_externmac.hpp \
     thread/mle.hpp                           \
     thread/mle_constants.hpp                 \
     thread/mle_router.hpp                    \

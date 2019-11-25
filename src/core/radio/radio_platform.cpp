@@ -39,6 +39,7 @@ using namespace ot;
 
 //---------------------------------------------------------------------------------------------------------------------
 // otPlatRadio callbacks
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 
 extern "C" void otPlatRadioReceiveDone(otInstance *aInstance, otRadioFrame *aFrame, otError aError)
 {
@@ -96,6 +97,7 @@ extern "C" void otPlatDiagRadioTransmitDone(otInstance *aInstance, otRadioFrame 
     instance->Get<Radio::Callbacks>().HandleDiagsTransmitDone(*static_cast<Mac::TxFrame *>(aFrame), aError);
 }
 #endif
+#endif // !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 
 //---------------------------------------------------------------------------------------------------------------------
 // Default/weak implementation of radio platform APIs

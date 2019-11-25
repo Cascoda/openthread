@@ -51,11 +51,11 @@
 #include "thread/key_manager.hpp"
 #include "thread/link_quality.hpp"
 #include "thread/network_diagnostic_tlvs.hpp"
-#include "thread/topology.hpp"
 
 namespace ot {
 
 class MeshSender;
+class Neighbor;
 namespace Mle {
 class MleRouter;
 }
@@ -374,10 +374,10 @@ public:
     /**
      * This method returns the IEEE 802.15.4 Network Name.
      *
-     * @returns A pointer to the IEEE 802.15.4 Network Name.
+     * @returns A reference to the IEEE 802.15.4 Network Name.
      *
      */
-    const char *GetNetworkName(void) const { return mNetworkName.m8; }
+    const NetworkName &GetNetworkName(void) const { return mNetworkName; }
 
     /**
      * This method sets the IEEE 802.15.4 Network Name.
@@ -392,14 +392,13 @@ public:
     /**
      * This method sets the IEEE 802.15.4 Network Name.
      *
-     * @param[in]  aBuffer  A pointer to the char buffer containing the name. Does not need to be null terminated.
-     * @param[in]  aLength  Number of chars in the buffer.
+     * @param[in]  aNameData  A name data (length and char buffer)
      *
      * @retval OT_ERROR_NONE           Successfully set the IEEE 802.15.4 Network Name.
      * @retval OT_ERROR_INVALID_ARGS   Given name is too long.
      *
      */
-    otError SetNetworkName(const char *aBuffer, uint8_t aLength);
+    otError SetNetworkName(const NetworkName::Data &aNameData);
 
     /**
      * This method returns the IEEE 802.15.4 PAN ID.
@@ -425,7 +424,7 @@ public:
      * @returns A pointer to the IEEE 802.15.4 Extended PAN ID.
      *
      */
-    const otExtendedPanId &GetExtendedPanId(void) const { return mExtendedPanId; }
+    const ExtendedPanId &GetExtendedPanId(void) const { return mExtendedPanId; }
 
     /**
      * This method sets the IEEE 802.15.4 Extended PAN ID.
@@ -435,7 +434,7 @@ public:
      * @retval OT_ERROR_NONE  Successfully set the IEEE 802.15.4 Extended PAN ID.
      *
      */
-    otError SetExtendedPanId(const otExtendedPanId &aExtendedPanId);
+    otError SetExtendedPanId(const ExtendedPanId &aExtendedPanId);
 
     /**
      * This method returns the maximum number of frame retries during direct transmission.
@@ -700,6 +699,12 @@ public:
      */
     bool IsEnabled(void) { return mEnabled; }
 
+    /**
+     * This method gets a valid MsduHandle for using to identify frames sent via the MAC.
+     *
+     * @returns  A valid 8-bit identifier handle to use in an TxFrame
+     */
+    uint8_t GetValidMsduHandle(void);
 private:
     enum
     {
@@ -722,7 +727,9 @@ private:
     void    FinishOperation(void);
     void    BuildBeacon(void);
     void    HandleBeginDirect(void);
+#if OPENTHREAD_FTD
     void    HandleBeginIndirect(void);
+#endif
     otError ProcessTransmitStatus(otError aTransmitError);
     otError Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration);
     void    HandleBeginScan(void);
@@ -748,7 +755,6 @@ private:
     static void sStateChangedCallback(Notifier::Callback &aCallback, uint32_t aFlags);
     void        stateChangedCallback(uint32_t aFlags);
 
-    uint8_t GetValidMsduHandle(void);
 
     static const char *OperationToString(Operation aOperation);
 
@@ -802,7 +808,7 @@ private:
 
     union
     {
-        otDataRequest  mDataReq;
+        TxFrame        mDataReq;
         otScanRequest  mScanReq;
         otStartRequest mStartReq;
     };

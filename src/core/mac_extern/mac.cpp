@@ -46,6 +46,7 @@
 #include "common/locator-getters.hpp"
 #include "common/locator.hpp"
 #include "common/logging.hpp"
+#include "common/notifier.hpp"
 #include "crypto/aes_ccm.hpp"
 #include "crypto/sha256.hpp"
 #include "mac/mac_frame.hpp"
@@ -90,14 +91,13 @@ Mac::Mac(Instance &aInstance)
 {
     GenerateExtAddress(&mExtAddress);
     otPlatRadioEnable(&GetInstance());
-    SetExtendedPanId(sExtendedPanidInit);
+    SetExtendedPanId(static_cast<const ExtendedPanId &>(sExtendedPanidInit));
     SetNetworkName(sNetworkNameInit);
     SetPanId(mPanId);
     SetExtAddress(mExtAddress);
     SetShortAddress(mShortAddress);
     mCcaSuccessRateTracker.Reset();
     ResetCounters();
-    memset(&mNetworkName, 0, sizeof(otNetworkName));
 }
 
 otError Mac::ActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, ActiveScanHandler aHandler)
@@ -455,7 +455,7 @@ void Mac::SetSupportedChannelMask(const ChannelMask &aMask)
 {
     ChannelMask newMask = aMask;
 
-    newMask.Intersect(ChannelMask(&Radio::kSupportedChannels));
+    newMask.Intersect(ChannelMask(Radio::kSupportedChannels));
     VerifyOrExit(newMask != mSupportedChannelMask, Get<Notifier>().SignalIfFirst(OT_CHANGED_SUPPORTED_CHANNEL_MASK));
 
     mSupportedChannelMask = newMask;
@@ -467,24 +467,27 @@ exit:
 
 otError Mac::SetNetworkName(const char *aNetworkName)
 {
-    return SetNetworkName(aNetworkName, OT_NETWORK_NAME_MAX_SIZE + 1);
+    NetworkName::Data data(aNetworkName, NetworkName::kMaxSize + 1);
+
+    return SetNetworkName(data);
 }
 
-otError Mac::SetNetworkName(const char *aBuffer, uint8_t aLength)
+otError Mac::SetNetworkName(const NetworkName::Data &aName)
 {
-    otError error  = OT_ERROR_NONE;
-    uint8_t newLen = static_cast<uint8_t>(strnlen(aBuffer, aLength));
+    otError error = mNetworkName.Set(aName);
 
-    VerifyOrExit(newLen <= OT_NETWORK_NAME_MAX_SIZE, error = OT_ERROR_INVALID_ARGS);
-    VerifyOrExit(newLen != strlen(mNetworkName.m8) || memcmp(mNetworkName.m8, aBuffer, newLen) != 0,
-                 Get<Notifier>().SignalIfFirst(OT_CHANGED_THREAD_NETWORK_NAME));
+    if (error == OT_ERROR_ALREADY)
+    {
+        error = OT_ERROR_NONE;
+        Get<Notifier>().SignalIfFirst(OT_CHANGED_THREAD_NETWORK_NAME);
+        BuildBeacon();
+    }
+    else if (error == OT_ERROR_NONE)
+    {
+        Get<Notifier>().Signal(OT_CHANGED_THREAD_NETWORK_NAME);
+        BuildBeacon();
+    }
 
-    memcpy(mNetworkName.m8, aBuffer, newLen);
-    mNetworkName.m8[newLen] = 0;
-    Get<Notifier>().Signal(OT_CHANGED_THREAD_NETWORK_NAME);
-    BuildBeacon();
-
-exit:
     return error;
 }
 
@@ -503,23 +506,24 @@ exit:
     return error;
 }
 
-otError Mac::SetExtendedPanId(const otExtendedPanId &aExtendedPanId)
+otError Mac::SetExtendedPanId(const ExtendedPanId &aExtendedPanId)
 {
-    mExtendedPanId = aExtendedPanId;
+    Get<Notifier>().Update(mExtendedPanId, aExtendedPanId, OT_CHANGED_THREAD_EXT_PANID);
     BuildBeacon();
     return OT_ERROR_NONE;
 }
 
 uint8_t Mac::GetMaxFrameRetriesDirect()
 {
-	uint8_t macMaxRetries = 3;
-	uint8_t len = 1;
-	otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_MAX_FRAME_RETRIES, 0, &len, &macMaxRetries)
+    uint8_t macMaxRetries = 3;
+    uint8_t len           = 1;
+    otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_MAX_FRAME_RETRIES, 0, &len, &macMaxRetries);
+    return macMaxRetries;
 }
 
 void Mac::SetMaxFrameRetriesDirect(uint8_t aMaxFrameRetriesDirect)
 {
-	otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_MAX_FRAME_RETRIES, 0, 1, &aMaxFrameRetriesDirect)
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_MAX_FRAME_RETRIES, 0, 1, &aMaxFrameRetriesDirect);
 }
 
 otError Mac::RequestDirectFrameTransmission(void)
@@ -611,11 +615,13 @@ void Mac::StartOperation(Operation aOperation)
         mPendingTransmitDataDirect = false;
         HandleBeginDirect();
     }
+#if OPENTHREAD_FTD
     else if (mPendingTransmitDataIndirect)
     {
         mPendingTransmitDataIndirect = false;
         HandleBeginIndirect();
     }
+#endif
 
     if (mOperation != kOperationIdle)
     {
@@ -881,7 +887,7 @@ void Mac::CacheDeviceTable()
 
         if (addr.GetShort() == kShortAddrInvalid)
         {
-            addr.SetExtended(deviceDesc.mExtAddress, ExtAddress::CopyByteOrder::kReverseByteOrder);
+            addr.SetExtended(deviceDesc.mExtAddress, ExtAddress::kReverseByteOrder);
         }
 
         neighbor = Get<Mle::MleRouter>().GetNeighbor(addr);
@@ -1154,7 +1160,7 @@ exit:
 
 void Mac::HandleBeginDirect(void)
 {
-    TxFrame sendFrame(mDataReq);
+    TxFrame &sendFrame = mDataReq;
     otError error = OT_ERROR_NONE;
 
     assert(mOperation == kOperationTransmitDataDirect);
@@ -1212,11 +1218,11 @@ exit:
     return;
 }
 
+#if OPENTHREAD_FTD
 void Mac::HandleBeginIndirect(void)
 {
     TxFrame sendFrame(mDataReq);
     otError error = OT_ERROR_NONE;
-    uint8_t channel;
 
     otLogDebgMac("Mac::HandleBeginDirect (indirect)");
     assert(mOperation == kOperationTransmitDataIndirect);
@@ -1234,10 +1240,10 @@ void Mac::HandleBeginIndirect(void)
     otDumpDebgMac("Msdu", mDataReq.mMsdu, mDataReq.mMsduLength);
     error = otPlatMcpsDataRequest(&GetInstance(), &mDataReq);
 
-exit:
     assert(error == OT_ERROR_NONE);
     return;
 }
+#endif
 
 void Mac::sStateChangedCallback(Notifier::Callback &aCallback, uint32_t aFlags)
 {
@@ -1322,12 +1328,13 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
 
         Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
     }
+#if OPENTHREAD_FTD
     else
     {
         Get<DataPollHandler>().HandleSentFrame(aError, aMsduHandle);
     }
+#endif
 
-exit:
     return;
 }
 otError Mac::ProcessReceiveSecurity(otSecSpec &aSecSpec, Neighbor *aNeighbor)
@@ -1413,7 +1420,7 @@ exit:
 
 void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 {
-    RxFrame   dataInd(aDataIndication);
+    RxFrame   &dataInd = static_cast<RxFrame&>(*aDataIndication);
     Address   srcaddr, dstaddr;
     Neighbor *neighbor;
     otError   error = OT_ERROR_NONE;
@@ -1639,8 +1646,6 @@ void Mac::ResetCounters(void)
 
 uint8_t Mac::GetValidMsduHandle(void)
 {
-    bool failed = false;
-
     while (true)
     {
         mNextMsduHandle++;
@@ -1652,11 +1657,11 @@ uint8_t Mac::GetValidMsduHandle(void)
         // Msdu in use by direct frame
         if (mNextMsduHandle == mDirectMsduHandle)
             continue;
-
+#if OPENTHREAD_FTD
         // Msdu in use by indirect frame
         if (Get<DataPollHandler>().GetFrameCache(mNextMsduHandle))
             continue;
-
+#endif
         break;
     }
 
@@ -1751,7 +1756,11 @@ const char *Mac::OperationToString(Operation aOperation)
         break;
 
     case kOperationTransmitDataDirect:
-        retval = "TransmitData";
+        retval = "TransmitDataDirect";
+        break;
+
+    case kOperationTransmitDataIndirect:
+        retval = "TransmitDataIndirect";
         break;
     }
 
@@ -1776,7 +1785,7 @@ otError FullAddr::GetAddress(Address &aAddress) const
         aAddress.SetShort(Encoding::LittleEndian::ReadUint16(mAddress));
         break;
     case OT_MAC_ADDRESS_MODE_EXT:
-        aAddress.SetExtended(mAddress, ExtAddress::CopyByteOrder::kReverseByteOrder);
+        aAddress.SetExtended(mAddress, ExtAddress::kReverseByteOrder);
         break;
     default:
         error = OT_ERROR_INVALID_ARGS;
@@ -1799,7 +1808,7 @@ otError FullAddr::SetAddress(const Address &aAddress)
         break;
     case Address::kTypeExtended:
         mAddressMode = OT_MAC_ADDRESS_MODE_EXT;
-        aAddress.GetExtended().CopyTo(mAddress, ExtAddress::CopyByteOrder::kReverseByteOrder);
+        aAddress.GetExtended().CopyTo(mAddress, ExtAddress::kReverseByteOrder);
         break;
     default:
         error = OT_ERROR_INVALID_ARGS;

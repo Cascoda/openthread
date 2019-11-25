@@ -2268,7 +2268,11 @@ template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CHAN_SUPPORTED>(v
 
 template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_PHY_CHAN_PREFERRED>(void)
 {
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC 
     return EncodeChannelMask(otPlatRadioGetPreferredChannelMask(mInstance));
+#else
+    return EncodeChannelMask(otLinkGetSupportedChannelMask(mInstance));
+#endif
 }
 
 #if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE

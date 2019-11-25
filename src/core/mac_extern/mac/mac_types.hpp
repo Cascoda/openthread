@@ -42,6 +42,7 @@
 
 #include <openthread/link.h>
 
+#include "common/encoding.hpp"
 #include "common/string.hpp"
 #include "openthread/platform/radio-mac.h"
 

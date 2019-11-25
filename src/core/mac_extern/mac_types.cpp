@@ -31,7 +31,7 @@
  *   This file implements MAC types such as Address, Extended PAN Identifier, Network Name, etc.
  */
 
-#include "mac_types.hpp"
+#include "mac/mac_types.hpp"
 
 #include <stdio.h>
 #include "utils/wrap_string.h"

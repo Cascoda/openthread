@@ -315,7 +315,6 @@ otError ActiveDataset::CreateNewNetwork(otOperationalDataset &aDataset)
 {
     otError          error             = OT_ERROR_NONE;
     Mac::ChannelMask supportedChannels = Get<Mac::Mac>().GetSupportedChannelMask();
-    Mac::ChannelMask preferredChannels(Get<Radio>().GetPreferredChannelMask());
 
     memset(&aDataset, 0, sizeof(aDataset));
 
@@ -330,18 +329,7 @@ otError ActiveDataset::CreateNewNetwork(otOperationalDataset &aDataset)
 
     aDataset.mSecurityPolicy.mFlags = Get<KeyManager>().GetSecurityPolicyFlags();
 
-    // If the preferred channel mask is not empty, select a random
-    // channel from it, otherwise choose one from the supported
-    // channel mask.
-
-    preferredChannels.Intersect(supportedChannels);
-
-    if (preferredChannels.IsEmpty())
-    {
-        preferredChannels = supportedChannels;
-    }
-
-    aDataset.mChannel     = preferredChannels.ChooseRandomChannel();
+    aDataset.mChannel     = supportedChannels.ChooseRandomChannel();
     aDataset.mChannelMask = supportedChannels.GetMask();
 
     aDataset.mPanId = Mac::GenerateRandomPanId();

@@ -33,7 +33,7 @@
 
 #if OPENTHREAD_FTD
 
-#include "data_poll_handler.hpp"
+#include "mac/data_poll_handler.hpp"
 
 #include "common/code_utils.hpp"
 #include "common/instance.hpp"
@@ -68,14 +68,14 @@ inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
 
 //---------------------------------------------------------
 
-void FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
+void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
 {
     mChild      = &aChild;
     mMsduHandle = aMsduHandle;
     aChild.IncrementFrameCount();
 }
 
-void FrameCache::Free()
+void DataPollHandler::FrameCache::Free()
 {
     if (!IsValid())
         return;
@@ -100,8 +100,9 @@ void DataPollHandler::Clear(void)
         child.SetFrameReplacePending(false);
     }
 
-    for (FrameCache &fc : mFrameCache)
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
+	FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
             continue;
 
@@ -147,7 +148,6 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
 {
     Mac::Address macSource;
     Child *      child;
-    uint16_t     indirectMsgCount;
 
     VerifyOrExit(aPollInd.GetSecurityEnabled());
     VerifyOrExit(Get<Mle::MleRouter>().GetRole() != OT_DEVICE_ROLE_DETACHED);
@@ -158,10 +158,9 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
 
     child->SetLastHeard(TimerMilli::GetNow());
     child->ResetLinkFailures();
-    indirectMsgCount = child->GetIndirectMessageCount();
 
-    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, rss:%d, ack-fp:%d", child->GetRloc16(), indirectMsgCount,
-                 aFrame.GetRssi(), aFrame.IsAckedWithFramePending());
+    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, rss:%d, ack-fp:%d", child->GetRloc16(),
+                 child->GetIndirectMessageCount(), aFrame.GetRssi(), aFrame.IsAckedWithFramePending());
 
     /* TODO: Maybe catch here if a poll was received with a different source address type
      * than expected.
@@ -198,8 +197,9 @@ exit:
 
 DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
 {
-    for (FrameCache &fc : mFrameCache)
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
+	FrameCache &fc = mFrameCache[i];
         if (fc.GetMsduHandle() == aMsduHandle)
             return &fc;
     }
@@ -208,8 +208,9 @@ DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
 
 DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(Child &aChild)
 {
-    for (FrameCache &fc : mFrameCache)
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
+	FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
             continue;
 
@@ -221,8 +222,9 @@ DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(Child &aChild)
 
 DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
 {
-    for (FrameCache &fc : mFrameCache)
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
+	FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
             return &fc;
     }

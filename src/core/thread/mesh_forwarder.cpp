@@ -1629,7 +1629,7 @@ exit:
     return;
 }
 
-void MeshForwarder::LogFrame(const char *aActionText, const Mac::Frame &aFrame, otError aError)
+void MeshForwarder::LogFrame(const char *aActionText, const Mac::RxFrame &aFrame, otError aError)
 {
     if (aError != OT_ERROR_NONE)
     {

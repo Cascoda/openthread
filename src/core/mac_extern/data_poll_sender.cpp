@@ -31,13 +31,14 @@
  *   This file implements data poll (mac data request command) sender class.
  */
 
-#include "data_poll_sender.hpp"
+#include "mac/data_poll_sender.hpp"
 
 #include "common/code_utils.hpp"
 #include "common/instance.hpp"
 #include "common/locator-getters.hpp"
 #include "common/logging.hpp"
 #include "common/message.hpp"
+#include "common/time.hpp"
 #include "net/ip6.hpp"
 #include "net/netif.hpp"
 #include "thread/mesh_forwarder.hpp"
@@ -48,11 +49,11 @@ namespace ot {
 
 DataPollSender::DataPollSender(Instance &aInstance)
     : InstanceLocator(aInstance)
-    , mTimerStartTime(0)
     , mPollPeriod(0)
     , mExternalPollPeriod(0)
     , mFastPollsUsers(0)
     , mTimer(aInstance, &DataPollSender::HandlePollTimer, this)
+    , mTimerStartTime(0)
     , mEnabled(false)
     , mAttachMode(false)
     , mRetxMode(false)
@@ -496,7 +497,7 @@ void DataPollSender::HandlePollTimer(Timer &aTimer)
 
 uint32_t DataPollSender::GetDefaultPollPeriod(void) const
 {
-    return TimerMilli::SecToMsec(Get<Mle::MleRouter>().GetTimeout()) -
+    return TimeMilli::SecToMsec(Get<Mle::MleRouter>().GetTimeout()) -
            static_cast<uint32_t>(kRetxPollPeriod) * kMaxPollRetxAttempts;
 }
 
