@@ -1817,6 +1817,26 @@ otError FullAddr::SetAddress(const Address &aAddress)
     return error;
 }
 
+otError FullAddr::SetAddress(ShortAddress aShortAddress)
+{
+    otError error = OT_ERROR_NONE;
+
+    mAddressMode = OT_MAC_ADDRESS_MODE_SHORT;
+    Encoding::LittleEndian::WriteUint16(aShortAddress, mAddress);
+
+    return error;
+}
+
+otError FullAddr::SetAddress(ExtAddress aExtAddress)
+{
+    otError error = OT_ERROR_NONE;
+
+    mAddressMode = OT_MAC_ADDRESS_MODE_EXT;
+    aExtAddress.CopyTo(mAddress, ExtAddress::kReverseByteOrder);
+
+    return error;
+}
+
 otError Mac::SetEnabled(bool aEnable)
 {
     mEnabled = aEnable;

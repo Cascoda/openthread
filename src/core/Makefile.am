@@ -202,6 +202,7 @@ SOURCES_COMMON                             = \
     thread/announce_begin_server.cpp         \
     thread/announce_sender.cpp               \
     thread/child_table.cpp                   \
+    thread/device_mode.cpp                   \
     thread/energy_scan_server.cpp            \
     thread/indirect_sender.cpp               \
     thread/key_manager.cpp                   \
