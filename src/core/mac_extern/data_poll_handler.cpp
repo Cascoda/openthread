@@ -159,8 +159,8 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
     child->SetLastHeard(TimerMilli::GetNow());
     child->ResetLinkFailures();
 
-    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, rss:%d, ack-fp:%d", child->GetRloc16(),
-                 child->GetIndirectMessageCount(), aFrame.GetRssi(), aFrame.IsAckedWithFramePending());
+    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, lqi:%d", child->GetRloc16(),
+                 child->GetIndirectMessageCount(), aPollInd.GetLqi());
 
     /* TODO: Maybe catch here if a poll was received with a different source address type
      * than expected.
@@ -172,7 +172,7 @@ exit:
 
 otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 {
-    otError error = OT_ERROR_NONE;
+    otError error = OT_ERROR_NOT_FOUND;
 
     for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
     {
@@ -185,9 +185,12 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             VerifyOrExit(fc != NULL, error = OT_ERROR_NO_BUFS);
 
             fc->Allocate(child, Get<Mac::Mac>().GetValidMsduHandle());
-            error = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
+            error              = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
+            aFrame.mMsduHandle = fc->GetMsduHandle();
             if (error)
                 fc->Free();
+            else
+                break;
         }
     }
 
@@ -235,9 +238,10 @@ void DataPollHandler::HandleSentFrame(otError aError, uint8_t aMsduHandle)
 {
     FrameCache *frameCache = GetFrameCache(aMsduHandle);
 
-    VerifyOrExit(frameCache != NULL);
-
-    HandleSentFrame(aError, *frameCache);
+    if (frameCache == NULL)
+        otLogWarnMac("Got confirm for unknown handle %x", aMsduHandle);
+    else
+        HandleSentFrame(aError, *frameCache);
 
 exit:
     return;
@@ -263,8 +267,7 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
         break;
 
     case OT_ERROR_NO_ACK:
-        otLogInfoMac("Indirect tx to child %04x failed, attempt %d/%d", aChild.GetRloc16(),
-                     aChild.GetIndirectTxAttempts(), kMaxPollTriggeredTxAttempts);
+        otLogInfoMac("Indirect tx to child %04x failed", child.GetRloc16());
 
         // Fall through
 

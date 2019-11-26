@@ -191,7 +191,7 @@ bool Mac::IsEnergyScanInProgress(void)
 
 bool Mac::IsInTransmitState(void)
 {
-    return (mOperation == kOperationTransmitDataDirect);
+    return mDirectMsduHandle;
 }
 
 extern "C" void otPlatMlmeScanConfirm(otInstance *aInstance, otScanConfirm *aScanConfirm)
@@ -531,7 +531,7 @@ otError Mac::RequestDirectFrameTransmission(void)
     otError error = OT_ERROR_NONE;
 
     VerifyOrExit(mEnabled, error = OT_ERROR_INVALID_STATE);
-    VerifyOrExit(!mPendingTransmitDataDirect && (mOperation != kOperationTransmitDataDirect), error = OT_ERROR_ALREADY);
+    VerifyOrExit(!mPendingTransmitDataDirect && !mDirectMsduHandle, error = OT_ERROR_ALREADY);
 
     StartOperation(kOperationTransmitDataDirect);
 
@@ -544,8 +544,7 @@ otError Mac::RequestIndirectFrameTransmission(void)
     otError error = OT_ERROR_NONE;
 
     VerifyOrExit(mEnabled, error = OT_ERROR_INVALID_STATE);
-    VerifyOrExit(!mPendingTransmitDataIndirect && (mOperation != kOperationTransmitDataIndirect),
-                 error = OT_ERROR_ALREADY);
+    VerifyOrExit(!mPendingTransmitDataIndirect, error = OT_ERROR_ALREADY);
 
     StartOperation(kOperationTransmitDataIndirect);
 
@@ -1163,8 +1162,7 @@ void Mac::HandleBeginDirect(void)
     TxFrame &sendFrame = mDataReq;
     otError error = OT_ERROR_NONE;
 
-    assert(mOperation == kOperationTransmitDataDirect);
-    otLogDebgMac("Mac::HandleBeginDirect (direct)", mSendHead->mMeshSender);
+    otLogDebgMac("Mac::HandleBeginDirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
@@ -1221,11 +1219,10 @@ exit:
 #if OPENTHREAD_FTD
 void Mac::HandleBeginIndirect(void)
 {
-    TxFrame sendFrame(mDataReq);
+    TxFrame &sendFrame = mDataReq;
     otError error = OT_ERROR_NONE;
 
-    otLogDebgMac("Mac::HandleBeginDirect (indirect)");
-    assert(mOperation == kOperationTransmitDataIndirect);
+    otLogDebgMac("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
@@ -1234,6 +1231,7 @@ void Mac::HandleBeginIndirect(void)
     mCounters.mTxUnicast++;
 
     ProcessTransmitSecurity(mDataReq.mSecurity);
+    mDataReq.mTxOptions |= OT_MAC_TX_OPTION_INDIRECT;
 
     otLogDebgMac("calling otPlatRadioTransmit for indirect");
     otLogDebgMac("Sam %x; Dam %x; MH %x;", mDataReq.mSrcAddrMode, mDataReq.mDst.mAddressMode, mDataReq.mMsduHandle);
@@ -1325,7 +1323,8 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
         {
             ClearTempTxChannel();
         }
-
+	
+	mDirectMsduHandle = 0;
         Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
     }
 #if OPENTHREAD_FTD
@@ -1665,6 +1664,7 @@ uint8_t Mac::GetValidMsduHandle(void)
         break;
     }
 
+    otLogDebgMac("Allocated MSDU Handle %x", mNextMsduHandle);
     return mNextMsduHandle;
 }
 
@@ -1839,10 +1839,15 @@ otError FullAddr::SetAddress(ExtAddress aExtAddress)
 
 otError Mac::SetEnabled(bool aEnable)
 {
+    VerifyOrExit(mEnabled != aEnable);
     mEnabled = aEnable;
 
-    otPlatMlmeReset(&GetInstance(), true);
+    if (mEnabled)
+        Start();
+    else
+        otPlatMlmeReset(&GetInstance(), true);
 
+exit:
     return OT_ERROR_NONE;
 }
 
