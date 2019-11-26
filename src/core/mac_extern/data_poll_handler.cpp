@@ -113,11 +113,8 @@ void DataPollHandler::Clear(void)
 
 void DataPollHandler::HandleNewFrame(Child &aChild)
 {
-    if (aChild.GetFrameCount() == 0)
-    {
-        // Request from mac
-        Get<Mac::Mac>().RequestIndirectFrameTransmission();
-    }
+    // Request from mac
+    Get<Mac::Mac>().RequestIndirectFrameTransmission();
 }
 
 void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild)
@@ -178,7 +175,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
     {
         Child &child = *iter.GetChild();
 
-        if (child.GetFrameCount() == 0 && child.GetIndirectMessageCount())
+        if (child.GetFrameCount() <= 1 && child.GetIndirectMessageCount())
         {
             FrameCache *fc = GetEmptyFrameCache();
 
@@ -250,8 +247,6 @@ exit:
 void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
 {
     Child &child = aFrameCache.GetChild();
-
-    child.DecrementFrameCount();
 
     if (child.IsFrameReplacePending())
     {

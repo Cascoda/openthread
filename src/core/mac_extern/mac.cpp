@@ -1226,7 +1226,7 @@ void Mac::HandleBeginIndirect(void)
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
-    Get<DataPollHandler>().HandleFrameRequest(sendFrame);
+    SuccessOrExit(error = Get<DataPollHandler>().HandleFrameRequest(sendFrame));
 
     mCounters.mTxUnicast++;
 
@@ -1239,6 +1239,8 @@ void Mac::HandleBeginIndirect(void)
     error = otPlatMcpsDataRequest(&GetInstance(), &mDataReq);
 
     assert(error == OT_ERROR_NONE);
+exit:
+    otLogDebgMac("HandleBeginIndirect: %s", otThreadErrorToString(error));
     return;
 }
 #endif
