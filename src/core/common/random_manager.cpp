@@ -60,6 +60,7 @@ RandomManager::RandomManager(void)
     otError  error;
 
     assert(sInitCount < 0xffff);
+    OT_UNUSED_VARIABLE(error);
 
     VerifyOrExit(sInitCount == 0);
 

@@ -205,6 +205,7 @@ public:
 
         rval = aMessage.Read(aMessage.GetOffset(), aLength, mWritePointer);
         assert(rval == aLength);
+	OT_UNUSED_VARIABLE(rval);
 
         mWritePointer += aLength;
         mRemainingLength -= aLength;

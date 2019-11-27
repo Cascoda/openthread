@@ -113,6 +113,7 @@ void DataPollHandler::Clear(void)
 
 void DataPollHandler::HandleNewFrame(Child &aChild)
 {
+    OT_UNUSED_VARIABLE(aChild);
     // Request from mac
     Get<Mac::Mac>().RequestIndirectFrameTransmission();
 }
@@ -240,7 +241,6 @@ void DataPollHandler::HandleSentFrame(otError aError, uint8_t aMsduHandle)
     else
         HandleSentFrame(aError, *frameCache);
 
-exit:
     return;
 }
 

@@ -4697,6 +4697,7 @@ void MleRouter::Signal(otNeighborTableEvent aEvent, Neighbor &aNeighbor)
         otNeighborTableEntryInfo info;
         otError                  error;
 
+	OT_UNUSED_VARIABLE(error);
         info.mInstance = &GetInstance();
 
         switch (aEvent)

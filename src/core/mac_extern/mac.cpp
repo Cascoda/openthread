@@ -1617,8 +1617,12 @@ exit:
 
 void Mac::ProcessPollIndication(otPollIndication *aPollIndication)
 {
-    RxPoll &pollInd = *aPollIndication;
+#if OPENTHREAD_FTD
+    RxPoll &pollInd = static_cast<RxPoll &>(*aPollIndication);
     Get<DataPollHandler>().HandleDataPoll(pollInd);
+#else
+    OT_UNUSED_VARIABLE(aPollIndication);
+#endif
 }
 
 void Mac::SetPcapCallback(otLinkPcapCallback aPcapCallback, void *aCallbackContext)

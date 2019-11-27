@@ -734,6 +734,7 @@ start:
         uint8_t              hcLength;
         Mac::Address         meshSource, meshDest;
         otError              error;
+	OT_UNUSED_VARIABLE(error);
 
         if (aAddMeshHeader)
         {
