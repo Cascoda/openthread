@@ -1232,6 +1232,7 @@ void Mac::HandleBeginIndirect(void)
 
     ProcessTransmitSecurity(mDataReq.mSecurity);
     mDataReq.mTxOptions |= OT_MAC_TX_OPTION_INDIRECT;
+    mDataReq.mTxOptions |= OT_MAC_TX_OPTION_NS_SECURE_IND;
 
     otLogDebgMac("calling otPlatRadioTransmit for indirect");
     otLogDebgMac("Sam %x; Dam %x; MH %x;", mDataReq.mSrcAddrMode, mDataReq.mDst.mAddressMode, mDataReq.mMsduHandle);

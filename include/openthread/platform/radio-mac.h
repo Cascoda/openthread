@@ -195,7 +195,8 @@ enum otTxOption
     OT_MAC_TX_OPTION_GTS      = (1 << 1), // Unset bit for CAP
     OT_MAC_TX_OPTION_INDIRECT = (1 << 2),
     OT_MAC_TX_OPTION_NS_NONCE = (1 << 7), // Nonstandard flag to indicate nonce should be constructed with mode2 extaddr
-    OT_MAC_TX_OPTION_NS_FPEND = (1 << 6)  // Nonstandard flag to indicate FPEND bit should be set (optional hint)
+    OT_MAC_TX_OPTION_NS_FPEND = (1 << 6), // Nonstandard flag to indicate FPEND bit should be set (optional hint)
+    OT_MAC_TX_OPTION_NS_SECURE_IND = (1 << 5) // Nonstandard flag so indirect message is only transmitted to secure poll
 };
 
 /**
