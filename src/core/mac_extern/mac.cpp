@@ -1160,7 +1160,7 @@ exit:
 void Mac::HandleBeginDirect(void)
 {
     TxFrame &sendFrame = mDataReq;
-    otError error = OT_ERROR_NONE;
+    otError  error     = OT_ERROR_NONE;
 
     otLogDebgMac("Mac::HandleBeginDirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
@@ -1220,7 +1220,7 @@ exit:
 void Mac::HandleBeginIndirect(void)
 {
     TxFrame &sendFrame = mDataReq;
-    otError error = OT_ERROR_NONE;
+    otError  error     = OT_ERROR_NONE;
 
     otLogDebgMac("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
@@ -1325,8 +1325,8 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
         {
             ClearTempTxChannel();
         }
-	
-	mDirectMsduHandle = 0;
+
+        mDirectMsduHandle = 0;
         Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
     }
 #if OPENTHREAD_FTD
@@ -1421,7 +1421,7 @@ exit:
 
 void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 {
-    RxFrame   &dataInd = static_cast<RxFrame&>(*aDataIndication);
+    RxFrame & dataInd = static_cast<RxFrame &>(*aDataIndication);
     Address   srcaddr, dstaddr;
     Neighbor *neighbor;
     otError   error = OT_ERROR_NONE;
@@ -1600,6 +1600,25 @@ void Mac::ProcessCommStatusIndication(otCommStatusIndication *aCommStatusIndicat
         otLogDebgMac("Key Index: 0x%02x", aCommStatusIndication->mSecurity.mKeyIndex);
         otDumpDebgMac("Key Source: ", aCommStatusIndication->mSecurity.mKeySource, 8);
     }
+}
+
+extern "C" void otPlatMlmePollIndication(otInstance *aInstance, otPollIndication *aPollIndication)
+{
+    Instance *instance = static_cast<Instance *>(aInstance);
+
+    VerifyOrExit(instance->IsInitialized());
+    VerifyOrExit(aPollIndication);
+
+    instance->Get<Mac>().ProcessPollIndication(aPollIndication);
+
+exit:
+    return;
+}
+
+void Mac::ProcessPollIndication(otPollIndication *aPollIndication)
+{
+    RxPoll &pollInd = *aPollIndication;
+    Get<DataPollHandler>().HandleDataPoll(pollInd);
 }
 
 void Mac::SetPcapCallback(otLinkPcapCallback aPcapCallback, void *aCallbackContext)

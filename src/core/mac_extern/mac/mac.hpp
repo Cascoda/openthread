@@ -467,10 +467,7 @@ public:
      * @param[in]  aMaxFrameRetriesIndirect  The maximum number of retries during indirect transmission.
      *
      */
-    void SetMaxFrameRetriesIndirect(uint8_t aMaxFrameRetriesIndirect)
-    {
-        OT_UNUSED_VARIABLE(aMaxFrameRetriesIndirect);
-    }
+    void SetMaxFrameRetriesIndirect(uint8_t aMaxFrameRetriesIndirect) { OT_UNUSED_VARIABLE(aMaxFrameRetriesIndirect); }
 #endif
 
 #if OPENTHREAD_ENABLE_MAC_FILTER
@@ -498,6 +495,15 @@ public:
      *
      */
     void ProcessCommStatusIndication(otCommStatusIndication *aCommStatusIndication);
+
+    /**
+     * This method is called to handle received poll command packets that did
+     * not trigger a data response.
+     *
+     * @param[in]  aFrame  A pointer to the otPollIndication primitive
+     *
+     */
+    void ProcessPollIndication(otPollIndication *aPollIndication);
 
     /**
      * This method is called to handle transmission start events.
@@ -705,6 +711,7 @@ public:
      * @returns  A valid 8-bit identifier handle to use in an TxFrame
      */
     uint8_t GetValidMsduHandle(void);
+
 private:
     enum
     {
@@ -728,7 +735,7 @@ private:
     void    BuildBeacon(void);
     void    HandleBeginDirect(void);
 #if OPENTHREAD_FTD
-    void    HandleBeginIndirect(void);
+    void HandleBeginIndirect(void);
 #endif
     otError ProcessTransmitStatus(otError aTransmitError);
     otError Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration);
@@ -754,7 +761,6 @@ private:
 
     static void sStateChangedCallback(Notifier::Callback &aCallback, uint32_t aFlags);
     void        stateChangedCallback(uint32_t aFlags);
-
 
     static const char *OperationToString(Operation aOperation);
 

@@ -102,7 +102,7 @@ void DataPollHandler::Clear(void)
 
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
-	FrameCache &fc = mFrameCache[i];
+        FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
             continue;
 
@@ -156,8 +156,8 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
     child->SetLastHeard(TimerMilli::GetNow());
     child->ResetLinkFailures();
 
-    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, lqi:%d", child->GetRloc16(),
-                 child->GetIndirectMessageCount(), aPollInd.GetLqi());
+    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, lqi:%d", child->GetRloc16(), child->GetIndirectMessageCount(),
+                 aPollInd.GetLqi());
 
     /* TODO: Maybe catch here if a poll was received with a different source address type
      * than expected.
@@ -199,7 +199,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
 {
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
-	FrameCache &fc = mFrameCache[i];
+        FrameCache &fc = mFrameCache[i];
         if (fc.GetMsduHandle() == aMsduHandle)
             return &fc;
     }
@@ -210,7 +210,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(Child &aChild)
 {
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
-	FrameCache &fc = mFrameCache[i];
+        FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
             continue;
 
@@ -224,7 +224,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
 {
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
-	FrameCache &fc = mFrameCache[i];
+        FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
             return &fc;
     }
@@ -259,6 +259,8 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
     {
     case OT_ERROR_NONE:
         child.SetFrameReplacePending(false);
+        child.SetLastHeard(TimerMilli::GetNow());
+        child.ResetLinkFailures();
         break;
 
     case OT_ERROR_NO_ACK:

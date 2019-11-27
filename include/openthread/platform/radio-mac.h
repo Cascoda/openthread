@@ -611,10 +611,20 @@ extern void otPlatMcpsDataIndication(otInstance *aInstance, otDataIndication *aD
  * The radio driver calls this method to notify OpenThread of a failed-security receive
  *
  * @param[in]  aInstance        The OpenThread instance structure.
- * @param[in]  aDataIndication  A pointer to the filled otCommStatusIndication struct
+ * @param[in]  aCommStatusIndication  A pointer to the filled otCommStatusIndication struct
  *
  */
 extern void otPlatMlmeCommStatusIndication(otInstance *aInstance, otCommStatusIndication *aCommStatusIndication);
+
+/**
+ * The radio driver calls this method to notify OpenThread of a poll command frame
+ * that has been received, and not caused an indirect data frame to be sent.
+ *
+ * @param[in]  aInstance        The OpenThread instance structure.
+ * @param[in]  aPollIndication  A pointer to the filled otPollIndication struct
+ *
+ */
+extern void otPlatMlmePollIndication(otInstance *aInstance, otPollIndication *aPollIndication);
 
 /**
  * This method synch
