@@ -79,6 +79,7 @@ void DataPollHandler::FrameCache::Free()
 {
     if (!IsValid())
         return;
+    mContext.HandleMacDone();
     mMsduHandle = 0;
     mChild->DecrementFrameCount();
 }
@@ -127,7 +128,9 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild)
         otError error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
 
         if (!error)
+        {
             frameCache->Free();
+        }
     }
 
     switch (aChange)
@@ -185,6 +188,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             fc->Allocate(child, Get<Mac::Mac>().GetValidMsduHandle());
             error              = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
             aFrame.mMsduHandle = fc->GetMsduHandle();
+            fc->mContext.HandleSentToMac();
             if (error)
                 fc->Free();
             else

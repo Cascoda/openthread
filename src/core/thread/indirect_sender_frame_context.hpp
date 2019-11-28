@@ -74,8 +74,35 @@ public:
     {
         friend class IndirectSender;
 
+        /**
+         * Called by Mac layer when this FrameContext has been transferred to the Mac
+         */
+        void HandleSentToMac(void)
+        {
+            if (mMessage && !mSentToMac)
+            {
+                mMessage->IncrementSentToMacCount();
+                mSentToMac = true;
+            }
+        }
+
+        /**
+         * Called by the Mac layer when it has completed operations with this FrameContext.
+         */
+        void HandleMacDone(void)
+        {
+            if (mMessage && mSentToMac)
+            {
+                mMessage->DecrementSentToMacCount();
+                mSentToMac = false;
+            }
+        }
+
     private:
         uint16_t mMessageNextOffset; ///< The next offset into the message associated with the prepared frame.
+        uint16_t mMessageOffset;     ///< The offset of the associated message.
+        Message *mMessage;           ///< The message associated with the prepared frame.
+        bool     mSentToMac;
     };
 };
 

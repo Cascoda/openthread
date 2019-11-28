@@ -91,8 +91,8 @@ public:
         Message *GetIndirectMessage(void) { return mIndirectMessage; }
         void     SetIndirectMessage(Message *aMessage) { mIndirectMessage = aMessage; }
 
-        uint16_t GetIndirectFragmentOffset(void) const { return mIndirectFragmentOffset; }
-        void     SetIndirectFragmentOffset(uint16_t aFragmentOffset) { mIndirectFragmentOffset = aFragmentOffset; }
+        uint16_t GetIndirectNextFragmentOffset(void) const { return mIndirectNextFragmentOffset; }
+        void SetIndirectNextFragmentOffset(uint16_t aFragmentOffset) { mIndirectNextFragmentOffset = aFragmentOffset; }
 
         bool GetIndirectTxSuccess(void) const { return mIndirectTxSuccess; }
         void SetIndirectTxSuccess(bool aTxStatus) { mIndirectTxSuccess = aTxStatus; }
@@ -112,13 +112,13 @@ public:
 
         const Mac::Address &GetMacAddress(Mac::Address &aMacAddress) const;
 
-        Message *mIndirectMessage;             // Current indirect message.
-        uint16_t mIndirectFragmentOffset : 14; // 6LoWPAN fragment offset for the indirect message.
-        bool     mIndirectTxSuccess : 1;       // Indicates tx success/failure of current indirect message.
-        bool     mWaitingForMessageUpdate : 1; // Indicates waiting for updating the indirect message.
-        uint16_t mQueuedMessageCount : 14;     // Number of queued indirect messages for the child.
-        bool     mUseShortAddress : 1;         // Indicates whether to use short or extended address.
-        bool     mSourceMatchPending : 1;      // Indicates whether or not pending to add to src match table.
+        Message *mIndirectMessage;                 // Current indirect message.
+        uint16_t mIndirectNextFragmentOffset : 14; // 6LoWPAN fragment offset for the indirect message.
+        bool     mIndirectTxSuccess : 1;           // Indicates tx success/failure of current indirect message.
+        bool     mWaitingForMessageUpdate : 1;     // Indicates waiting for updating the indirect message.
+        uint16_t mQueuedMessageCount : 14;         // Number of queued indirect messages for the child.
+        bool     mUseShortAddress : 1;             // Indicates whether to use short or extended address.
+        bool     mSourceMatchPending : 1;          // Indicates whether or not pending to add to src match table.
 
         OT_STATIC_ASSERT(OPENTHREAD_CONFIG_NUM_MESSAGE_BUFFERS < (1UL << 14),
                          "mQueuedMessageCount cannot fit max required!");
@@ -209,7 +209,7 @@ private:
 
     // Callbacks from DataPollHandler
     otError PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
-    void    HandleSentFrameToChild(const FrameContext &aContext, otError aError, Child &aChild);
+    void    HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild);
     void    HandleFrameChangeDone(Child &aChild);
 
     void     UpdateIndirectMessage(Child &aChild);
