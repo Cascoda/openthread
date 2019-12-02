@@ -1225,6 +1225,7 @@ void Mac::HandleBeginIndirect(void)
     otLogDebgMac("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
+    // TODO: Check that this SetChannel is actually correct, maybe need to restore at end?
     sendFrame.SetChannel(mChannel);
     SuccessOrExit(error = Get<DataPollHandler>().HandleFrameRequest(sendFrame));
 

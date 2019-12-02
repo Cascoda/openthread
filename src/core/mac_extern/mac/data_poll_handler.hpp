@@ -158,7 +158,7 @@ public:
          * @param[in]  aChild     The child to which the frame was transmitted.
          *
          */
-        void HandleSentFrameToChild(const FrameContext &aContext, otError aError, Child &aChild);
+        void HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild);
 
         /**
          * This callback method notifies that a requested frame change from `RequestFrameChange()` is processed.
@@ -181,6 +181,9 @@ public:
         uint8_t GetMsduHandle(void) { return mMsduHandle; }
         Child & GetChild() const { return *mChild; }
 
+        bool IsPurgePending(void) { return mPurgePending; }
+        void SetPurgePending(void) { mPurgePending = true; }
+
         void Allocate(Child &aChild, uint8_t aMsduHandle);
         void Free();
 
@@ -189,6 +192,7 @@ public:
         uint8_t                          mMsduHandle;
         IndirectSenderBase::FrameContext mContext;
         Child *                          mChild;
+        bool                             mPurgePending : 1;
     };
 
     /**
@@ -250,9 +254,16 @@ public:
      *
      * @param[in]  aChange    The frame change type.
      * @param[in]  aChild     The child to process its frame change.
+     * @param[in]  aMessage   The message pointer for the frame being changed.
      *
      */
-    void RequestFrameChange(FrameChange aChange, Child &aChild);
+    void RequestFrameChange(FrameChange aChange, Child &aChild, Message *aMessage);
+
+    /**
+     * Purge all messages destined for a certain child, then invoke `HandleFrameChangeDone()` callback.
+     * @param aChild
+     */
+    void DataPollHandler::RequestChildPurge(Child &aChild);
 
 private:
     // Callbacks from MAC

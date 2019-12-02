@@ -113,7 +113,11 @@ otError IndirectSender::RemoveMessageFromSleepyChild(Message &aMessage, Child &a
     aMessage.ClearChildMask(childIndex);
     mSourceMatchController.DecrementMessageCount(aChild);
 
-    RequestMessageUpdate(aChild);
+    if (aChild.GetIndirectMessage() == &aMessage)
+        aChild.SetIndirectMessage(NULL);
+
+    aChild.SetWaitingForMessageUpdate(true);
+    mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild, &aMessage);
 
 exit:
     return error;
@@ -147,7 +151,7 @@ void IndirectSender::ClearAllMessagesForSleepyChild(Child &aChild)
     aChild.SetIndirectMessage(NULL);
     mSourceMatchController.ResetMessageCount(aChild);
 
-    mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild);
+    mDataPollHandler.RequestChildPurge(aChild);
 
 exit:
     return;
@@ -189,7 +193,7 @@ void IndirectSender::HandleChildModeChange(Child &aChild, Mle::DeviceMode aOldMo
         aChild.SetIndirectMessage(NULL);
         mSourceMatchController.ResetMessageCount(aChild);
 
-        mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild);
+        mDataPollHandler.RequestChildPurge(aChild);
     }
 
     // Since the queuing delays for direct transmissions are expected to
@@ -215,14 +219,9 @@ Message *IndirectSender::FindIndirectMessage(Child &aChild)
             // Skip and remove the supervision message if there are
             // other messages queued for the child.
 
-            // TODO: Allow clearing supervision messages even if already sent to Mac.
-            if ((message->GetType() == Message::kTypeSupervision) && !message->IsSentToMac() &&
-                (aChild.GetIndirectMessageCount() > 1))
+            if ((message->GetType() == Message::kTypeSupervision) && (aChild.GetIndirectMessageCount() > 1))
             {
-                message->ClearChildMask(childIndex);
-                mSourceMatchController.DecrementMessageCount(aChild);
-                Get<MeshForwarder>().mSendQueue.Dequeue(*message);
-                message->Free();
+                RemoveMessageFromSleepyChild(*message, aChild);
                 continue;
             }
 
@@ -233,34 +232,13 @@ Message *IndirectSender::FindIndirectMessage(Child &aChild)
     return message;
 }
 
+// TODO: Investigate this... This is not a purge in the same style as the others, this is seeking to purge
+// Individual messages, and the logic of checking the child mask will fall short, as that is unset as the
+// message is sent to the MAC.
 void IndirectSender::RequestMessageUpdate(Child &aChild)
 {
     Message *curMessage = aChild.GetIndirectMessage();
     Message *newMessage;
-
-    // Purge the frame if the current message is no longer destined
-    // for the child. This check needs to be done first to cover the
-    // case where we have a pending "replace frame" request and while
-    // waiting for the callback, the current message is removed.
-
-    if ((curMessage != NULL) && !curMessage->GetChildMask(Get<ChildTable>().GetChildIndex(aChild)))
-    {
-        // Set the indirect message for this child to NULL to ensure
-        // it is not processed on `HandleSentFrameToChild()` callback.
-
-        aChild.SetIndirectMessage(NULL);
-
-        // Request a "frame purge" using `RequestFrameChange()` and
-        // wait for `HandleFrameChangeDone()` callback for completion
-        // of the request. Note that the callback may be directly
-        // called from the `RequestFrameChange()` itself when the
-        // request can be handled immediately.
-
-        aChild.SetWaitingForMessageUpdate(true);
-        mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild);
-
-        ExitNow();
-    }
 
     VerifyOrExit(!aChild.IsWaitingForMessageUpdate());
 
@@ -277,16 +255,18 @@ void IndirectSender::RequestMessageUpdate(Child &aChild)
         ExitNow();
     }
 
-    // Current message and new message differ and are both non-NULL.
-    // We need to request the frame to be replaced. The current
-    // indirect message can be replaced only if it is the first
-    // fragment. If a next fragment frame for message is already
-    // prepared, we wait for the entire message to be delivered.
+    // TODO: Cannot currently replace a frame in the indirect queue with a higher priority one.
+    /*
+        // Current message and new message differ and are both non-NULL.
+        // We need to request the frame to be replaced. The current
+        // indirect message can be replaced only if it is the first
+        // fragment. If a next fragment frame for message is already
+        // prepared, we wait for the entire message to be delivered.
 
-    VerifyOrExit(aChild.GetIndirectNextFragmentOffset() == 0);
+        VerifyOrExit(aChild.GetIndirectNextFragmentOffset() == 0);
 
-    aChild.SetWaitingForMessageUpdate(true);
-    mDataPollHandler.RequestFrameChange(DataPollHandler::kReplaceFrame, aChild);
+        aChild.SetWaitingForMessageUpdate(true);
+        mDataPollHandler.RequestFrameChange(DataPollHandler::kReplaceFrame, aChild);*/
 
 exit:
     return;
@@ -331,7 +311,17 @@ otError IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext 
 
     if (message == NULL)
     {
-        PrepareEmptyFrame(aFrame, aChild, /* aAckRequest */ true);
+        UpdateIndirectMessage(aChild);
+    }
+    //    TODO: Remove this for extern mac - move to DataPollHandler of the full mac version
+    //    if (message == NULL)
+    //    {
+    //        PrepareEmptyFrame(aFrame, aChild, /* aAckRequest */ true);
+    //        ExitNow();
+    //    }
+    if (message == NULL)
+    {
+        error = OT_ERROR_NOT_FOUND;
         ExitNow();
     }
 
@@ -360,7 +350,7 @@ otError IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext 
 
 exit:
     return error;
-}
+} // namespace ot
 
 uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage)
 {
@@ -384,14 +374,25 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
     }
 
     nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
-    aChild.SetIndirectNextFragmentOffset(nextOffset);
 
-    // Set `FramePending` if there are more queued messages (excluding
-    // the current one being sent out) for the child (note `> 1` check).
-    // The case where the current message itself requires fragmentation
-    // is already checked and handled in `PrepareDataFrame()` method.
+    if (nextOffset >= aMessage.GetLength())
+    {
+        aChild.SetIndirectMessage(NULL);
+        aChild.SetIndirectNextFragmentOffset(0);
+        aMessage.ClearChildMask(Get<ChildTable>().GetChildIndex(aChild));
+        mSourceMatchController.DecrementMessageCount(aChild);
+    }
+    else
+    {
+        aChild.SetIndirectNextFragmentOffset(nextOffset);
+    }
 
-    if (aChild.GetIndirectMessageCount() > 1)
+    // Set `FramePending` if there are more queued messages for the
+    // child. The case where the current message itself requires
+    // fragmentation is already checked and handled in
+    // `PrepareDataFrame()` method.
+
+    if (aChild.GetIndirectMessageCount())
     {
         aFrame.SetFramePending(true);
     }
@@ -405,6 +406,7 @@ void IndirectSender::PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool
     Mac::Address macSource, macDest;
 
     aChild.GetMacAddress(macDest);
+    aChild.SetIndirectMessage(NULL);
 
     macSource.SetShort(Get<Mac::Mac>().GetShortAddress());
 
@@ -436,7 +438,8 @@ void IndirectSender::PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool
 
 void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild)
 {
-    uint16_t nextOffset = aChild.GetIndirectNextFragmentOffset();
+    uint16_t nextOffset  = aChild.GetIndirectNextFragmentOffset();
+    Message *sentMessage = aContext.mMessage;
 
     VerifyOrExit(mEnabled);
     aContext.HandleMacDone();
@@ -458,13 +461,13 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
         // send any remaining fragments in the message to the child, if all tx
         // attempts of current frame already failed.
 
-        if (aContext.mMessage != NULL)
+        if (sentMessage != NULL)
         {
-            if (aContext.mMessage == aChild.GetIndirectMessage())
+            if (sentMessage == aChild.GetIndirectMessage())
             {
                 aChild.SetIndirectMessage(NULL);
                 aChild.SetIndirectNextFragmentOffset(0);
-                if (aContext.mMessage->GetType() == Message::kTypeIp6)
+                if (sentMessage->GetType() == Message::kTypeIp6)
                     Get<MeshForwarder>().mIpCounters.mTxFailure++;
                 ExitNow();
             }
@@ -483,17 +486,14 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
         mDataPollHandler.HandleNewFrame(aChild);
     }
 
-    if (aContext.mMessage != NULL && (aContext.mMessageNextOffset == aContext.mMessage->GetLength()))
+    if (sentMessage != NULL && (aContext.mMessageNextOffset == sentMessage->GetLength()))
     {
         // The indirect tx of this message to the child is done.
 
         otError      txError    = aError;
-        Message *    message    = aContext.mMessage;
         uint16_t     childIndex = Get<ChildTable>().GetChildIndex(aChild);
         Mac::Address macDest;
 
-        // TODO: Move this to send logic.
-        aChild.SetIndirectMessage(NULL);
         aChild.GetLinkInfo().AddMessageTxStatus(aChild.GetIndirectTxSuccess());
 
         // Enable short source address matching after the first indirect
@@ -524,9 +524,9 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
 #endif
 
         aChild.GetMacAddress(macDest);
-        Get<MeshForwarder>().LogMessage(MeshForwarder::kMessageTransmit, *message, &macDest, txError);
+        Get<MeshForwarder>().LogMessage(MeshForwarder::kMessageTransmit, *sentMessage, &macDest, txError);
 
-        if (message->GetType() == Message::kTypeIp6)
+        if (sentMessage->GetType() == Message::kTypeIp6)
         {
             if (txError)
             {
@@ -538,17 +538,10 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
             }
         }
 
-        // TODO: Move this to send logic upon sending final fragment
-        if (message->GetChildMask(childIndex))
+        if (!sentMessage->GetDirectTransmission() && !sentMessage->IsChildPending())
         {
-            message->ClearChildMask(childIndex);
-            mSourceMatchController.DecrementMessageCount(aChild);
-        }
-
-        if (!message->GetDirectTransmission() && !message->IsChildPending())
-        {
-            Get<MeshForwarder>().mSendQueue.Dequeue(*message);
-            message->Free();
+            Get<MeshForwarder>().mSendQueue.Dequeue(*sentMessage);
+            sentMessage->Free();
         }
     }
 

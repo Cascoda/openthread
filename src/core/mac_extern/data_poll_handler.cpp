@@ -54,9 +54,7 @@ inline otError DataPollHandler::Callbacks::PrepareFrameForChild(Mac::TxFrame &aF
     return Get<IndirectSender>().PrepareFrameForChild(aFrame, aContext, aChild);
 }
 
-inline void DataPollHandler::Callbacks::HandleSentFrameToChild(const FrameContext &aContext,
-                                                               otError             aError,
-                                                               Child &             aChild)
+inline void DataPollHandler::Callbacks::HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild)
 {
     Get<IndirectSender>().HandleSentFrameToChild(aContext, aError, aChild);
 }
@@ -70,8 +68,9 @@ inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
 
 void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
 {
-    mChild      = &aChild;
-    mMsduHandle = aMsduHandle;
+    mChild        = &aChild;
+    mMsduHandle   = aMsduHandle;
+    mPurgePending = false;
     aChild.IncrementFrameCount();
 }
 
@@ -119,7 +118,7 @@ void DataPollHandler::HandleNewFrame(Child &aChild)
     Get<Mac::Mac>().RequestIndirectFrameTransmission();
 }
 
-void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild)
+void DataPollHandler::RequestChildPurge(Child &aChild)
 {
     FrameCache *frameCache = NULL;
 
@@ -128,9 +127,31 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild)
         otError error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
 
         if (!error)
-        {
             frameCache->Free();
-        }
+        else
+            frameCache->SetPurgePending();
+    }
+
+    mCallbacks.HandleFrameChangeDone(aChild);
+}
+
+void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Message *aMessage)
+{
+    FrameCache *frameCache = NULL;
+
+    while ((frameCache = GetFrameCache(aChild)))
+    {
+        otError error;
+
+        if (!frameCache->GetContext().IsForMessage(aMessage))
+            continue;
+
+        error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
+
+        if (!error)
+            frameCache->Free();
+        else
+            frameCache->SetPurgePending();
     }
 
     switch (aChange)
@@ -252,7 +273,7 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
 {
     Child &child = aFrameCache.GetChild();
 
-    if (child.IsFrameReplacePending())
+    if (child.IsFrameReplacePending() || aFrameCache.IsPurgePending())
     {
         child.SetFrameReplacePending(false);
         mCallbacks.HandleFrameChangeDone(child);

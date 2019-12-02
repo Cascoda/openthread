@@ -95,8 +95,16 @@ public:
             {
                 mMessage->DecrementSentToMacCount();
                 mSentToMac = false;
+                mMessage   = NULL;
             }
         }
+
+        /**
+         * Check if this FrameContext is for a given message
+         * @param aMessage The message to check
+         * @return Whether or not this FrameContext is being used for the specified message
+         */
+        bool IsForMessage(Message *aMessage) { return aMessage == mMessage; }
 
     private:
         uint16_t mMessageNextOffset; ///< The next offset into the message associated with the prepared frame.
