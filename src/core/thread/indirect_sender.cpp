@@ -438,7 +438,6 @@ void IndirectSender::PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool
 
 void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild)
 {
-    uint16_t nextOffset  = aChild.GetIndirectNextFragmentOffset();
     Message *sentMessage = aContext.mMessage;
 
     VerifyOrExit(mEnabled);
@@ -491,7 +490,6 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
         // The indirect tx of this message to the child is done.
 
         otError      txError    = aError;
-        uint16_t     childIndex = Get<ChildTable>().GetChildIndex(aChild);
         Mac::Address macDest;
 
         aChild.GetLinkInfo().AddMessageTxStatus(aChild.GetIndirectTxSuccess());

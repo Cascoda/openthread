@@ -263,7 +263,7 @@ public:
      * Purge all messages destined for a certain child, then invoke `HandleFrameChangeDone()` callback.
      * @param aChild
      */
-    void DataPollHandler::RequestChildPurge(Child &aChild);
+    void RequestChildPurge(Child &aChild);
 
 private:
     // Callbacks from MAC
