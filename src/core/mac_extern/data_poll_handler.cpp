@@ -139,9 +139,16 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Mes
 {
     FrameCache *frameCache = NULL;
 
-    while ((frameCache = GetFrameCache(aChild)))
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
         otError error;
+        frameCache = &mFrameCache[i];
+
+        if (!frameCache->IsValid())
+            continue;
+
+        if (&(frameCache->GetChild()) != &aChild)
+            continue;
 
         if (!frameCache->GetContext().IsForMessage(aMessage))
             continue;

@@ -612,12 +612,14 @@ void Mac::StartOperation(Operation aOperation)
     else if (mPendingTransmitDataDirect)
     {
         mPendingTransmitDataDirect = false;
+        mOperation                 = kOperationTransmitDataDirect;
         HandleBeginDirect();
     }
 #if OPENTHREAD_FTD
     else if (mPendingTransmitDataIndirect)
     {
         mPendingTransmitDataIndirect = false;
+        mOperation                   = kOperationTransmitDataIndirect;
         HandleBeginIndirect();
     }
 #endif
@@ -625,6 +627,11 @@ void Mac::StartOperation(Operation aOperation)
     if (mOperation != kOperationIdle)
     {
         otLogDebgMac("Starting operation \"%s\"", OperationToString(mOperation));
+    }
+
+    if (mOperation == kOperationTransmitDataDirect || mOperation == kOperationTransmitDataIndirect)
+    {
+        FinishOperation();
     }
 
 exit:

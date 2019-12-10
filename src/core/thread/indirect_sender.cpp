@@ -60,6 +60,13 @@ const Mac::Address &IndirectSender::ChildInfo::GetMacAddress(Mac::Address &aMacA
     return aMacAddress;
 }
 
+void IndirectSender::ChildInfo::SetIndirectMessage(Message *aMessage)
+{
+    //TODO: Move this back to header and remove log message
+    otLogDebgMac("swap ind message %d -> %d", mIndirectMessage, aMessage);
+    mIndirectMessage = aMessage;
+}
+
 IndirectSender::IndirectSender(Instance &aInstance)
     : InstanceLocator(aInstance)
     , mEnabled(false)
@@ -312,6 +319,7 @@ otError IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext 
     if (message == NULL)
     {
         UpdateIndirectMessage(aChild);
+	message = aChild.GetIndirectMessage();
     }
     //    TODO: Remove this for extern mac - move to DataPollHandler of the full mac version
     //    if (message == NULL)
@@ -333,6 +341,7 @@ otError IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext 
         directTxOffset          = message->GetOffset();
         aContext.mMessageOffset = aChild.GetIndirectNextFragmentOffset();
         message->SetOffset(aContext.mMessageOffset);
+	otLogDebgMac("Ind Frag offset %d", aContext.mMessageOffset);
         aContext.mMessageNextOffset = PrepareDataFrame(aFrame, aChild, *message);
         message->SetOffset(directTxOffset);
         break;
@@ -377,9 +386,9 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
 
     if (nextOffset >= aMessage.GetLength())
     {
-        aChild.SetIndirectMessage(NULL);
-        aChild.SetIndirectNextFragmentOffset(0);
+	otLogDebgMac("Final message fragment queued.");
         aMessage.ClearChildMask(Get<ChildTable>().GetChildIndex(aChild));
+	UpdateIndirectMessage(aChild);
         mSourceMatchController.DecrementMessageCount(aChild);
     }
     else
@@ -542,8 +551,8 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
             sentMessage->Free();
         }
     }
-
-    UpdateIndirectMessage(aChild);
+    
+    mDataPollHandler.HandleNewFrame(aChild);
 
 exit:
     if (mEnabled)
