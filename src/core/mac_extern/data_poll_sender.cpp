@@ -326,7 +326,7 @@ void DataPollSender::CheckFramePending(Mac::RxFrame &aFrame)
     VerifyOrExit(mEnabled);
 
     mPollTimeoutCounter = 0;
-
+    otLogDebgMac("CheckFramePending: %d", aFrame.GetFramePending());
     if (aFrame.GetFramePending())
     {
         SendDataPoll();

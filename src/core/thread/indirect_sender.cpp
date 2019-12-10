@@ -357,6 +357,9 @@ otError IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext 
         break;
     }
 
+    if (aFrame.GetFramePending())
+        mDataPollHandler.HandleNewFrame(aChild);
+
 exit:
     return error;
 } // namespace ot

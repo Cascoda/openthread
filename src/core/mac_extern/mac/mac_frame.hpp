@@ -716,6 +716,14 @@ public:
     }
 
     /**
+     * This method gets the Frame Pending bit.
+     *
+     * @param[in]  aFramePending  The Frame Pending bit.
+     *
+     */
+    bool GetFramePending(void) { return (mTxOptions & OT_MAC_TX_OPTION_NS_FPEND); }
+
+    /**
      * This method indicates whether or not the Ack Request bit is set.
      *
      * @retval TRUE   If the Ack Request bit is set.

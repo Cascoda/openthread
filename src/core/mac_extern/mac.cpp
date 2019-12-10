@@ -1530,6 +1530,9 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     // Receive
     Get<MeshForwarder>().HandleReceivedFrame(dataInd);
 
+    //Process Frame Pending
+    Get<DataPollSender>().CheckFramePending(dataInd);
+
 exit:
 
     if (error != OT_ERROR_NONE)
