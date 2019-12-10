@@ -54,6 +54,11 @@ inline otError DataPollHandler::Callbacks::PrepareFrameForChild(Mac::TxFrame &aF
     return Get<IndirectSender>().PrepareFrameForChild(aFrame, aContext, aChild);
 }
 
+inline otError DataPollHandler::Callbacks::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild)
+{
+    return Get<IndirectSender>().RegenerateFrame(aFrame, aContext, aChild);
+}
+
 inline void DataPollHandler::Callbacks::HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild)
 {
     Get<IndirectSender>().HandleSentFrameToChild(aContext, aError, aChild);
@@ -68,9 +73,11 @@ inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
 
 void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
 {
-    mChild        = &aChild;
-    mMsduHandle   = aMsduHandle;
-    mPurgePending = false;
+    mChild             = &aChild;
+    mMsduHandle        = aMsduHandle;
+    mPurgePending      = false;
+    mFramePending      = false;
+    mPendingRetransmit = false;
     aChild.IncrementFrameCount();
 }
 
@@ -113,7 +120,25 @@ void DataPollHandler::Clear(void)
 
 void DataPollHandler::HandleNewFrame(Child &aChild)
 {
-    OT_UNUSED_VARIABLE(aChild);
+    FrameCache *fc = NULL;
+
+    // Check if there is already a frame in the MAC with FP=false that needs updating
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (!fc.IsValid())
+            continue;
+
+        if (&(fc.GetChild()) != &aChild)
+            continue;
+
+        if (fc.mFramePending)
+            continue;
+
+        fc.mFramePending      = true;
+        fc.mPendingRetransmit = true;
+    }
+
     // Request from mac
     Get<Mac::Mac>().RequestIndirectFrameTransmission();
 }
@@ -203,6 +228,25 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 {
     otError error = OT_ERROR_NOT_FOUND;
 
+    // First check if we need any frames regenerating
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (!fc.IsValid())
+            continue;
+
+        if (!fc.mPendingRetransmit)
+            continue;
+
+        if (Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
+            continue;
+
+        error = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild());
+        assert(error = OT_ERROR_NONE);
+        ExitNow();
+    }
+
+    // Now check for new frames that need sending
     for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
     {
         Child &child = *iter.GetChild();
@@ -216,11 +260,12 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             fc->Allocate(child, Get<Mac::Mac>().GetValidMsduHandle());
             error              = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
             aFrame.mMsduHandle = fc->GetMsduHandle();
+            fc->mFramePending  = aFrame.GetFramePending();
             fc->mContext.HandleSentToMac();
             if (error)
                 fc->Free();
             else
-                break;
+                ExitNow();
         }
     }
 

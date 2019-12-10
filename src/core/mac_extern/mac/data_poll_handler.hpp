@@ -137,7 +137,7 @@ public:
          * This callback method requests a frame to be prepared for indirect transmission to a given sleepy child.
          *
          * @param[out] aFrame    A reference to a MAC frame where the new frame would be placed.
-         * @prarm[out] aContext  A reference to a `FrameContext` where the context for the new frame would be
+         * @param[out] aContext  A reference to a `FrameContext` where the context for the new frame would be
          * placed.
          * @param[in]  aChild    The child for which to prepare the frame.
          *
@@ -146,6 +146,19 @@ public:
          *
          */
         otError PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
+
+        /**
+         * This callback method requests a frame to be regenerated for indirect transmission from a given FrameContext.
+         *
+         * @param[out] aFrame    A reference to a MAC frame where the new frame would be placed.
+         * @param[in] aContext  A reference to a `FrameContext` that was used for the original frame.
+         * @param[in]  aChild    The child for which to prepare the frame.
+         *
+         * @retval OT_ERROR_NONE   Frame was prepared successfully
+         * @retval OT_ERROR_ABORT  Indirect transmission to child should be aborted (no frame for the child).
+         *
+         */
+        otError RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
 
         /**
          * This callback method notifies the end of indirect frame transmission to a child.
@@ -193,6 +206,8 @@ public:
         IndirectSenderBase::FrameContext mContext;
         Child *                          mChild;
         bool                             mPurgePending : 1;
+        bool                             mFramePending : 1;
+        bool                             mPendingRetransmit : 1;
     };
 
     /**

@@ -208,6 +208,7 @@ private:
 
     // Callbacks from DataPollHandler
     otError PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
+    otError RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
     void    HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild);
     void    HandleFrameChangeDone(Child &aChild);
 
@@ -215,6 +216,8 @@ private:
     Message *FindIndirectMessage(Child &aChild);
     void     RequestMessageUpdate(Child &aChild);
     uint16_t PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage);
+    uint16_t RegenerateDataFrame(Mac::TxFrame &aFrame, const Child &aChild, Message &aMessage);
+    uint16_t GenerateDataFrame(Mac::TxFrame &aFrame, const Child &aChild, Message &aMessage);
     void     PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool aAckRequest);
     void     ClearMessagesForRemovedChildren(void);
 
