@@ -120,8 +120,6 @@ void DataPollHandler::Clear(void)
 
 void DataPollHandler::HandleNewFrame(Child &aChild)
 {
-    FrameCache *fc = NULL;
-
     // Check if there is already a frame in the MAC with FP=false that needs updating
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
@@ -135,6 +133,7 @@ void DataPollHandler::HandleNewFrame(Child &aChild)
         if (fc.mFramePending)
             continue;
 
+        otLogDebgMac("Setting retransmit, handle %x, fp %d", fc.GetMsduHandle(), fc.mFramePending);
         fc.mFramePending      = true;
         fc.mPendingRetransmit = true;
     }
@@ -226,7 +225,8 @@ exit:
 
 otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 {
-    otError error = OT_ERROR_NOT_FOUND;
+    otError error        = OT_ERROR_NOT_FOUND;
+    Child * pendingChild = NULL;
 
     // First check if we need any frames regenerating
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
@@ -241,8 +241,14 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         if (Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
             continue;
 
-        error = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild());
+        error              = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild());
+        aFrame.mMsduHandle = fc.GetMsduHandle();
+        fc.mFramePending   = aFrame.GetFramePending();
+        pendingChild       = fc.mFramePending ? &fc.GetChild() : NULL;
+        otLogDebgMac("HFR, FP = %d", aFrame.GetFramePending());
         assert(error = OT_ERROR_NONE);
+        fc.mPendingRetransmit = false;
+        Get<Mac::Mac>().RequestIndirectFrameTransmission();
         ExitNow();
     }
 
@@ -261,7 +267,9 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             error              = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
             aFrame.mMsduHandle = fc->GetMsduHandle();
             fc->mFramePending  = aFrame.GetFramePending();
+            pendingChild       = fc->mFramePending ? &fc->GetChild() : NULL;
             fc->mContext.HandleSentToMac();
+            otLogDebgMac("HFR, FP = %d", aFrame.GetFramePending());
             if (error)
                 fc->Free();
             else
@@ -270,6 +278,8 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
     }
 
 exit:
+    if (!error && pendingChild)
+        HandleNewFrame(*pendingChild);
     return error;
 }
 
