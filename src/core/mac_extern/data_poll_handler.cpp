@@ -189,6 +189,7 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Mes
     {
     case kReplaceFrame:
         aChild.SetFrameReplacePending(true);
+	otLogDebgMac("HandleNewFrame from ReplaceFrame");
         HandleNewFrame(aChild);
         break;
     case kPurgeFrame:
@@ -279,7 +280,10 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 
 exit:
     if (!error && pendingChild)
+    {
+	otLogDebgMac("HandleNewFrame from HandleFrameRequest");
         HandleNewFrame(*pendingChild);
+    }
     return error;
 }
 

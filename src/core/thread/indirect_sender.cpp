@@ -301,6 +301,7 @@ void IndirectSender::UpdateIndirectMessage(Child &aChild)
     {
         Mac::Address childAddress;
 
+        otLogDebgMac("HandleNewFrame from UpdateIndirectMessage");
         mDataPollHandler.HandleNewFrame(aChild);
 
         aChild.GetMacAddress(childAddress);
@@ -557,6 +558,7 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
     if ((aChild.GetIndirectMessage() != NULL) &&
         (aChild.GetIndirectNextFragmentOffset() < aChild.GetIndirectMessage()->GetLength()))
     {
+        otLogDebgMac("HandleNewFrame from HandleFrameSentToChild mid");
         mDataPollHandler.HandleNewFrame(aChild);
     }
 
@@ -618,7 +620,11 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
         }
     }
 
-    mDataPollHandler.HandleNewFrame(aChild);
+    if (aChild.GetIndirectMessageCount())
+    {
+        otLogDebgMac("HandleNewFrame from HandleSentFrameToChild end");
+        mDataPollHandler.HandleNewFrame(aChild);
+    }
 
 exit:
     if (mEnabled)
