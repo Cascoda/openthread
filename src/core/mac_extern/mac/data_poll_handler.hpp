@@ -289,7 +289,7 @@ private:
     void HandleSentFrame(otError aError, FrameCache &aFrameCache);
 
     FrameCache *GetFrameCache(uint8_t aMsduHandle);
-    FrameCache *GetFrameCache(Child &aChild);
+    FrameCache *GetNextFrameCache(Child &aChild, FrameCache *aPrevCache);
     FrameCache *GetEmptyFrameCache(void);
 
     Callbacks  mCallbacks;

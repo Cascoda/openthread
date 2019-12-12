@@ -146,7 +146,7 @@ void DataPollHandler::RequestChildPurge(Child &aChild)
 {
     FrameCache *frameCache = NULL;
 
-    while ((frameCache = GetFrameCache(aChild)))
+    while ((frameCache = GetNextFrameCache(aChild, frameCache)))
     {
         otError error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
 
@@ -163,16 +163,9 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Mes
 {
     FrameCache *frameCache = NULL;
 
-    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    while ((frameCache = GetNextFrameCache(aChild, frameCache)))
     {
-        otError error;
-        frameCache = &mFrameCache[i];
-
-        if (!frameCache->IsValid())
-            continue;
-
-        if (&(frameCache->GetChild()) != &aChild)
-            continue;
+        otError error = OT_ERROR_NONE;
 
         if (!frameCache->GetContext().IsForMessage(aMessage))
             continue;
@@ -189,7 +182,6 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Mes
     {
     case kReplaceFrame:
         aChild.SetFrameReplacePending(true);
-	otLogDebgMac("HandleNewFrame from ReplaceFrame");
         HandleNewFrame(aChild);
         break;
     case kPurgeFrame:
@@ -215,6 +207,11 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
 
     otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, lqi:%d", child->GetRloc16(), child->GetIndirectMessageCount(),
                  aPollInd.GetLqi());
+
+    if (child->GetIndirectMessageCount())
+    {
+        otLogWarnMac("Data poll did not trigger queued message for child %04x!", child->GetRloc16());
+    }
 
     /* TODO: Maybe catch here if a poll was received with a different source address type
      * than expected.
@@ -246,7 +243,6 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         aFrame.mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = aFrame.GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : NULL;
-        otLogDebgMac("HFR, FP = %d", aFrame.GetFramePending());
         assert(error = OT_ERROR_NONE);
         fc.mPendingRetransmit = false;
         Get<Mac::Mac>().RequestIndirectFrameTransmission();
@@ -258,6 +254,10 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
     {
         Child &child = *iter.GetChild();
 
+        /*TODO: Add an additional limitation here so that only 2 children are double-buffered at a time,
+         * so that we stay in line with the requirement to support 6 SEDs with small IP frames.
+         */
+        // TODO: Add fairness to child buffering.
         if (child.GetFrameCount() <= 1 && child.GetIndirectMessageCount())
         {
             FrameCache *fc = GetEmptyFrameCache();
@@ -270,7 +270,6 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             fc->mFramePending  = aFrame.GetFramePending();
             pendingChild       = fc->mFramePending ? &fc->GetChild() : NULL;
             fc->mContext.HandleSentToMac();
-            otLogDebgMac("HFR, FP = %d", aFrame.GetFramePending());
             if (error)
                 fc->Free();
             else
@@ -281,7 +280,6 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 exit:
     if (!error && pendingChild)
     {
-	otLogDebgMac("HandleNewFrame from HandleFrameRequest");
         HandleNewFrame(*pendingChild);
     }
     return error;
@@ -298,9 +296,15 @@ DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
     return NULL;
 }
 
-DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(Child &aChild)
+DataPollHandler::FrameCache *DataPollHandler::GetNextFrameCache(Child &aChild, FrameCache *aPrevCache)
 {
-    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    size_t i = 0;
+
+    // Start looking after the previous cache.
+    if (aPrevCache)
+        i = (aPrevCache - &mFrameCache) + 1;
+
+    for (; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
         FrameCache &fc = mFrameCache[i];
         if (!fc.IsValid())
@@ -344,6 +348,13 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
         child.SetFrameReplacePending(false);
         mCallbacks.HandleFrameChangeDone(child);
         ExitNow();
+    }
+
+    if (aError == OT_ERROR_ABORT)
+    {
+        // Some kind of system error, try again.
+        aFrameCache.mPendingRetransmit = true;
+        return; // Return now so we don't free.
     }
 
     switch (aError)

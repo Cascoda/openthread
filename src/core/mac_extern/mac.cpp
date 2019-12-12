@@ -554,6 +554,7 @@ exit:
 
 otError Mac::PurgeIndirectFrame(uint8_t aMsduHandle)
 {
+    otLogDebgMac("Purging handle %x", aMsduHandle);
     return otPlatMcpsPurge(&GetInstance(), aMsduHandle);
 }
 
@@ -1530,7 +1531,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     // Receive
     Get<MeshForwarder>().HandleReceivedFrame(dataInd);
 
-    //Process Frame Pending
+    // Process Frame Pending
     Get<DataPollSender>().CheckFramePending(dataInd);
 
 exit:
