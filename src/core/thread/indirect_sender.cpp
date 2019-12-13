@@ -239,7 +239,6 @@ Message *IndirectSender::FindIndirectMessage(Child &aChild)
     return message;
 }
 
-// TODO: Investigate this... This is not a purge in the same style as the others, this is seeking to purge
 // Individual messages, and the logic of checking the child mask will fall short, as that is unset as the
 // message is sent to the MAC.
 void IndirectSender::RequestMessageUpdate(Child &aChild)
@@ -262,18 +261,18 @@ void IndirectSender::RequestMessageUpdate(Child &aChild)
         ExitNow();
     }
 
-    // TODO: Cannot currently replace a frame in the indirect queue with a higher priority one.
-    /*
-        // Current message and new message differ and are both non-NULL.
-        // We need to request the frame to be replaced. The current
-        // indirect message can be replaced only if it is the first
-        // fragment. If a next fragment frame for message is already
-        // prepared, we wait for the entire message to be delivered.
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    // Current message and new message differ and are both non-NULL.
+    // We need to request the frame to be replaced. The current
+    // indirect message can be replaced only if it is the first
+    // fragment. If a next fragment frame for message is already
+    // prepared, we wait for the entire message to be delivered.
 
-        VerifyOrExit(aChild.GetIndirectNextFragmentOffset() == 0);
+    VerifyOrExit(aChild.GetIndirectNextFragmentOffset() == 0);
 
-        aChild.SetWaitingForMessageUpdate(true);
-        mDataPollHandler.RequestFrameChange(DataPollHandler::kReplaceFrame, aChild);*/
+    aChild.SetWaitingForMessageUpdate(true);
+    mDataPollHandler.RequestFrameChange(DataPollHandler::kReplaceFrame, aChild);
+#endif
 
 exit:
     return;
