@@ -1234,7 +1234,6 @@ void Mac::HandleBeginIndirect(void)
     otLogDebgMac("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
-    // TODO: Check that this SetChannel is actually correct, maybe need to restore at end?
     sendFrame.SetChannel(mChannel);
     SuccessOrExit(error = Get<DataPollHandler>().HandleFrameRequest(sendFrame));
 
@@ -1296,12 +1295,14 @@ otError Mac::ProcessTransmitStatus(otError aTransmitError)
     // fall through
     case OT_ERROR_NO_ACK:
     case OT_ERROR_NONE:
-        // TODO: if not on PAN channel skip cca tracking
-        if (mCcaSampleCount < kMaxCcaSampleCount)
+        if (GetCurrentChannel() == mChannel)
         {
-            mCcaSampleCount++;
+            if (mCcaSampleCount < kMaxCcaSampleCount)
+            {
+                mCcaSampleCount++;
+            }
+            mCcaSuccessRateTracker.AddSample(ccaSuccess, mCcaSampleCount);
         }
-        mCcaSuccessRateTracker.AddSample(ccaSuccess, mCcaSampleCount);
         break;
 
     default:

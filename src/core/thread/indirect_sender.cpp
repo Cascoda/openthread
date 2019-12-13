@@ -60,13 +60,6 @@ const Mac::Address &IndirectSender::ChildInfo::GetMacAddress(Mac::Address &aMacA
     return aMacAddress;
 }
 
-void IndirectSender::ChildInfo::SetIndirectMessage(Message *aMessage)
-{
-    // TODO: Move this back to header and remove log message
-    otLogDebgMac("swap ind message %d -> %d", mIndirectMessage, aMessage);
-    mIndirectMessage = aMessage;
-}
-
 IndirectSender::IndirectSender(Instance &aInstance)
     : InstanceLocator(aInstance)
     , mEnabled(false)

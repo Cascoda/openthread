@@ -89,7 +89,7 @@ public:
 
     private:
         Message *GetIndirectMessage(void) { return mIndirectMessage; }
-        void     SetIndirectMessage(Message *aMessage);
+        void     SetIndirectMessage(Message *aMessage) { mIndirectMessage = aMessage; }
         uint16_t GetIndirectNextFragmentOffset(void) const { return mIndirectNextFragmentOffset; }
         void SetIndirectNextFragmentOffset(uint16_t aFragmentOffset) { mIndirectNextFragmentOffset = aFragmentOffset; }
 
