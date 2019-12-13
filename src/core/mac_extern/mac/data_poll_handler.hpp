@@ -72,6 +72,7 @@ public:
     {
         kMaxPollTriggeredTxAttempts = OPENTHREAD_CONFIG_MAC_MAX_TX_ATTEMPTS_INDIRECT_POLLS,
         kMaxAttachedSEDs            = OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS,
+        kMaxIndirectMessages        = OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN,
     };
 
     /**
@@ -292,9 +293,10 @@ private:
     FrameCache *GetFrameCache(uint8_t aMsduHandle);
     FrameCache *GetNextFrameCache(Child &aChild, FrameCache *aPrevCache);
     FrameCache *GetEmptyFrameCache(void);
+    uint8_t     GetDoubleBufferCount(void);
 
     Callbacks  mCallbacks;
-    FrameCache mFrameCache[OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN];
+    FrameCache mFrameCache[kMaxIndirectMessages];
 };
 
 /**

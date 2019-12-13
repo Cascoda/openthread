@@ -225,6 +225,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
 {
     otError error        = OT_ERROR_NOT_FOUND;
     Child * pendingChild = NULL;
+    uint8_t maxBufferCount;
 
     // First check if we need any frames regenerating
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
@@ -249,16 +250,22 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         ExitNow();
     }
 
+    // Calculate whether or not we have strictly have room for more double-buffer indirects
+    if (GetDoubleBufferCount() > (kMaxIndirectMessages - kMaxAttachedSEDs))
+        maxBufferCount = 1;
+    else
+        maxBufferCount = 2;
+
     // Now check for new frames that need sending
     for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
     {
         Child &child = *iter.GetChild();
 
-        /*TODO: Add an additional limitation here so that only 2 children are double-buffered at a time,
+        /* TODO: Add an additional limitation here so that only 2 children are double-buffered at a time,
          * so that we stay in line with the requirement to support 6 SEDs with small IP frames.
          */
-        // TODO: Add fairness to child buffering.
-        if (child.GetFrameCount() <= 1 && child.GetIndirectMessageCount())
+        // TODO: Add fairness to child buffering (only relevant when more SEDs than SED slots).
+        if (child.GetFrameCount() < maxBufferCount && child.GetIndirectMessageCount())
         {
             FrameCache *fc = GetEmptyFrameCache();
 
@@ -314,6 +321,29 @@ DataPollHandler::FrameCache *DataPollHandler::GetNextFrameCache(Child &aChild, F
             return &fc;
     }
     return NULL;
+}
+
+uint8_t DataPollHandler::GetDoubleBufferCount()
+{
+    uint8_t count = 0;
+
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (!fc.IsValid())
+            continue;
+
+        for (size_t j = i; j < OT_ARRAY_LENGTH(mFrameCache); j++)
+        {
+            FrameCache &fc2 = mFrameCache[i];
+            if (!fc2.IsValid())
+                continue;
+
+            if (&fc.GetChild() == &fc2.GetChild())
+                count++;
+        }
+    }
+    return count;
 }
 
 DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
