@@ -1617,8 +1617,7 @@ otError MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::Messa
     VerifyOrExit(mode.IsValid(), error = OT_ERROR_PARSE);
     if (!(mode.GetMode().IsRxOnWhenIdle()))
     {
-	//TODO: Limit number of SEDs by max allowed
-        //VerifyOrExit(Get<MeshForwarder>().GetRemainingSEDSlotCount() > 0, error = OT_ERROR_DROP);
+        VerifyOrExit(GetSleepyChildrenCount() < OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS, error = OT_ERROR_DROP);
     }
 #endif
 
@@ -2160,8 +2159,7 @@ otError MleRouter::HandleChildIdRequest(const Message &         aMessage,
 #if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     if (!(mode.GetMode().IsRxOnWhenIdle()))
     {
-	//TODO: Limit the number of attached SEDs by remaining slots.
-        //VerifyOrExit(Get<MeshForwarder>().GetRemainingSEDSlotCount() > 0, error = OT_ERROR_NO_BUFS);
+        VerifyOrExit(GetSleepyChildrenCount() < OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS, error = OT_ERROR_NO_BUFS);
     }
 #endif
 
@@ -2425,11 +2423,10 @@ otError MleRouter::HandleChildUpdateRequest(const Message &         aMessage,
     {
         // To handle a child update request from rx-on to sleepy
         Get<SourceMatchController>().SetSrcMatchAsShort(*child, true);
-        //TODO: Get<MeshForwarder>().AllocateSEDSlot(*child);
     }
 #endif
 
-SendChildUpdateResponse(child, aMessageInfo, tlvs, tlvslength, challenge);
+    SendChildUpdateResponse(child, aMessageInfo, tlvs, tlvslength, challenge);
 
 exit:
 
@@ -2967,9 +2964,6 @@ otError MleRouter::SendChildIdResponse(Child &aChild)
     if (!aChild.IsRxOnWhenIdle())
     {
         Get<IndirectSender>().SetChildUseShortAddress(aChild, false);
-#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-        //TODO: SuccessOrExit(error = Get<MeshForwarder>().AllocateSEDSlot(aChild));
-#endif
     }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
@@ -3248,9 +3242,6 @@ void MleRouter::RemoveNeighbor(Neighbor &aNeighbor)
 
         Get<IndirectSender>().ClearAllMessagesForSleepyChild(static_cast<Child &>(aNeighbor));
         Get<NetworkData::Leader>().SendServerDataNotification(aNeighbor.GetRloc16());
-#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-        //TODO:Get<MeshForwarder>().DeallocateSEDSlot(static_cast<Child &>(aNeighbor));
-#endif
 
         if (aNeighbor.IsFullThreadDevice())
         {
@@ -3618,14 +3609,6 @@ void MleRouter::RestoreChildren(void)
         child->SetRloc16(childInfo.mRloc16);
         child->SetTimeout(childInfo.mTimeout);
         child->SetDeviceMode(DeviceMode(childInfo.mMode));
-#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-        //TODO: Implement SED limiting
-	/*
-	if (!child->IsRxOnWhenIdle() && Get<MeshForwarder>().AllocateSEDSlot(*child) != OT_ERROR_NONE)
-        {
-            continue;
-        }*/
-#endif
         child->SetState(Neighbor::kStateRestored);
         child->SetLastHeard(TimerMilli::GetNow());
         Get<IndirectSender>().SetChildUseShortAddress(*child, true);
@@ -4697,7 +4680,7 @@ void MleRouter::Signal(otNeighborTableEvent aEvent, Neighbor &aNeighbor)
         otNeighborTableEntryInfo info;
         otError                  error;
 
-	OT_UNUSED_VARIABLE(error);
+        OT_UNUSED_VARIABLE(error);
         info.mInstance = &GetInstance();
 
         switch (aEvent)
@@ -4749,6 +4732,26 @@ bool MleRouter::HasSleepyChildrenSubscribed(const Ip6::Address &aAddress)
         {
             ExitNow(rval = true);
         }
+    }
+
+exit:
+    return rval;
+}
+
+uint8_t MleRouter::GetSleepyChildrenCount(void)
+{
+    uint8_t rval = 0;
+
+    for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateValidOrRestoring); !iter.IsDone(); iter++)
+    {
+        Child &child = *iter.GetChild();
+
+        if (child.IsRxOnWhenIdle())
+        {
+            continue;
+        }
+
+        rval++;
     }
 
 exit:

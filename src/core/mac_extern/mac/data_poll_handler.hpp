@@ -71,6 +71,7 @@ public:
     enum
     {
         kMaxPollTriggeredTxAttempts = OPENTHREAD_CONFIG_MAC_MAX_TX_ATTEMPTS_INDIRECT_POLLS,
+        kMaxAttachedSEDs            = OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS,
     };
 
     /**
@@ -293,7 +294,7 @@ private:
     FrameCache *GetEmptyFrameCache(void);
 
     Callbacks  mCallbacks;
-    FrameCache mFrameCache[OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS];
+    FrameCache mFrameCache[OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN];
 };
 
 /**

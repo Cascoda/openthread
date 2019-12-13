@@ -756,12 +756,13 @@ private:
 
     void HandlePartitionChange(void);
 
-    void SetChildStateToValid(Child &aChild);
-    bool HasChildren(void);
-    void RemoveChildren(void);
-    bool HasMinDowngradeNeighborRouters(void);
-    bool HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId);
-    bool HasSmallNumberOfChildren(void);
+    void    SetChildStateToValid(Child &aChild);
+    bool    HasChildren(void);
+    void    RemoveChildren(void);
+    bool    HasMinDowngradeNeighborRouters(void);
+    bool    HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId);
+    bool    HasSmallNumberOfChildren(void);
+    uint8_t GetSleepyChildrenCount(void);
 
     static bool HandleAdvertiseTimer(TrickleTimer &aTimer);
     bool        HandleAdvertiseTimer(void);

@@ -303,25 +303,24 @@
  * reserved for individual SEDs. This is to satisfy the requirement that a Router
  * must be able to buffer 1 106 octet ipv6 datagram per attached SED. Must be at
  * least '6' for a router in order to meet Thread 1.1 conformance requirements.
- *
+ * Should really be less than OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN.
  */
 #ifndef OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS
 #define OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS 6
 #endif
 
 /**
- * @def OPENTHREAD_CONFIG_EXTERNAL_MAC_FLOATING_SENDERS
+ * @def OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN
  *
- * This setting configures the size of the external MAC's indirect queue that is
- * 'floating' for use by any sender. This exists to control the resource usage on
- * the external MAC. This is used essentially used to 'buffer' future data requests,
+ * This setting configures the size of the external MAC's indirect queue. This exists
+ * to control the resource usage on the external MAC. This is used to 'buffer' indirect data
  * and more buffers are required if the latency between MAC and openthread is higher.
  * These are required to satisfy the 'max 1280 octet' ipv6 datagram for an attached
  * SED, by making sure there is at least one more fragment in the indirect queue
- * at a time. TODO is to use these sparingly for direct transmission as well.
+ * at a time.
  */
-#ifndef OPENTHREAD_CONFIG_EXTERNAL_MAC_FLOATING_SENDERS
-#define OPENTHREAD_CONFIG_EXTERNAL_MAC_FLOATING_SENDERS 2
+#ifndef OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN
+#define OPENTHREAD_CONFIG_EXTERNAL_MAC_INDIRECT_QUEUE_LEN 8
 #endif
 
 #endif // CONFIG_MAC_H_
