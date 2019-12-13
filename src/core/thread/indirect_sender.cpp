@@ -461,14 +461,7 @@ uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, const Child &aC
 
     Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
 
-    if (ip6Header.GetDestination().IsLinkLocal())
-    {
-        Get<MeshForwarder>().GetMacDestinationAddress(ip6Header.GetDestination(), macDest);
-    }
-    else
-    {
-        aChild.GetMacAddress(macDest);
-    }
+    aChild.GetMacAddress(macDest);
 
     nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
 
