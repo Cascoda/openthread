@@ -302,7 +302,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetNextFrameCache(Child &aChild, F
 
     // Start looking after the previous cache.
     if (aPrevCache)
-        i = (aPrevCache - &mFrameCache) + 1;
+        i = (aPrevCache - mFrameCache) + 1;
 
     for (; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {

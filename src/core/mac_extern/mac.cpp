@@ -554,8 +554,9 @@ exit:
 
 otError Mac::PurgeIndirectFrame(uint8_t aMsduHandle)
 {
-    otLogDebgMac("Purging handle %x", aMsduHandle);
-    return otPlatMcpsPurge(&GetInstance(), aMsduHandle);
+    otError error = otPlatMcpsPurge(&GetInstance(), aMsduHandle);
+    otLogDebgMac("Purged handle %x with error %s", aMsduHandle, otThreadErrorToString(error));
+    return error;
 }
 
 void Mac::StartOperation(Operation aOperation)
@@ -1084,7 +1085,7 @@ void Mac::BuildSecurityTable()
     // FFD children have one-way comms (rx-only) with neighboring routers so they must
     // maintain the device table for them. See TS:1.1.1 sec 4.7.7.4
 
-    if ((role == OT_DEVICE_ROLE_CHILD) || Get<Mle::Mle>().IsAttaching())
+    if ((role == OT_DEVICE_ROLE_CHILD) || role == OT_DEVICE_ROLE_DETACHED)
     {
         Router *parent = Get<Mle::Mle>().GetParentCandidate();
 
@@ -1305,6 +1306,7 @@ otError Mac::ProcessTransmitStatus(otError aTransmitError)
 
     default:
         mCounters.mTxErrAbort++;
+        otLogInfoMac("Converting error %s to ABORT", otThreadErrorToString(error));
         error = OT_ERROR_ABORT;
         break;
     }
