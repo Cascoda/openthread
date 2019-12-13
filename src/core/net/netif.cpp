@@ -208,7 +208,7 @@ exit:
 otError Netif::SubscribeAllRoutersMulticast(void)
 {
     otError                error = OT_ERROR_NONE;
-    NetifMulticastAddress *prev;
+    NetifMulticastAddress *prev = NULL;
     NetifMulticastAddress &linkLocalAllRoutersAddress = static_cast<NetifMulticastAddress &>(
         const_cast<otNetifMulticastAddress &>(kLinkLocalAllRoutersMulticastAddress));
     NetifMulticastAddress &linkLocalAllNodesAddress =

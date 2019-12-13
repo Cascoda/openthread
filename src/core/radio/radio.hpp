@@ -326,7 +326,6 @@ public:
      *
      */
     void SetPromiscuous(bool aEnable) { otPlatRadioSetPromiscuous(GetInstance(), aEnable); }
-#endif
 
     /**
      * This method returns the current state of the radio.
@@ -339,6 +338,7 @@ public:
      *
      */
     otRadioState GetState(void) { return otPlatRadioGetState(GetInstance()); }
+#endif
 
     /**
      * This method enables the radio.

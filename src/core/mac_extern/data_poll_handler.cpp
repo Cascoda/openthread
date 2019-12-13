@@ -335,7 +335,7 @@ uint8_t DataPollHandler::GetDoubleBufferCount()
 
         for (size_t j = i; j < OT_ARRAY_LENGTH(mFrameCache); j++)
         {
-            FrameCache &fc2 = mFrameCache[i];
+            FrameCache &fc2 = mFrameCache[j];
             if (!fc2.IsValid())
                 continue;
 

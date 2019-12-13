@@ -4754,7 +4754,6 @@ uint8_t MleRouter::GetSleepyChildrenCount(void)
         rval++;
     }
 
-exit:
     return rval;
 }
 
