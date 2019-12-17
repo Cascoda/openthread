@@ -244,7 +244,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         aFrame.mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = aFrame.GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : NULL;
-        assert(error = OT_ERROR_NONE);
+        assert(error == OT_ERROR_NONE);
         fc.mPendingRetransmit = false;
         Get<Mac::Mac>().RequestIndirectFrameTransmission();
         ExitNow();
