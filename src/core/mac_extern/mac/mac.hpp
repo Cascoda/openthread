@@ -470,7 +470,7 @@ public:
     void SetMaxFrameRetriesIndirect(uint8_t aMaxFrameRetriesIndirect) { OT_UNUSED_VARIABLE(aMaxFrameRetriesIndirect); }
 #endif
 
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     /**
      * This method returns the MAC filter.
      *
@@ -478,7 +478,7 @@ public:
      *
      */
     Filter &GetFilter(void) { return mFilter; }
-#endif // OPENTHREAD_ENABLE_MAC_FILTER
+#endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
     /**
      * This method is called to handle received data packets
@@ -822,9 +822,9 @@ private:
     SuccessRateTracker mCcaSuccessRateTracker;
     uint16_t           mCcaSampleCount;
     otMacCounters      mCounters;
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     Filter mFilter;
-#endif // OPENTHREAD_ENABLE_MAC_FILTER
+#endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
     static const uint8_t         sMode2Key[];
     static const otExtAddress    sMode2ExtAddress;

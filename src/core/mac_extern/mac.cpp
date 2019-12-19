@@ -85,9 +85,9 @@ Mac::Mac(Instance &aInstance)
     , mScanChannels(0)
     , mScanDuration(0)
     , mActiveScanHandler(NULL) // Initialize `mActiveScanHandler` and `mEnergyScanHandler` union
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     , mFilter()
-#endif // OPENTHREAD_ENABLE_MAC_FILTER
+#endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 {
     GenerateExtAddress(&mExtAddress);
     otPlatRadioEnable(&GetInstance());
@@ -1438,9 +1438,9 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     Address   srcaddr, dstaddr;
     Neighbor *neighbor;
     otError   error = OT_ERROR_NONE;
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     int8_t rssi = OT_MAC_FILTER_FIXED_RSS_DISABLED;
-#endif // OPENTHREAD_ENABLE_MAC_FILTER
+#endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
     assert(aDataIndication != NULL);
 
@@ -1478,7 +1478,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
         ExitNow(error = OT_ERROR_INVALID_SOURCE_ADDRESS);
     }
 
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
     // Source filter Processing.
     if (srcaddr.IsExtended())
@@ -1493,14 +1493,14 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
         }
     }
 
-#endif // OPENTHREAD_ENABLE_MAC_FILTER
+#endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
     // Security Processing
     SuccessOrExit(error = ProcessReceiveSecurity(aDataIndication->mSecurity, neighbor));
 
     if (neighbor != NULL)
     {
-#if OPENTHREAD_ENABLE_MAC_FILTER
+#if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
         // make assigned rssi to take effect quickly
         if (rssi != OT_MAC_FILTER_FIXED_RSS_DISABLED)
@@ -1508,7 +1508,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
             neighbor->GetLinkInfo().Clear();
         }
 
-#endif // OPENTHREAD_ENABLE_MAC_FILTER
+#endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
         neighbor->GetLinkInfo().AddRss(GetNoiseFloor(), dataInd.GetRssi());
 
