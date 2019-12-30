@@ -261,9 +261,6 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
     {
         Child &child = *iter.GetChild();
 
-        /* TODO: Add an additional limitation here so that only 2 children are double-buffered at a time,
-         * so that we stay in line with the requirement to support 6 SEDs with small IP frames.
-         */
         // TODO: Add fairness to child buffering (only relevant when more SEDs than SED slots).
         if (child.GetFrameCount() < maxBufferCount && child.GetIndirectMessageCount())
         {
@@ -333,7 +330,7 @@ uint8_t DataPollHandler::GetDoubleBufferCount()
         if (!fc.IsValid())
             continue;
 
-        for (size_t j = i; j < OT_ARRAY_LENGTH(mFrameCache); j++)
+        for (size_t j = i + 1; j < OT_ARRAY_LENGTH(mFrameCache); j++)
         {
             FrameCache &fc2 = mFrameCache[j];
             if (!fc2.IsValid())
