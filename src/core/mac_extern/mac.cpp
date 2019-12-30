@@ -1444,6 +1444,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 
     assert(aDataIndication != NULL);
 
+    dataInd.SetChannel(GetCurrentChannel());
     dataInd.GetSrcAddr(srcaddr);
     dataInd.GetDstAddr(dstaddr);
     neighbor = Get<Mle::MleRouter>().GetNeighbor(srcaddr);
