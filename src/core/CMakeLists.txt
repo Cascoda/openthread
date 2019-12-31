@@ -107,16 +107,6 @@ set(COMMON_SOURCES
     crypto/pbkdf2_cmac.cpp
     crypto/sha256.cpp
     diags/factory_diags.cpp
-    mac/channel_mask.cpp
-    mac/data_poll_handler.cpp
-    mac/data_poll_sender.cpp
-    mac/link_raw.cpp
-    mac/mac.cpp
-    mac/mac_filter.cpp
-    mac/mac_frame.cpp
-    mac/mac_types.cpp
-    mac/sub_mac.cpp
-    mac/sub_mac_callbacks.cpp
     meshcop/announce_begin_client.cpp
     meshcop/border_agent.cpp
     meshcop/commissioner.cpp
@@ -184,6 +174,35 @@ set(COMMON_SOURCES
     utils/parse_cmdline.cpp
     utils/slaac_address.cpp
 )
+
+# TODO: Properly extract this into some externally injectable module.
+if(OPENTHREAD_USE_EXTERN_MAC)
+    list(APPEND COMMON_SOURCES
+        mac_extern/channel_mask.cpp
+        mac_extern/data_poll_handler.cpp
+        mac_extern/data_poll_sender.cpp
+        mac_extern/link_raw.cpp
+        mac_extern/mac.cpp
+        mac_extern/mac_filter.cpp
+        mac_extern/mac_frame.cpp
+        mac_extern/mac_types.cpp
+        mac_extern/sub_mac.cpp
+        mac_extern/sub_mac_callbacks.cpp
+    )
+else()
+    list(APPEND COMMON_SOURCES
+        mac/channel_mask.cpp
+        mac/data_poll_handler.cpp
+        mac/data_poll_sender.cpp
+        mac/link_raw.cpp
+        mac/mac.cpp
+        mac/mac_filter.cpp
+        mac/mac_frame.cpp
+        mac/mac_types.cpp
+        mac/sub_mac.cpp
+        mac/sub_mac_callbacks.cpp
+    )
+endif()
 
 target_include_directories(openthread-ftd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 target_include_directories(openthread-mtd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
