@@ -28,7 +28,6 @@
 
 add_library(openthread-ftd)
 add_library(openthread-mtd)
-add_library(openthread-radio)
 
 target_compile_definitions(openthread-ftd PRIVATE
     ${OT_PRIVATE_DEFINES}
@@ -38,11 +37,6 @@ target_compile_definitions(openthread-ftd PRIVATE
 target_compile_definitions(openthread-mtd PRIVATE
     ${OT_PRIVATE_DEFINES}
     OPENTHREAD_MTD=1
-)
-
-target_compile_definitions(openthread-radio PRIVATE
-    ${OT_PRIVATE_DEFINES}
-    OPENTHREAD_RADIO=1
 )
 
 set(COMMON_INCLUDES
@@ -187,7 +181,6 @@ if(OPENTHREAD_USE_EXTERN_MAC)
         mac_extern/mac_frame.cpp
         mac_extern/mac_types.cpp
         mac_extern/sub_mac.cpp
-        mac_extern/sub_mac_callbacks.cpp
     )
 else()
     list(APPEND COMMON_SOURCES
@@ -206,32 +199,39 @@ endif()
 
 target_include_directories(openthread-ftd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 target_include_directories(openthread-mtd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
-target_include_directories(openthread-radio PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 
 target_sources(openthread-ftd PRIVATE ${COMMON_SOURCES})
 target_sources(openthread-mtd PRIVATE ${COMMON_SOURCES})
 
-target_sources(openthread-radio PRIVATE
-    api/diags_api.cpp
-    api/instance_api.cpp
-    api/link_raw_api.cpp
-    api/logging_api.cpp
-    api/random_noncrypto_api.cpp
-    api/tasklet_api.cpp
-    common/instance.cpp
-    common/logging.cpp
-    common/random_manager.cpp
-    common/string.cpp
-    common/tasklet.cpp
-    common/timer.cpp
-    diags/factory_diags.cpp
-    mac/link_raw.cpp
-    mac/mac_frame.cpp
-    mac/mac_types.cpp
-    mac/sub_mac.cpp
-    mac/sub_mac_callbacks.cpp
-    radio/radio_callbacks.cpp
-    radio/radio_platform.cpp
-    thread/link_quality.cpp
-    utils/parse_cmdline.cpp
-)
+if(NOT OPENTHREAD_USE_EXTERN_MAC)
+    add_library(openthread-radio)
+    target_compile_definitions(openthread-radio PRIVATE
+        ${OT_PRIVATE_DEFINES}
+        OPENTHREAD_RADIO=1
+    )
+    target_include_directories(openthread-radio PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
+    target_sources(openthread-radio PRIVATE
+        api/diags_api.cpp
+        api/instance_api.cpp
+        api/link_raw_api.cpp
+        api/logging_api.cpp
+        api/random_noncrypto_api.cpp
+        api/tasklet_api.cpp
+        common/instance.cpp
+        common/logging.cpp
+        common/random_manager.cpp
+        common/string.cpp
+        common/tasklet.cpp
+        common/timer.cpp
+        diags/factory_diags.cpp
+        mac/link_raw.cpp
+        mac/mac_frame.cpp
+        mac/mac_types.cpp
+        mac/sub_mac.cpp
+        mac/sub_mac_callbacks.cpp
+        radio/radio_callbacks.cpp
+        radio/radio_platform.cpp
+        thread/link_quality.cpp
+        utils/parse_cmdline.cpp
+    )
+endif()

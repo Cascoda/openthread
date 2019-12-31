@@ -1673,7 +1673,7 @@ void MeshForwarder::LogMessage(MessageAction, const Message &, const Mac::Addres
 {
 }
 
-void MeshForwarder::LogFrame(const char *, const Mac::Frame &, otError)
+void MeshForwarder::LogFrame(const char *, const Mac::RxFrame &, otError)
 {
 }
 
