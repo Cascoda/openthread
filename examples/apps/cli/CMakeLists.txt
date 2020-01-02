@@ -49,7 +49,6 @@ target_link_libraries(ot-cli-ftd
     ${OT_PLATFORM_LIB}
     openthread-ftd
     ${OT_PLATFORM_LIB}
-    mbedcrypto
 )
 
 target_link_libraries(ot-cli-mtd
@@ -57,5 +56,4 @@ target_link_libraries(ot-cli-mtd
     ${OT_PLATFORM_LIB}
     openthread-mtd
     ${OT_PLATFORM_LIB}
-    mbedcrypto
 )

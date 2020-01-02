@@ -29,6 +29,13 @@
 add_library(openthread-ftd)
 add_library(openthread-mtd)
 
+target_link_libraries(openthread-ftd PUBLIC
+    mbedcrypto
+)
+target_link_libraries(openthread-mtd PUBLIC
+    mbedcrypto
+)
+
 target_compile_definitions(openthread-ftd PRIVATE
     ${OT_PRIVATE_DEFINES}
     OPENTHREAD_FTD=1
@@ -209,6 +216,9 @@ if(NOT OPENTHREAD_USE_EXTERN_MAC)
         ${OT_PRIVATE_DEFINES}
         OPENTHREAD_RADIO=1
     )
+	target_link_libraries(openthread-radio PUBLIC
+		mbedcrypto
+	)
     target_include_directories(openthread-radio PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
     target_sources(openthread-radio PRIVATE
         api/diags_api.cpp

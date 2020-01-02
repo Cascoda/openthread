@@ -50,7 +50,6 @@ if(OT_DAEMON)
         openthread-ftd
         ${OT_PLATFORM_LIB}
         openthread-ncp-ftd
-        mbedcrypto
     )
 
     add_executable(ot-ctl
@@ -74,7 +73,6 @@ else()
         ${OT_PLATFORM_LIB}
         openthread-ftd
         ${OT_PLATFORM_LIB}
-        mbedcrypto
         openthread-ncp-ftd
     )
 
@@ -92,7 +90,6 @@ else()
         ${OT_PLATFORM_LIB}
         openthread-ftd
         ${OT_PLATFORM_LIB}
-        mbedcrypto
         openthread-ncp-ftd
     )
 endif()
