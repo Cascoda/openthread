@@ -4742,7 +4742,7 @@ uint8_t MleRouter::GetSleepyChildrenCount(void)
 {
     uint8_t rval = 0;
 
-    for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateValidOrRestoring); !iter.IsDone(); iter++)
+    for (ChildTable::Iterator iter(GetInstance(), Child::kInStateValidOrRestoring); !iter.IsDone(); iter++)
     {
         Child &child = *iter.GetChild();
 

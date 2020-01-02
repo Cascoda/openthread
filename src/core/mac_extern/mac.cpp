@@ -797,7 +797,7 @@ otError Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t &aNumActiv
 {
     otError error = OT_ERROR_NONE;
 
-    for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateValidOrRestoring); !iter.IsDone(); iter++)
+    for (ChildTable::Iterator iter(GetInstance(), Child::kInStateValidOrRestoring); !iter.IsDone(); iter++)
     {
         BuildDeviceDescriptor(*iter.GetChild(), aDevIndex);
         aNumActiveDevices++;
@@ -1087,13 +1087,13 @@ void Mac::BuildSecurityTable()
 
     if ((role == OT_DEVICE_ROLE_CHILD) || role == OT_DEVICE_ROLE_DETACHED)
     {
-        Router *parent = Get<Mle::Mle>().GetParentCandidate();
+        Router &parent = Get<Mle::Mle>().GetParentCandidate();
 
-        if (parent->IsStateValidOrRestoring())
+        if (parent.IsStateValidOrRestoring())
         {
-            BuildDeviceDescriptor(*parent, devIndex);
+            BuildDeviceDescriptor(parent, devIndex);
             numActiveDevices++;
-            nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent->GetRloc16());
+            nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent.GetRloc16());
         }
     }
     if (isFFD)
@@ -1323,7 +1323,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
 
     if (error != OT_ERROR_NONE)
     {
-        otLogDebgMacErr(aError, "Transmit Error");
+        otLogDebgMac("Transmit Error: %s", otThreadErrorToString(aError));
     }
 
     if (aMsduHandle == mDirectMsduHandle)

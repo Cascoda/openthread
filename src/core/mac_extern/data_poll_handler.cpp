@@ -101,7 +101,7 @@ DataPollHandler::DataPollHandler(Instance &aInstance)
 
 void DataPollHandler::Clear(void)
 {
-    for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
+    for (ChildTable::Iterator iter(GetInstance(), Child::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
     {
         Child &child = *iter.GetChild();
         child.SetFrameReplacePending(false);
@@ -199,7 +199,7 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
     VerifyOrExit(Get<Mle::MleRouter>().GetRole() != OT_DEVICE_ROLE_DETACHED);
 
     SuccessOrExit(aPollInd.GetSrcAddr(macSource));
-    child = Get<ChildTable>().FindChild(macSource, ChildTable::kInStateValidOrRestoring);
+    child = Get<ChildTable>().FindChild(macSource, Child::kInStateValidOrRestoring);
     VerifyOrExit(child != NULL);
 
     child->SetLastHeard(TimerMilli::GetNow());
@@ -257,7 +257,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         maxBufferCount = 2;
 
     // Now check for new frames that need sending
-    for (ChildTable::Iterator iter(GetInstance(), ChildTable::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
+    for (ChildTable::Iterator iter(GetInstance(), Child::kInStateAnyExceptInvalid); !iter.IsDone(); iter++)
     {
         Child &child = *iter.GetChild();
 
