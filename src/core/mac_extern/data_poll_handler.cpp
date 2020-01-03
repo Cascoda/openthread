@@ -377,7 +377,7 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
         ExitNow();
     }
 
-    if (aError == OT_ERROR_ABORT)
+    if (aError == OT_ERROR_FAILED)
     {
         // Some kind of system error, try again.
         aFrameCache.mPendingRetransmit = true;

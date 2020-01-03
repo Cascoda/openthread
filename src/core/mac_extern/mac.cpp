@@ -1168,7 +1168,7 @@ exit:
 
 void Mac::HandleBeginDirect(void)
 {
-    TxFrame &sendFrame = mDataReq;
+    TxFrame &sendFrame = mDirectDataReq;
     otError  error     = OT_ERROR_NONE;
 
     otLogDebgMac("Mac::HandleBeginDirect");
@@ -1228,7 +1228,7 @@ exit:
 #if OPENTHREAD_FTD
 void Mac::HandleBeginIndirect(void)
 {
-    TxFrame &sendFrame = mDataReq;
+    TxFrame &sendFrame = mIndirectDataReq;
     otError  error     = OT_ERROR_NONE;
 
     otLogDebgMac("Mac::HandleBeginIndirect");
@@ -1328,6 +1328,13 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
 
     if (aMsduHandle == mDirectMsduHandle)
     {
+        if (aError == OT_ERROR_CHANNEL_ACCESS_FAILURE || aError == OT_ERROR_FAILED)
+        {
+            // Failed without even hitting the air, retry silently.
+            error = otPlatMcpsDataRequest(&GetInstance(), &mDirectDataReq);
+            assert(error = OT_ERROR_NONE);
+            return;
+        }
         if (mJoinerEntrustResponseRequested)
         {
             // Restore the mode 2 key after sending the joiner entrust response

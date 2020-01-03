@@ -812,9 +812,10 @@ private:
         EnergyScanHandler mEnergyScanHandler;
     };
 
+    TxFrame mDirectDataReq;
     union
     {
-        TxFrame        mDataReq;
+        TxFrame        mIndirectDataReq;
         otScanRequest  mScanReq;
         otStartRequest mStartReq;
     };
