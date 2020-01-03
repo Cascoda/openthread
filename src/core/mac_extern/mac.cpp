@@ -1177,8 +1177,8 @@ void Mac::HandleBeginDirect(void)
     sendFrame.SetChannel(mChannel);
     SuccessOrExit(error = Get<MeshForwarder>().HandleFrameRequest(sendFrame));
 
-    if (mDataReq.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
-        Encoding::LittleEndian::ReadUint16(mDataReq.mDst.mAddress) == kShortAddrBroadcast)
+    if (sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
+        Encoding::LittleEndian::ReadUint16(sendFrame.mDst.mAddress) == kShortAddrBroadcast)
     {
         mCounters.mTxBroadcast++;
     }
@@ -1188,13 +1188,13 @@ void Mac::HandleBeginDirect(void)
     }
 
     // Security Processing
-    ProcessTransmitSecurity(mDataReq.mSecurity);
+    ProcessTransmitSecurity(sendFrame.mSecurity);
 
     // Assign MSDU handle
-    mDirectMsduHandle    = GetValidMsduHandle();
-    mDataReq.mMsduHandle = mDirectMsduHandle;
+    mDirectMsduHandle     = GetValidMsduHandle();
+    sendFrame.mMsduHandle = mDirectMsduHandle;
 
-    if (mDataReq.mSecurity.mSecurityLevel > 0 && mDataReq.mSecurity.mKeyIdMode == 0)
+    if (sendFrame.mSecurity.mSecurityLevel > 0 && sendFrame.mSecurity.mKeyIdMode == 0)
     {
         bool isJoining = false;
 
@@ -1206,8 +1206,8 @@ void Mac::HandleBeginDirect(void)
         if (!isJoining)
         {
             // Hotswap the kek descriptor into keytable for joiner entrust response
-            assert(mDataReq.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT);
-            HotswapJoinerRouterKeyDescriptor(mDataReq.mDst.mAddress);
+            assert(sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT);
+            HotswapJoinerRouterKeyDescriptor(sendFrame.mDst.mAddress);
         }
     }
 
@@ -1218,7 +1218,7 @@ void Mac::HandleBeginDirect(void)
     otDumpDebgMac("Msdu", mDataReq.mMsdu, mDataReq.mMsduLength);
     mDirectAckRequested = sendFrame.GetAckRequest();
     sendFrame.GetDstAddr(mDirectDstAddress);
-    error = otPlatMcpsDataRequest(&GetInstance(), &mDataReq);
+    error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
     assert(error == OT_ERROR_NONE);
 
 exit:
@@ -1239,14 +1239,14 @@ void Mac::HandleBeginIndirect(void)
 
     mCounters.mTxUnicast++;
 
-    ProcessTransmitSecurity(mDataReq.mSecurity);
-    mDataReq.mTxOptions |= OT_MAC_TX_OPTION_INDIRECT;
-    mDataReq.mTxOptions |= OT_MAC_TX_OPTION_NS_SECURE_IND;
+    ProcessTransmitSecurity(sendFrame.mSecurity);
+    sendFrame.mTxOptions |= OT_MAC_TX_OPTION_INDIRECT;
+    sendFrame.mTxOptions |= OT_MAC_TX_OPTION_NS_SECURE_IND;
 
     otLogDebgMac("calling otPlatRadioTransmit for indirect");
     otLogDebgMac("Sam %x; Dam %x; MH %x;", mDataReq.mSrcAddrMode, mDataReq.mDst.mAddressMode, mDataReq.mMsduHandle);
     otDumpDebgMac("Msdu", mDataReq.mMsdu, mDataReq.mMsduLength);
-    error = otPlatMcpsDataRequest(&GetInstance(), &mDataReq);
+    error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
 
     assert(error == OT_ERROR_NONE);
 exit:
