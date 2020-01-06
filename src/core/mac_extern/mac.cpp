@@ -1087,7 +1087,9 @@ void Mac::BuildSecurityTable()
 
     if ((role == OT_DEVICE_ROLE_CHILD) || role == OT_DEVICE_ROLE_DETACHED)
     {
-        Router &parent = Get<Mle::Mle>().GetParentCandidate();
+        Router &parent = Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring()
+                             ? Get<Mle::Mle>().GetParentCandidate()
+                             : Get<Mle::Mle>().GetParent();
 
         if (parent.IsStateValidOrRestoring())
         {
