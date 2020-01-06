@@ -1334,7 +1334,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
         {
             // Failed without even hitting the air, retry silently.
             error = otPlatMcpsDataRequest(&GetInstance(), &mDirectDataReq);
-            assert(error = OT_ERROR_NONE);
+            assert(error == OT_ERROR_NONE);
             return;
         }
         if (mJoinerEntrustResponseRequested)
