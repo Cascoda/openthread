@@ -99,7 +99,9 @@ otError DataPollSender::SendDataPoll(void)
     VerifyOrExit(mEnabled, error = OT_ERROR_INVALID_STATE);
     VerifyOrExit(!Get<Mac::Mac>().GetRxOnWhenIdle(), error = OT_ERROR_INVALID_STATE);
 
-    parent = &Get<Mle::MleRouter>().GetParentCandidate();
+    parent = Get<Mle::MleRouter>().Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring()
+                 ? &Get<Mle::Mle>().GetParentCandidate()
+                 : &Get<Mle::Mle>().GetParent();
     VerifyOrExit(parent->IsStateValidOrRestoring(), error = OT_ERROR_INVALID_STATE);
 
     mTimer.Stop();
@@ -158,11 +160,14 @@ exit:
 otError DataPollSender::GetPollDestinationAddress(Mac::Address &aDest) const
 {
     otError error  = OT_ERROR_NONE;
-    Router &parent = Get<Mle::MleRouter>().GetParentCandidate();
+    Router &parent = Get<Mle::MleRouter>().Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring()
+                         ? Get<Mle::Mle>().GetParentCandidate()
+                         : Get<Mle::Mle>().GetParent();
 
     VerifyOrExit(parent.IsStateValidOrRestoring(), error = OT_ERROR_ABORT);
 
-    if ((Get<Mac::Mac>().GetShortAddress() == Mac::kShortAddrInvalid) || (parent.GetRloc16() != Get<Mle::MleRouter>().GetParent().GetRloc16()))
+    if ((Get<Mac::Mac>().GetShortAddress() == Mac::kShortAddrInvalid) ||
+        (parent.GetRloc16() != Get<Mle::MleRouter>().GetParent().GetRloc16()))
     {
         aDest.SetExtended(parent.GetExtAddress());
     }
@@ -220,13 +225,16 @@ void DataPollSender::HandlePollSent(otPollRequest &aPollReq, otError aError)
 {
     bool         shouldRecalculatePollPeriod = false;
     Mac::Address macDest;
+    Router &     parent = Get<Mle::MleRouter>().Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring()
+                         ? Get<Mle::Mle>().GetParentCandidate()
+                         : Get<Mle::Mle>().GetParent();
 
     VerifyOrExit(mEnabled);
 
     static_cast<Mac::FullAddr *>(&aPollReq.mCoordAddress)->GetAddress(macDest);
     Get<MeshForwarder>().UpdateNeighborOnSentFrame(true, aError, macDest);
 
-    if (Get<Mle::MleRouter>().GetParentCandidate().GetState() == Neighbor::kStateInvalid)
+    if (parent.GetState() == Neighbor::kStateInvalid)
     {
         StopPolling();
         Get<Mle::MleRouter>().BecomeDetached();
