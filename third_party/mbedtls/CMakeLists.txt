@@ -28,14 +28,21 @@
 
 add_library(mbedcrypto)
 
-target_compile_definitions(mbedcrypto PRIVATE
-    ${OT_PRIVATE_DEFINES}
+target_compile_definitions(mbedcrypto
+    PUBLIC
+        "MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\""
+    PRIVATE
+        ${OT_PRIVATE_DEFINES}
 )
 
-target_include_directories(mbedcrypto PRIVATE
-    ${OT_PUBLIC_INCLUDES}
-    ${OT_PRIVATE_INCLUDES}
-    ${PROJECT_SOURCE_DIR}/src/core
+target_include_directories(mbedcrypto
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+    PRIVATE
+        ${OT_PUBLIC_INCLUDES}
+        ${OT_PRIVATE_INCLUDES}
+        ${PROJECT_SOURCE_DIR}/src/core
 )
 
 target_sources(mbedcrypto PRIVATE
