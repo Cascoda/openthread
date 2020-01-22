@@ -424,7 +424,7 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
     return nextOffset;
 }
 
-uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, const Child &aChild, Message &aMessage)
+uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage)
 {
     uint16_t nextOffset = GenerateDataFrame(aFrame, aChild, aMessage);
 
@@ -441,7 +441,7 @@ uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, const Child &
     return nextOffset;
 }
 
-uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, const Child &aChild, Message &aMessage)
+uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage)
 {
     Ip6::Header  ip6Header;
     Mac::Address macSource, macDest;
@@ -456,6 +456,17 @@ uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, const Child &aC
     aChild.GetMacAddress(macDest);
 
     nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
+
+    // Enable short source address matching after the first indirect
+    // message transmission attempt to the child. We intentionally do
+    // not check for successful tx here to address the scenario where
+    // the child does receive "Child ID Response" but parent misses the
+    // 15.4 ack from child. If the "Child ID Response" does not make it
+    // to the child, then the child will need to send a new "Child ID
+    // Request" which will cause the parent to switch to using long
+    // address mode for source address matching.
+
+    mSourceMatchController.SetSrcMatchAsShort(aChild, true);
 
     return nextOffset;
 }
@@ -553,17 +564,6 @@ void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, otError aErr
         Mac::Address macDest;
 
         aChild.GetLinkInfo().AddMessageTxStatus(aChild.GetIndirectTxSuccess());
-
-        // Enable short source address matching after the first indirect
-        // message transmission attempt to the child. We intentionally do
-        // not check for successful tx here to address the scenario where
-        // the child does receive "Child ID Response" but parent misses the
-        // 15.4 ack from child. If the "Child ID Response" does not make it
-        // to the child, then the child will need to send a new "Child ID
-        // Request" which will cause the parent to switch to using long
-        // address mode for source address matching.
-
-        mSourceMatchController.SetSrcMatchAsShort(aChild, true);
 
 #if !OPENTHREAD_CONFIG_DROP_MESSAGE_ON_FRAGMENT_TX_FAILURE
 

@@ -34,6 +34,7 @@
 #if OPENTHREAD_FTD
 
 #include "mac/data_poll_handler.hpp"
+#include "thread/src_match_controller.hpp"
 
 #include "common/code_utils.hpp"
 #include "common/instance.hpp"
@@ -78,6 +79,7 @@ void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
     mPurgePending      = false;
     mFramePending      = false;
     mPendingRetransmit = false;
+    mUseExtAddr        = false;
     aChild.IncrementFrameCount();
 }
 
@@ -230,7 +232,9 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
     // First check if we need any frames regenerating
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
-        FrameCache &fc = mFrameCache[i];
+        FrameCache &fc          = mFrameCache[i];
+        bool        swapExtAddr = fc.mUseExtAddr; // Swap the extaddr in to rebuild frame using same dst addr
+
         if (!fc.IsValid())
             continue;
 
@@ -240,7 +244,12 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         if (Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
             continue;
 
-        error              = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild());
+        if (swapExtAddr)
+            Get<SourceMatchController>().SetSrcMatchAsShort(*fc.mChild, false);
+        error = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild());
+        if (swapExtAddr)
+            Get<SourceMatchController>().SetSrcMatchAsShort(*fc.mChild, true);
+
         aFrame.mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = aFrame.GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : NULL;
@@ -272,6 +281,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             error              = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
             aFrame.mMsduHandle = fc->GetMsduHandle();
             fc->mFramePending  = aFrame.GetFramePending();
+            fc->mUseExtAddr    = aFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT;
             pendingChild       = fc->mFramePending ? &fc->GetChild() : NULL;
             fc->mContext.HandleSentToMac();
             if (error)

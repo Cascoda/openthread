@@ -210,6 +210,7 @@ public:
         bool                             mPurgePending : 1;
         bool                             mFramePending : 1;
         bool                             mPendingRetransmit : 1;
+        bool                             mUseExtAddr : 1;
     };
 
     /**

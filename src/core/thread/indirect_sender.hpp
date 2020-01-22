@@ -216,8 +216,8 @@ private:
     Message *FindIndirectMessage(Child &aChild);
     void     RequestMessageUpdate(Child &aChild);
     uint16_t PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage);
-    uint16_t RegenerateDataFrame(Mac::TxFrame &aFrame, const Child &aChild, Message &aMessage);
-    uint16_t GenerateDataFrame(Mac::TxFrame &aFrame, const Child &aChild, Message &aMessage);
+    uint16_t RegenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage);
+    uint16_t GenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage);
     void     PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool aAckRequest);
     void     ClearMessagesForRemovedChildren(void);
 
