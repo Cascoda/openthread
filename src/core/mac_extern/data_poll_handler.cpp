@@ -212,12 +212,23 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
 
     if (child->GetIndirectMessageCount())
     {
+        FrameCache *frameCache = NULL;
         otLogWarnMac("Data poll did not trigger queued message for child %04x!", child->GetRloc16());
-    }
 
-    /* TODO: Maybe catch here if a poll was received with a different source address type
-     * than expected.
-     */
+        VerifyOrExit(aPollInd.mSrc.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT);
+        // Check for indirect queued frames queued with extended address
+        while ((frameCache = GetNextFrameCache(*child, frameCache)))
+        {
+            otError error = OT_ERROR_NONE;
+
+            if (!frameCache->mUseExtAddr)
+                continue;
+
+            error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
+            if (!error)
+                HandleSentFrame(OT_ERROR_ABORT, *frameCache);
+        }
+    }
 
 exit:
     return;
