@@ -110,7 +110,7 @@ public:
         uint16_t mMessageNextOffset; ///< The next offset into the message associated with the prepared frame.
         uint16_t mMessageOffset;     ///< The offset of the associated message.
         Message *mMessage;           ///< The message associated with the prepared frame.
-        bool     mSentToMac;
+        bool     mSentToMac : 1;     ///< Has the frame been sent to the MAC layer
     };
 };
 

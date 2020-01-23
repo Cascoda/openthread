@@ -155,12 +155,13 @@ public:
          * @param[out] aFrame    A reference to a MAC frame where the new frame would be placed.
          * @param[in] aContext  A reference to a `FrameContext` that was used for the original frame.
          * @param[in]  aChild    The child for which to prepare the frame.
+         * @param[in] aForceExtDst  Set to force the frame to be regenerated with an extended Destination address
          *
          * @retval OT_ERROR_NONE   Frame was prepared successfully
          * @retval OT_ERROR_ABORT  Indirect transmission to child should be aborted (no frame for the child).
          *
          */
-        otError RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild);
+        otError RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild, bool aForceExtDst);
 
         /**
          * This callback method notifies the end of indirect frame transmission to a child.

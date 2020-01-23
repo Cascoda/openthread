@@ -353,7 +353,7 @@ exit:
     return error;
 } // namespace ot
 
-otError IndirectSender::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild)
+otError IndirectSender::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild, bool aForceExtDst)
 {
     otError  error   = OT_ERROR_NONE;
     Message *message = aContext.mMessage;
@@ -376,7 +376,7 @@ otError IndirectSender::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aCon
         // Prepare the data frame from child's indirect offset.
         directTxOffset = message->GetOffset();
         message->SetOffset(aContext.mMessageOffset);
-        aContext.mMessageNextOffset = RegenerateDataFrame(aFrame, aChild, *message);
+        aContext.mMessageNextOffset = RegenerateDataFrame(aFrame, aChild, *message, aForceExtDst);
         message->SetOffset(directTxOffset);
         break;
 
@@ -405,6 +405,17 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
         aMessage.ClearChildMask(Get<ChildTable>().GetChildIndex(aChild));
         UpdateIndirectMessage(aChild);
         mSourceMatchController.DecrementMessageCount(aChild);
+
+        // Enable short source address matching after the first indirect
+        // message transmission attempt to the child. We intentionally do
+        // not check for successful tx here to address the scenario where
+        // the child does receive "Child ID Response" but parent misses the
+        // 15.4 ack from child. If the "Child ID Response" does not make it
+        // to the child, then the child will need to send a new "Child ID
+        // Request" which will cause the parent to switch to using long
+        // address mode for source address matching.
+
+        mSourceMatchController.SetSrcMatchAsShort(aChild, true);
     }
     else
     {
@@ -424,15 +435,26 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
     return nextOffset;
 }
 
-uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage)
+uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage, bool aForceExtDst)
 {
-    uint16_t nextOffset = GenerateDataFrame(aFrame, aChild, aMessage);
+    Ip6::Header  ip6Header;
+    Mac::Address macSource, macDest;
+    uint16_t     nextOffset;
+
+    aMessage.Read(0, sizeof(ip6Header), &ip6Header);
+    Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
+
+    if (aForceExtDst)
+        macDest.SetExtended(aChild.GetExtAddress());
+    else
+        aChild.GetMacAddress(macDest);
+
+    nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
 
     // Set `FramePending` if there are more queued messages for the
     // child. The case where the current message itself requires
     // fragmentation is already checked and handled in
     // `PrepareDataFrame()` method.
-
     if (aChild.GetIndirectMessageCount())
     {
         aFrame.SetFramePending(true);
@@ -447,8 +469,6 @@ uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, 
     Mac::Address macSource, macDest;
     uint16_t     nextOffset;
 
-    // Determine the MAC source and destination addresses.
-
     aMessage.Read(0, sizeof(ip6Header), &ip6Header);
 
     Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
@@ -456,17 +476,6 @@ uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, 
     aChild.GetMacAddress(macDest);
 
     nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
-
-    // Enable short source address matching after the first indirect
-    // message transmission attempt to the child. We intentionally do
-    // not check for successful tx here to address the scenario where
-    // the child does receive "Child ID Response" but parent misses the
-    // 15.4 ack from child. If the "Child ID Response" does not make it
-    // to the child, then the child will need to send a new "Child ID
-    // Request" which will cause the parent to switch to using long
-    // address mode for source address matching.
-
-    mSourceMatchController.SetSrcMatchAsShort(aChild, true);
 
     return nextOffset;
 }

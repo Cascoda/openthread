@@ -55,9 +55,12 @@ inline otError DataPollHandler::Callbacks::PrepareFrameForChild(Mac::TxFrame &aF
     return Get<IndirectSender>().PrepareFrameForChild(aFrame, aContext, aChild);
 }
 
-inline otError DataPollHandler::Callbacks::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild)
+inline otError DataPollHandler::Callbacks::RegenerateFrame(Mac::TxFrame &aFrame,
+                                                           FrameContext &aContext,
+                                                           Child &       aChild,
+                                                           bool          aForceExtDst)
 {
-    return Get<IndirectSender>().RegenerateFrame(aFrame, aContext, aChild);
+    return Get<IndirectSender>().RegenerateFrame(aFrame, aContext, aChild, aForceExtDst);
 }
 
 inline void DataPollHandler::Callbacks::HandleSentFrameToChild(FrameContext &aContext, otError aError, Child &aChild)
@@ -243,8 +246,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
     // First check if we need any frames regenerating
     for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
     {
-        FrameCache &fc          = mFrameCache[i];
-        bool        swapExtAddr = fc.mUseExtAddr; // Swap the extaddr in to rebuild frame using same dst addr
+        FrameCache &fc = mFrameCache[i];
 
         if (!fc.IsValid())
             continue;
@@ -255,12 +257,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         if (Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
             continue;
 
-        if (swapExtAddr)
-            Get<SourceMatchController>().SetSrcMatchAsShort(*fc.mChild, false);
-        error = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild());
-        if (swapExtAddr)
-            Get<SourceMatchController>().SetSrcMatchAsShort(*fc.mChild, true);
-
+        error              = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
         aFrame.mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = aFrame.GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : NULL;
