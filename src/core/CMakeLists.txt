@@ -26,22 +26,30 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-add_library(openthread-ftd)
-add_library(openthread-mtd)
+# Provide object libraries for capable platforms
+add_library(openthread-ftd-obj OBJECT)
+add_library(openthread-mtd-obj OBJECT)
 
-target_link_libraries(openthread-ftd PUBLIC
+# Provide static libraries for non-cmake consumers
+add_library(openthread-ftd $<TARGET_OBJECTS:openthread-ftd-obj>)
+add_library(openthread-mtd $<TARGET_OBJECTS:openthread-mtd-obj>)
+target_link_libraries(openthread-ftd PUBLIC openthread-ftd-obj)
+target_link_libraries(openthread-mtd PUBLIC openthread-mtd-obj)
+
+target_link_libraries(openthread-ftd-obj PUBLIC
     mbedcrypto
 )
-target_link_libraries(openthread-mtd PUBLIC
+target_link_libraries(openthread-mtd-obj PUBLIC
     mbedcrypto
 )
 
-target_compile_definitions(openthread-ftd PRIVATE
+
+target_compile_definitions(openthread-ftd-obj PRIVATE
     ${OT_PRIVATE_DEFINES}
     OPENTHREAD_FTD=1
 )
 
-target_compile_definitions(openthread-mtd PRIVATE
+target_compile_definitions(openthread-mtd-obj PRIVATE
     ${OT_PRIVATE_DEFINES}
     OPENTHREAD_MTD=1
 )
@@ -204,11 +212,11 @@ else()
     )
 endif()
 
-target_include_directories(openthread-ftd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
-target_include_directories(openthread-mtd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
+target_include_directories(openthread-ftd-obj PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
+target_include_directories(openthread-mtd-obj PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 
-target_sources(openthread-ftd PRIVATE ${COMMON_SOURCES})
-target_sources(openthread-mtd PRIVATE ${COMMON_SOURCES})
+target_sources(openthread-ftd-obj PRIVATE ${COMMON_SOURCES})
+target_sources(openthread-mtd-obj PRIVATE ${COMMON_SOURCES})
 
 if(NOT OPENTHREAD_USE_EXTERN_MAC)
     add_library(openthread-radio)
