@@ -148,13 +148,11 @@ void IndirectSender::ClearAllMessagesForSleepyChild(Child &aChild)
         }
     }
 
-    aChild.SetIndirectMessage(NULL);
     mSourceMatchController.ResetMessageCount(aChild);
 
-    mDataPollHandler.RequestChildPurge(aChild);
-
 exit:
-    return;
+    aChild.SetIndirectMessage(NULL);
+    mDataPollHandler.RequestChildPurge(aChild);
 }
 
 void IndirectSender::SetChildUseShortAddress(Child &aChild, bool aUseShortAddress)
