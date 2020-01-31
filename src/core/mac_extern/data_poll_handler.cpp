@@ -77,12 +77,13 @@ inline void DataPollHandler::Callbacks::HandleFrameChangeDone(Child &aChild)
 
 void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
 {
-    mChild             = &aChild;
-    mMsduHandle        = aMsduHandle;
-    mPurgePending      = false;
-    mFramePending      = false;
-    mPendingRetransmit = false;
-    mUseExtAddr        = false;
+    mChild                  = &aChild;
+    mMsduHandle             = aMsduHandle;
+    mPurgePending           = false;
+    mFramePending           = false;
+    mPendingRetransmitPurge = false;
+    mPendingRetransmit      = false;
+    mUseExtAddr             = false;
     aChild.IncrementFrameCount();
 }
 
@@ -139,8 +140,9 @@ void DataPollHandler::HandleNewFrame(Child &aChild)
             continue;
 
         otLogDebgMac("Setting retransmit, handle %x, fp %d", fc.GetMsduHandle(), fc.mFramePending);
-        fc.mFramePending      = true;
-        fc.mPendingRetransmit = true;
+        fc.mFramePending           = true;
+        fc.mPendingRetransmit      = true;
+        fc.mPendingRetransmitPurge = true;
     }
 
     // Request from mac
@@ -254,7 +256,7 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         if (!fc.mPendingRetransmit)
             continue;
 
-        if (Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
+        if (fc.mPendingRetransmitPurge && Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
             continue;
 
         error              = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
@@ -399,7 +401,8 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
     {
         // Some kind of system error, try again.
         aFrameCache.mPendingRetransmit = true;
-        return; // Return now so we don't free.
+        Get<Mac::Mac>().RequestIndirectFrameTransmission();
+        ExitNow(); // Return now so we don't free.
     }
 
     switch (aError)
