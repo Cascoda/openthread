@@ -1224,6 +1224,14 @@ void Mac::HandleBeginDirect(void)
     assert(error == OT_ERROR_NONE);
 
 exit:
+    if (error != OT_ERROR_NONE)
+    {
+        // If the sendFrame could not be prepared and the tx is being
+        // aborted, forward the error back up.
+        sendFrame.GetDstAddr(mDirectDstAddress);
+        Get<MeshForwarder>().HandleSentFrame(sendFrame.GetAckRequest(), error, mDirectDstAddress);
+    }
+
     return;
 }
 
