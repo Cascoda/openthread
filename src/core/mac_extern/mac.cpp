@@ -1172,6 +1172,7 @@ void Mac::HandleBeginDirect(void)
 {
     TxFrame &sendFrame = mDirectDataReq;
     otError  error     = OT_ERROR_NONE;
+    Address dstAddr;
 
     otLogDebgMac("Mac::HandleBeginDirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
@@ -1213,10 +1214,12 @@ void Mac::HandleBeginDirect(void)
         }
     }
 
+    sendFrame.GetDstAddr(dstAddr);
+
     error = SetTempTxChannel(sendFrame);
     assert(error == OT_ERROR_NONE);
     otLogDebgMac("calling otPlatRadioTransmit for direct");
-    otLogDebgMac("Sam %x; Dam %x; MH %x;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode, sendFrame.mMsduHandle);
+    otLogDebgMac("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode, sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
     otDumpDebgMac("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     mDirectAckRequested = sendFrame.GetAckRequest();
     sendFrame.GetDstAddr(mDirectDstAddress);
@@ -1240,6 +1243,7 @@ void Mac::HandleBeginIndirect(void)
 {
     TxFrame &sendFrame = mIndirectDataReq;
     otError  error     = OT_ERROR_NONE;
+    Address dstAddr;
 
     otLogDebgMac("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
@@ -1253,8 +1257,9 @@ void Mac::HandleBeginIndirect(void)
     sendFrame.mTxOptions |= OT_MAC_TX_OPTION_INDIRECT;
     sendFrame.mTxOptions |= OT_MAC_TX_OPTION_NS_SECURE_IND;
 
+    sendFrame.GetDstAddr(dstAddr);
     otLogDebgMac("calling otPlatRadioTransmit for indirect");
-    otLogDebgMac("Sam %x; Dam %x; MH %x;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode, sendFrame.mMsduHandle);
+    otLogDebgMac("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode, sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
     otDumpDebgMac("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
 
