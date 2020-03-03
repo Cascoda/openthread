@@ -85,12 +85,14 @@ void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
     mPendingRetransmit      = false;
     mUseExtAddr             = false;
     aChild.IncrementFrameCount();
+    otLogDebgMac("Allocated FrameCache %x", mMsduHandle);
 }
 
 void DataPollHandler::FrameCache::Free()
 {
     if (!IsValid())
         return;
+    otLogDebgMac("Freeing FrameCache %x", mMsduHandle);
     mContext.HandleMacDone();
     mMsduHandle = 0;
     mChild->DecrementFrameCount();
@@ -180,9 +182,15 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Mes
         error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
 
         if (!error)
+        {
             frameCache->Free();
+        }
         else
+        {
+            // The higher layer no longer expects the message to exist, and we aren't going to regen, so remove it.
+            frameCache->GetContext().HandleMacDone();
             frameCache->SetPurgePending();
+        }
     }
 
     switch (aChange)
@@ -195,6 +203,19 @@ void DataPollHandler::RequestFrameChange(FrameChange aChange, Child &aChild, Mes
         mCallbacks.HandleFrameChangeDone(aChild);
         break;
     }
+}
+
+bool DataPollHandler::IsFrameBufferedForChild(Child &aChild, Message &aMessage)
+{
+    FrameCache *frameCache = NULL;
+
+    while ((frameCache = GetNextFrameCache(aChild, frameCache)))
+    {
+        if (frameCache->GetContext().IsForMessage(&aMessage))
+            return true;
+    }
+
+    return false;
 }
 
 void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
@@ -212,26 +233,46 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
     child->SetLastHeard(TimerMilli::GetNow());
     child->ResetLinkFailures();
 
-    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, lqi:%d", child->GetRloc16(), child->GetIndirectMessageCount(),
-                 aPollInd.GetLqi());
+    otLogInfoMac("Rx data poll, src:0x%04x, qed_msgs:%d, in_q: %d, lqi:%d", child->GetRloc16(),
+                 child->GetIndirectMessageCount(), child->GetFrameCount(), aPollInd.GetLqi());
 
     if (child->GetIndirectMessageCount())
     {
         FrameCache *frameCache = NULL;
         otLogWarnMac("Data poll did not trigger queued message for child %04x!", child->GetRloc16());
 
-        VerifyOrExit(aPollInd.mSrc.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT);
-        // Check for indirect queued frames queued with extended address
-        while ((frameCache = GetNextFrameCache(*child, frameCache)))
+        if (aPollInd.mSrc.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT)
         {
-            otError error = OT_ERROR_NONE;
+            // Check for indirect queued frames queued with extended address
+            while ((frameCache = GetNextFrameCache(*child, frameCache)))
+            {
+                otError error = OT_ERROR_NONE;
 
-            if (!frameCache->mUseExtAddr)
+                if (!frameCache->mUseExtAddr)
+                    continue;
+
+                error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
+                if (!error)
+                    HandleSentFrame(OT_ERROR_ABORT, *frameCache);
+            }
+        }
+        HandleNewFrame(*child);
+    }
+    else if (child->GetFrameCount())
+    {
+        otLogWarnMac("Data poll did not trigger queued message for child %04x!", child->GetRloc16());
+        otLogDebgMac("Dumping framecache...");
+        for (int i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+        {
+            FrameCache &frameCache = mFrameCache[i];
+
+            if (!frameCache.IsValid())
                 continue;
 
-            error = Get<Mac::Mac>().PurgeIndirectFrame(frameCache->GetMsduHandle());
-            if (!error)
-                HandleSentFrame(OT_ERROR_ABORT, *frameCache);
+            otLogDebgMac("Child 0x%04x, MH %02x, PP %d, FP %d, PRP %d, PR %d, UEA %d",
+                         frameCache.GetChild().GetRloc16(), frameCache.GetMsduHandle(), frameCache.mPurgePending,
+                         frameCache.mFramePending, frameCache.mPendingRetransmitPurge, frameCache.mPendingRetransmit,
+                         frameCache.mUseExtAddr);
         }
     }
 
@@ -256,8 +297,12 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
         if (!fc.mPendingRetransmit)
             continue;
 
-        if (fc.mPendingRetransmitPurge && Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle()) != OT_ERROR_NONE)
-            continue;
+        if (fc.mPendingRetransmitPurge)
+        {
+            otError purgeErr = Get<Mac::Mac>().PurgeIndirectFrame(fc.GetMsduHandle());
+            if (!(purgeErr == OT_ERROR_NONE || purgeErr == OT_ERROR_ALREADY))
+                continue;
+        }
 
         error              = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
         aFrame.mMsduHandle = fc.GetMsduHandle();
@@ -295,9 +340,18 @@ otError DataPollHandler::HandleFrameRequest(Mac::TxFrame &aFrame)
             pendingChild       = fc->mFramePending ? &fc->GetChild() : NULL;
             fc->mContext.HandleSentToMac();
             if (error)
+            {
+                otLogDebgMac("HandleFrameRequest for child 0x%04x failed with error %s", child.GetRloc16(),
+                             otThreadErrorToString(error));
+
+                pendingChild = NULL;
+                error        = OT_ERROR_NOT_FOUND;
                 fc->Free();
+            }
             else
+            {
                 ExitNow();
+            }
         }
     }
 
@@ -371,6 +425,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
         if (!fc.IsValid())
             return &fc;
     }
+    otLogWarnMac("Failed to GetEmptyFrameCache");
     return NULL;
 }
 
@@ -402,7 +457,7 @@ void DataPollHandler::HandleSentFrame(otError aError, FrameCache &aFrameCache)
         // Some kind of system error, try again.
         aFrameCache.mPendingRetransmit = true;
         Get<Mac::Mac>().RequestIndirectFrameTransmission();
-        ExitNow(); // Return now so we don't free.
+        return; // Return now so we don't free.
     }
 
     switch (aError)

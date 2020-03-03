@@ -691,7 +691,7 @@ bool Message::IsChildPending(void) const
 {
     bool rval = false;
 
-    if (mBuffer.mHead.mInfo.mSentToMacCount)
+    if (IsSentToMac())
         ExitNow(rval = true);
 
     for (size_t i = 0; i < sizeof(mBuffer.mHead.mInfo.mChildMask); i++)

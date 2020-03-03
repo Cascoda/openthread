@@ -36,6 +36,8 @@
 
 #include "openthread-core-config.h"
 
+#include <common/logging.hpp>
+
 #include <stdint.h>
 
 namespace ot {

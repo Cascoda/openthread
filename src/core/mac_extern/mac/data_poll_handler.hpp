@@ -280,6 +280,15 @@ public:
     void RequestFrameChange(FrameChange aChange, Child &aChild, Message *aMessage);
 
     /**
+     * This method checks whether or not a given message is buffered for a given child in the DataPollHandler.
+     *
+     * @param aChild   The child to check for
+     * @param aMessage The message to check for
+     * @return True if there is a frame for this message and child buffered, false if not.
+     */
+    bool IsFrameBufferedForChild(Child &aChild, Message &aMessage);
+
+    /**
      * Purge all messages destined for a certain child, then invoke `HandleFrameChangeDone()` callback.
      * @param aChild
      */

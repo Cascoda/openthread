@@ -105,21 +105,26 @@ exit:
 
 otError IndirectSender::RemoveMessageFromSleepyChild(Message &aMessage, Child &aChild)
 {
-    otError  error      = OT_ERROR_NONE;
+    otError  error      = OT_ERROR_NOT_FOUND;
     uint16_t childIndex = Get<ChildTable>().GetChildIndex(aChild);
 
-    VerifyOrExit(aMessage.GetChildMask(childIndex), error = OT_ERROR_NOT_FOUND);
+    if (aMessage.GetChildMask(childIndex))
+    {
+        error = OT_ERROR_NONE;
+        aMessage.ClearChildMask(childIndex);
+        mSourceMatchController.DecrementMessageCount(aChild);
 
-    aMessage.ClearChildMask(childIndex);
-    mSourceMatchController.DecrementMessageCount(aChild);
+        if (aChild.GetIndirectMessage() == &aMessage)
+            aChild.SetIndirectMessage(NULL);
+    }
 
-    if (aChild.GetIndirectMessage() == &aMessage)
-        aChild.SetIndirectMessage(NULL);
+    if (mDataPollHandler.IsFrameBufferedForChild(aChild, aMessage))
+    {
+        error = OT_ERROR_NONE;
+        aChild.SetWaitingForMessageUpdate(true);
+        mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild, &aMessage);
+    }
 
-    aChild.SetWaitingForMessageUpdate(true);
-    mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild, &aMessage);
-
-exit:
     return error;
 }
 
@@ -367,7 +372,6 @@ otError IndirectSender::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aCon
 
     otLogDebgMac("Regenerating indirect frame");
 
-    aContext.mMessage = message;
     switch (message->GetType())
     {
     case Message::kTypeIp6:
@@ -397,6 +401,16 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
 {
     uint16_t nextOffset = GenerateDataFrame(aFrame, aChild, aMessage);
 
+    // Set `FramePending` if there are more queued messages for the
+    // child. The case where the current message itself requires
+    // fragmentation is already checked and handled in
+    // `PrepareDataFrame()` method.
+
+    if (aChild.GetIndirectMessageCount())
+    {
+        aFrame.SetFramePending(true);
+    }
+
     if (nextOffset >= aMessage.GetLength())
     {
         otLogDebgMac("Final message fragment queued.");
@@ -418,16 +432,6 @@ uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, M
     else
     {
         aChild.SetIndirectNextFragmentOffset(nextOffset);
-    }
-
-    // Set `FramePending` if there are more queued messages for the
-    // child. The case where the current message itself requires
-    // fragmentation is already checked and handled in
-    // `PrepareDataFrame()` method.
-
-    if (aChild.GetIndirectMessageCount())
-    {
-        aFrame.SetFramePending(true);
     }
 
     return nextOffset;
