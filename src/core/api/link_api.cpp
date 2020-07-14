@@ -443,8 +443,8 @@ void HandleActiveScanResult(Instance &aInstance, otBeaconNotify *aBeacon)
     {
         otActiveScanResult result;
 
-        aInstance.Get<Mac::Mac>().ConvertBeaconToActiveScanResult(aBeacon, result);
-        aInstance.InvokeActiveScanCallback(&result);
+        if (aInstance.Get<Mac::Mac>().ConvertBeaconToActiveScanResult(aBeacon, result) == OT_ERROR_NONE)
+            aInstance.InvokeActiveScanCallback(&result);
     }
 }
 #else
