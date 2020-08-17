@@ -189,6 +189,7 @@ private:
 
     TimerMilli     mTimer;
     Coap::Resource mJoinerEntrust;
+    otPanId        mRestorePanId;
 };
 
 } // namespace MeshCoP

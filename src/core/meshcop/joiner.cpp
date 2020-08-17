@@ -62,6 +62,7 @@ Joiner::Joiner(Instance &aInstance)
     , mFinalizeMessage(NULL)
     , mTimer(aInstance, &Joiner::HandleTimer, this)
     , mJoinerEntrust(OT_URI_PATH_JOINER_ENTRUST, &Joiner::HandleJoinerEntrust, this)
+    , mRestorePanId(Mac::kPanIdBroadcast)
 {
     memset(mJoinerRouters, 0, sizeof(mJoinerRouters));
     Get<Coap::Coap>().AddResource(mJoinerEntrust);
@@ -135,8 +136,9 @@ otError Joiner::Start(const char *     aPskd,
     SuccessOrExit(error = Get<Mle::MleRouter>().Discover(Mac::ChannelMask(0), Get<Mac::Mac>().GetPanId(),
                                                          /* aJoiner */ true, /* aEnableFiltering */ true,
                                                          HandleDiscoverResult, this));
-    mCallback = aCallback;
-    mContext  = aContext;
+    mCallback     = aCallback;
+    mContext      = aContext;
+    mRestorePanId = Get<Mac::Mac>().GetPanId();
 
     SetState(OT_JOINER_STATE_DISCOVER);
 
@@ -180,6 +182,11 @@ void Joiner::Finish(otError aError)
         Get<Coap::CoapSecure>().Stop();
         FreeJoinerFinalizeMessage();
         break;
+    }
+
+    if (aError)
+    {
+        Get<Mac::Mac>().SetPanId(mRestorePanId);
     }
 
     SetState(OT_JOINER_STATE_IDLE);
