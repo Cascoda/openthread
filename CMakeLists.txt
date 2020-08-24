@@ -36,12 +36,21 @@ include("${PROJECT_SOURCE_DIR}/etc/cmake/checks.cmake")
 include("${PROJECT_SOURCE_DIR}/etc/cmake/options.cmake")
 include("${PROJECT_SOURCE_DIR}/etc/cmake/functions.cmake")
 
-file(READ .default-version OT_DEFAULT_VERSION)
-execute_process(
-    COMMAND bash "-c" "third_party/nlbuild-autotools/repo/scripts/mkversion -b ${OT_DEFAULT_VERSION}"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE OT_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(CMAKE_HOST_WIN32)
+    find_package(Git)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} version --dirty --always
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        OUTPUT_VARIABLE OT_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    file(READ .default-version OT_DEFAULT_VERSION)
+    execute_process(
+        COMMAND bash "-c" "third_party/nlbuild-autotools/repo/scripts/mkversion -b ${OT_DEFAULT_VERSION}"
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        OUTPUT_VARIABLE OT_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+endif()
 message(STATUS "Version: ${OT_VERSION}")
 
 list(APPEND OT_PRIVATE_DEFINES
