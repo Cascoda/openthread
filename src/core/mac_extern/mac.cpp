@@ -1085,18 +1085,21 @@ void Mac::BuildSecurityTable()
     // FFD children have one-way comms (rx-only) with neighboring routers so they must
     // maintain the device table for them. See TS:1.1.1 sec 4.7.7.4
 
-    if ((role == OT_DEVICE_ROLE_CHILD) || role == OT_DEVICE_ROLE_DETACHED)
-    {
-        Router &parent = Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring()
-                             ? Get<Mle::Mle>().GetParentCandidate()
-                             : Get<Mle::Mle>().GetParent();
+    // The reason we don't check for role at all is because routers can have parent
+    // candidates if they are reattaching to a better partition.
 
-        if (parent.IsStateValidOrRestoring())
-        {
-            BuildDeviceDescriptor(parent, devIndex);
-            numActiveDevices++;
-            nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent.GetRloc16());
-        }
+    if (Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring())
+    {
+        Router &parent = Get<Mle::Mle>().GetParentCandidate();
+        BuildDeviceDescriptor(parent, devIndex);
+        numActiveDevices++;
+    }
+    if (Get<Mle::Mle>().GetParent().IsStateValidOrRestoring())
+    {
+        Router &parent = Get<Mle::Mle>().GetParent();
+        BuildDeviceDescriptor(parent, devIndex);
+        numActiveDevices++;
+        nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent.GetRloc16());
     }
     if (isFFD)
     {
@@ -1172,7 +1175,7 @@ void Mac::HandleBeginDirect(void)
 {
     TxFrame &sendFrame = mDirectDataReq;
     otError  error     = OT_ERROR_NONE;
-    Address dstAddr;
+    Address  dstAddr;
 
     otLogDebgMac("Mac::HandleBeginDirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
@@ -1219,7 +1222,8 @@ void Mac::HandleBeginDirect(void)
     error = SetTempTxChannel(sendFrame);
     assert(error == OT_ERROR_NONE);
     otLogDebgMac("calling otPlatRadioTransmit for direct");
-    otLogDebgMac("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode, sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
+    otLogDebgMac("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
+                 sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
     otDumpDebgMac("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     mDirectAckRequested = sendFrame.GetAckRequest();
     sendFrame.GetDstAddr(mDirectDstAddress);
@@ -1243,7 +1247,7 @@ void Mac::HandleBeginIndirect(void)
 {
     TxFrame &sendFrame = mIndirectDataReq;
     otError  error     = OT_ERROR_NONE;
-    Address dstAddr;
+    Address  dstAddr;
 
     otLogDebgMac("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
@@ -1259,7 +1263,8 @@ void Mac::HandleBeginIndirect(void)
 
     sendFrame.GetDstAddr(dstAddr);
     otLogDebgMac("calling otPlatRadioTransmit for indirect");
-    otLogDebgMac("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode, sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
+    otLogDebgMac("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
+                 sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
     otDumpDebgMac("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
 
