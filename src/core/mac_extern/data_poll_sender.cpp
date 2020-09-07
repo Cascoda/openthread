@@ -95,13 +95,13 @@ otError DataPollSender::SendDataPoll(void)
     Router *      parent;
     otPollRequest pollReq;
     Mac::Address  macSource;
+    bool          usePC;
 
     VerifyOrExit(mEnabled, error = OT_ERROR_INVALID_STATE);
     VerifyOrExit(!Get<Mac::Mac>().GetRxOnWhenIdle(), error = OT_ERROR_INVALID_STATE);
 
-    parent = Get<Mle::MleRouter>().Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring()
-                 ? &Get<Mle::Mle>().GetParentCandidate()
-                 : &Get<Mle::Mle>().GetParent();
+    usePC  = Get<Mle::MleRouter>().Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring();
+    parent = usePC ? &Get<Mle::Mle>().GetParentCandidate() : &Get<Mle::Mle>().GetParent();
     VerifyOrExit(parent->IsStateValidOrRestoring(), error = OT_ERROR_INVALID_STATE);
 
     mTimer.Stop();
@@ -110,7 +110,7 @@ otError DataPollSender::SendDataPoll(void)
 
     memset(&pollReq, 0, sizeof(pollReq));
     Encoding::LittleEndian::WriteUint16(Get<Mac::Mac>().GetPanId(), pollReq.mCoordAddress.mPanId);
-    if (!macSource.IsShortAddrInvalid())
+    if (macSource.IsShortAddrInvalid() || usePC)
     {
         Mac::Address parentAddr;
         parentAddr.SetExtended(parent->GetExtAddress());
