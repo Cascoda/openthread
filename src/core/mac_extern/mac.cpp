@@ -805,6 +805,7 @@ otError Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRou
 
     for (ChildTable::Iterator iter(GetInstance(), Child::kInStateValidOrRestoring); !iter.IsDone(); iter++)
     {
+        otLogDebgMac("Building Child DD...");
         BuildDeviceDescriptor(*iter.GetChild(), aDevIndex);
         mActiveNeighborCount++;
     }
@@ -819,6 +820,7 @@ otError Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRou
         if (Get<Mle::MleRouter>().GetNeighbor(router->GetRloc16()) == NULL)
             continue; // Ignore non-neighbors
 
+        otLogDebgMac("Building Router DD...");
         error = BuildDeviceDescriptor(*router, aDevIndex);
         VerifyOrExit(error == OT_ERROR_NONE);
         mActiveNeighborCount++;
@@ -1140,12 +1142,15 @@ void Mac::BuildSecurityTable()
     if (Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring())
     {
         Router &parent = Get<Mle::Mle>().GetParentCandidate();
+        otLogDebgMac("Building Parent Candidate DD...");
         BuildDeviceDescriptor(parent, devIndex);
         mActiveNeighborCount++;
     }
-    if (Get<Mle::Mle>().GetParent().IsStateValidOrRestoring())
+    if (((role == OT_DEVICE_ROLE_CHILD) || (role == OT_DEVICE_ROLE_DETACHED)) &&
+        Get<Mle::Mle>().GetParent().IsStateValidOrRestoring())
     {
         Router &parent = Get<Mle::Mle>().GetParent();
+        otLogDebgMac("Building Parent DD...");
         BuildDeviceDescriptor(parent, devIndex);
         mActiveNeighborCount++;
         nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent.GetRloc16());
