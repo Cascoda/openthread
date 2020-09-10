@@ -747,11 +747,12 @@ private:
                                   uint16_t          shortAddr,
                                   uint8_t           aIndex);
     otError BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex);
-    otError BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t &aNumActiveDevices, uint8_t aIgnoreRouterId);
+    otError BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRouterId);
     void    BuildJoinerKeyDescriptor(uint8_t aIndex);
-    void    BuildMainKeyDescriptors(uint8_t aDeviceCount, uint8_t &aIndex);
-    void    BuildMode2KeyDescriptor(uint8_t aIndex, uint8_t aMode2DevHandle);
+    void    BuildMainKeyDescriptors(uint8_t &aIndex);
+    void    BuildMode2KeyDescriptor(uint8_t aIndex);
     void    HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr);
+    void    BuildKeyTable(void);
 
     uint8_t GetCurrentChannel(void);
     otError SetTempTxChannel(TxFrame &aTxFrame);
@@ -795,6 +796,7 @@ private:
     uint8_t      mDirectMsduHandle;
     uint8_t      mDynamicKeyIndex;
     uint8_t      mMode2DevHandle;
+    uint8_t      mActiveNeighborCount;
     ChannelMask  mSupportedChannelMask;
 
     uint8_t mDeviceCurrentKeys[OPENTHREAD_CONFIG_EXTERNAL_MAC_DEVICE_TABLE_SIZE];

@@ -79,6 +79,7 @@ Mac::Mac(Instance &aInstance)
     , mNextMsduHandle(1)
     , mDynamicKeyIndex(0)
     , mMode2DevHandle(0)
+    , mActiveNeighborCount(0)
     , mSupportedChannelMask(Radio::kSupportedChannels)
     , mDeviceCurrentKeys()
     , mNotifierCallback(aInstance, sStateChangedCallback, this)
@@ -763,7 +764,7 @@ otError Mac::BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex)
     int32_t keyOffset = 0, keyNum = 0;
     uint8_t reps = 1;
 
-    keyNum = 1 + Get<KeyManager>().GetCurrentKeySequence() - aNeighbor.GetKeySequence();
+    keyNum = 1 + aNeighbor.GetKeySequence() - Get<KeyManager>().GetCurrentKeySequence();
     VerifyOrExit(keyNum >= 0 && keyNum <= 2, error = OT_ERROR_SECURITY);
 
 #if !OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
@@ -785,22 +786,27 @@ otError Mac::BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex)
             fc = 0xFFFFFFFF;
         }
         error = BuildDeviceDescriptor(aNeighbor.GetExtAddress(), fc, mPanId, aNeighbor.GetRloc16(), aIndex);
+        otLogDebgMac("Key Sequence Number: %d", aNeighbor.GetKeySequence());
         VerifyOrExit(error == OT_ERROR_NONE);
         aIndex += 1;
     }
 
 exit:
+    if (error)
+    {
+        otLogDebgMac("BuildDeviceDescriptor error %s", otThreadErrorToString(error));
+    }
     return error;
 }
 
-otError Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t &aNumActiveDevices, uint8_t aIgnoreRouterId)
+otError Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRouterId)
 {
     otError error = OT_ERROR_NONE;
 
     for (ChildTable::Iterator iter(GetInstance(), Child::kInStateValidOrRestoring); !iter.IsDone(); iter++)
     {
         BuildDeviceDescriptor(*iter.GetChild(), aDevIndex);
-        aNumActiveDevices++;
+        mActiveNeighborCount++;
     }
 
     for (RouterTable::Iterator iter(GetInstance()); !iter.IsDone(); iter++)
@@ -815,7 +821,7 @@ otError Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t &aNumActiv
 
         error = BuildDeviceDescriptor(*router, aDevIndex);
         VerifyOrExit(error == OT_ERROR_NONE);
-        aNumActiveDevices++;
+        mActiveNeighborCount++;
     }
 
 exit:
@@ -852,11 +858,24 @@ otError Mac::UpdateDevice(Neighbor &aNeighbor)
 {
     uint8_t               len;
     uint8_t               index = aNeighbor.GetDeviceTableIndex();
+    uint8_t               keyNum;
+    uint8_t               reps = 1;
     otPibDeviceDescriptor deviceDesc;
     ExtAddress            addr;
     otError               error = OT_ERROR_NONE;
 
+    otLogDebgMac("Updating device.");
+#if !OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
+    reps = 3;
+#endif
+
     VerifyOrExit(aNeighbor.IsStateValidOrRestoring(), error = OT_ERROR_NOT_FOUND);
+
+    keyNum = 1 + aNeighbor.GetKeySequence() - Get<KeyManager>().GetCurrentKeySequence();
+    otLogDebgMac("Key Sequence Number: %d", aNeighbor.GetKeySequence());
+    VerifyOrExit(keyNum >= 0 && keyNum <= 2, error = OT_ERROR_SECURITY);
+
+    mDeviceCurrentKeys[index / reps] = keyNum;
 
     error =
         otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, index, &len, reinterpret_cast<uint8_t *>(&deviceDesc));
@@ -870,7 +889,13 @@ otError Mac::UpdateDevice(Neighbor &aNeighbor)
     error =
         otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, index, len, reinterpret_cast<uint8_t *>(&deviceDesc));
 
+    BuildKeyTable();
+
 exit:
+    if (error)
+    {
+        otLogDebgMac("UpdateDevice error: %s", otThreadErrorToString(error));
+    }
     return error;
 }
 
@@ -941,7 +966,7 @@ void Mac::BuildJoinerKeyDescriptor(uint8_t aIndex)
 #endif
 }
 
-void Mac::BuildMainKeyDescriptors(uint8_t aDeviceCount, uint8_t &aIndex)
+void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
 {
     otKeyTableEntry keyTableEntry;
     uint32_t        keySequence = Get<KeyManager>().GetCurrentKeySequence() - 1;
@@ -951,12 +976,12 @@ void Mac::BuildMainKeyDescriptors(uint8_t aDeviceCount, uint8_t &aIndex)
     ddReps = 1;
 #endif
 
-    VerifyOrExit(aDeviceCount > 0);
+    VerifyOrExit(mActiveNeighborCount > 0);
     memset(&keyTableEntry, 0, sizeof(keyTableEntry));
 
     keyTableEntry.mKeyIdLookupListEntries = 1;
     keyTableEntry.mKeyUsageListEntries    = 2;
-    keyTableEntry.mKeyDeviceListEntries   = aDeviceCount;
+    keyTableEntry.mKeyDeviceListEntries   = mActiveNeighborCount;
 
     keyTableEntry.mKeyIdLookupDesc[0].mLookupDataSizeCode = OT_MAC_LOOKUP_DATA_SIZE_CODE_9_OCTETS;
     keyTableEntry.mKeyIdLookupDesc[0].mLookupData[8]      = 0xFF; // keyIndex || macDefaultKeySource
@@ -971,7 +996,7 @@ void Mac::BuildMainKeyDescriptors(uint8_t aDeviceCount, uint8_t &aIndex)
         memcpy(keyTableEntry.mKey, key, sizeof(keyTableEntry.mKey));
         keyTableEntry.mKeyIdLookupDesc[0].mLookupData[0] = (keySequence & 0x7F) + 1;
 
-        for (int j = 0; j < aDeviceCount; j++)
+        for (int j = 0; j < mActiveNeighborCount; j++)
         {
             keyTableEntry.mKeyDeviceDesc[j].mDeviceDescriptorHandle = (j * ddReps) + (i % ddReps);
 
@@ -989,7 +1014,7 @@ void Mac::BuildMainKeyDescriptors(uint8_t aDeviceCount, uint8_t &aIndex)
         }
 
         otLogDebgMac("Built Key at index %d", aIndex);
-        for (int j = 0; j < aDeviceCount; j++)
+        for (int j = 0; j < mActiveNeighborCount; j++)
         {
             otLogDebgMac("Device Desc handle %d, blacklisted %d",
                          keyTableEntry.mKeyDeviceDesc[j].mDeviceDescriptorHandle,
@@ -1007,14 +1032,13 @@ exit:
     return;
 }
 
-void Mac::BuildMode2KeyDescriptor(uint8_t aIndex, uint8_t aMode2DevHandle)
+void Mac::BuildMode2KeyDescriptor(uint8_t aIndex)
 {
     otKeyTableEntry keyTableEntry;
 
     memset(&keyTableEntry, 0, sizeof(keyTableEntry));
 
     mDynamicKeyIndex = aIndex;
-    mMode2DevHandle  = aMode2DevHandle;
 
     keyTableEntry.mKeyIdLookupListEntries = 1;
     keyTableEntry.mKeyUsageListEntries    = 1;
@@ -1025,7 +1049,7 @@ void Mac::BuildMode2KeyDescriptor(uint8_t aIndex, uint8_t aMode2DevHandle)
 
     keyTableEntry.mKeyUsageDesc[0].mFrameType     = Frame::kFcfFrameData;
     keyTableEntry.mKeyDeviceDesc[0].mUniqueDevice = true; // Assumed errata in thread spec says this should be false
-    keyTableEntry.mKeyDeviceDesc[0].mDeviceDescriptorHandle = aMode2DevHandle;
+    keyTableEntry.mKeyDeviceDesc[0].mDeviceDescriptorHandle = mMode2DevHandle;
 
     memcpy(keyTableEntry.mKey, sMode2Key, sizeof(keyTableEntry.mKey));
 
@@ -1064,15 +1088,40 @@ void Mac::HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr)
     mJoinerEntrustResponseRequested = true;
 }
 
+void Mac::BuildKeyTable()
+{
+    uint8_t keyIndex  = 0;
+    bool    isJoining = false;
+
+#if OPENTHREAD_CONFIG_JOINER_ENABLE
+    isJoining = (Get<MeshCoP::Joiner>().GetState() == OT_JOINER_STATE_CONNECT);
+#endif
+
+    if (isJoining)
+    {
+#if OPENTHREAD_CONFIG_JOINER_ENABLE
+        BuildJoinerKeyDescriptor(keyIndex++);
+#endif
+    }
+    else
+    {
+        BuildMainKeyDescriptors(keyIndex);
+    }
+    BuildMode2KeyDescriptor(keyIndex++);
+
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_KEY_TABLE_ENTRIES, 0, 1, &keyIndex);
+}
+
 void Mac::BuildSecurityTable()
 {
     otDeviceRole role                = Get<Mle::Mle>().GetRole();
     uint8_t      devIndex            = 0;
-    uint8_t      keyIndex            = 0;
-    uint8_t      numActiveDevices    = 0;
     uint8_t      nextHopForNeighbors = Mle::kInvalidRouterId;
     bool         isJoining           = false;
     bool         isFFD               = (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice());
+
+    mActiveNeighborCount = 0;
+    otLogDebgMac("Current KeySequenceNumber: %d", Get<KeyManager>().GetCurrentKeySequence());
 
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
     isJoining = (Get<MeshCoP::Joiner>().GetState() == OT_JOINER_STATE_CONNECT);
@@ -1092,18 +1141,18 @@ void Mac::BuildSecurityTable()
     {
         Router &parent = Get<Mle::Mle>().GetParentCandidate();
         BuildDeviceDescriptor(parent, devIndex);
-        numActiveDevices++;
+        mActiveNeighborCount++;
     }
     if (Get<Mle::Mle>().GetParent().IsStateValidOrRestoring())
     {
         Router &parent = Get<Mle::Mle>().GetParent();
         BuildDeviceDescriptor(parent, devIndex);
-        numActiveDevices++;
+        mActiveNeighborCount++;
         nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent.GetRloc16());
     }
     if (isFFD)
     {
-        BuildRouterDeviceDescriptors(devIndex, numActiveDevices, nextHopForNeighbors);
+        BuildRouterDeviceDescriptors(devIndex, nextHopForNeighbors);
     }
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
     if (role == OT_DEVICE_ROLE_DISABLED && isJoining)
@@ -1119,23 +1168,9 @@ void Mac::BuildSecurityTable()
     BuildDeviceDescriptor(static_cast<const ExtAddress &>(sMode2ExtAddress), 0, 0xFFFF, 0xFFFF, mMode2DevHandle);
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE_ENTRIES, 0, 1, &devIndex);
 
-    // Keys:
-    if (isJoining)
-    {
-#if OPENTHREAD_CONFIG_JOINER_ENABLE
-        BuildJoinerKeyDescriptor(keyIndex++);
-#endif
-    }
-    else
-    {
-        BuildMainKeyDescriptors(numActiveDevices, keyIndex);
-    }
-    BuildMode2KeyDescriptor(keyIndex++, mMode2DevHandle);
+    BuildKeyTable();
 
-    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_KEY_TABLE_ENTRIES, 0, 1, &keyIndex);
-    // Finalisation
-
-    otLogInfoMac("Built Security Table with %d devices", numActiveDevices);
+    otLogInfoMac("Built Security Table with %d devices", mActiveNeighborCount);
 }
 
 void Mac::ProcessTransmitSecurity(otSecSpec &aSecSpec)
@@ -1359,7 +1394,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, otError aError)
         {
             // Restore the mode 2 key after sending the joiner entrust response
             mJoinerEntrustResponseRequested = false;
-            BuildMode2KeyDescriptor(mDynamicKeyIndex, mMode2DevHandle);
+            BuildMode2KeyDescriptor(mDynamicKeyIndex);
         }
         if (mUseTempTxChannel)
         {
