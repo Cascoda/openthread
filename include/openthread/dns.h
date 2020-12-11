@@ -108,6 +108,22 @@ otError otDnsClientQuery(otInstance *         aInstance,
                          void *               aContext);
 
 /**
+ * This function sends a DNS query for A (IPv4) record, and converts it to IPv4 by DNS64.
+ *
+ * This function is available only if feature `OPENTHREAD_CONFIG_DNS_CLIENT_ENABLE` is enabled.
+ *
+ * @param[in]  aInstance   A pointer to an OpenThread instance.
+ * @param[in]  aQuery      A pointer to specify DNS query parameters.
+ * @param[in]  aHandler    A function pointer that shall be called on response reception or time-out.
+ * @param[in]  aContext    A pointer to arbitrary context information.
+ *
+ */
+otError otDnsClientQueryDNS64(otInstance *         aInstance,
+                              const otDnsQuery *   aQuery,
+                              otDnsResponseHandler aHandler,
+                              void *               aContext);
+
+/**
  * @}
  *
  */

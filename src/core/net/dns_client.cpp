@@ -111,14 +111,14 @@ otError Client::Stop(void)
     return mSocket.Close();
 }
 
-otError Client::Query(const otDnsQuery *aQuery, otDnsResponseHandler aHandler, void *aContext)
+otError Client::Query(const otDnsQuery *aQuery, otDnsResponseHandler aHandler, void *aContext, bool aUseIpv4)
 {
-    otError                 error;
-    QueryMetadata           queryMetadata(aHandler, aContext);
-    Message *               message     = NULL;
-    Message *               messageCopy = NULL;
-    Header                  header;
-    QuestionAaaa            question;
+    otError       error;
+    QueryMetadata queryMetadata(aHandler, aContext);
+    Message *     message     = NULL;
+    Message *     messageCopy = NULL;
+    Header        header;
+
     const Ip6::MessageInfo *messageInfo;
 
     VerifyOrExit(aQuery->mHostname != NULL && aQuery->mMessageInfo != NULL, error = OT_ERROR_INVALID_ARGS);
@@ -137,7 +137,17 @@ otError Client::Query(const otDnsQuery *aQuery, otDnsResponseHandler aHandler, v
     VerifyOrExit((message = NewMessage(header)) != NULL, error = OT_ERROR_NO_BUFS);
 
     SuccessOrExit(error = AppendCompressedHostname(*message, aQuery->mHostname));
-    SuccessOrExit(error = question.AppendTo(*message));
+
+    if (aUseIpv4)
+    {
+        QuestionA question;
+        SuccessOrExit(error = question.AppendTo(*message));
+    }
+    else
+    {
+        QuestionAaaa question;
+        SuccessOrExit(error = question.AppendTo(*message));
+    }
 
     messageInfo = static_cast<const Ip6::MessageInfo *>(aQuery->mMessageInfo);
 
@@ -465,7 +475,8 @@ void Client::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessag
     otError            error = OT_ERROR_NONE;
     Header             responseHeader;
     QueryMetadata      queryMetadata;
-    ResourceRecordAaaa record;
+    ResourceRecordAaaa recordAaaa;
+    ResourceRecordA    recordA;
     Message *          message = NULL;
     uint16_t           offset;
 
@@ -494,18 +505,25 @@ void Client::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessag
             ExitNow(error = OT_ERROR_PARSE);
         }
 
-        if (aMessage.Read(offset, sizeof(record), &record) != sizeof(record) ||
-            record.GetType() != ResourceRecordAaaa::kType || record.GetClass() != ResourceRecordAaaa::kClass)
+        if (aMessage.Read(offset, sizeof(recordAaaa), &recordAaaa) == sizeof(recordAaaa) &&
+            recordAaaa.GetType() == ResourceRecordAaaa::kType && recordAaaa.GetClass() == ResourceRecordAaaa::kClass)
         {
-            offset += sizeof(ResourceRecord) + record.GetLength();
-
-            continue;
+            // Return the first found IPv6 address.
+            FinalizeDnsTransaction(*message, queryMetadata, &recordAaaa.GetAddress(), recordAaaa.GetTtl(),
+                                   OT_ERROR_NONE);
+            ExitNow();
+        }
+        else if (aMessage.Read(offset, sizeof(recordA), &recordA) == sizeof(recordA) &&
+                 recordA.GetType() == ResourceRecordA::kType && recordA.GetClass() == ResourceRecordA::kClass)
+        {
+            // Return the first found IPv4 address as an IPv4 address with nat64 prefix.
+            otIp6Address nat64Prefix = {0x00, 0x64, 0xFF, 0x9B};
+            memcpy(nat64Prefix.mFields.m8 + 12, &recordA.GetAddress(), sizeof(recordA.GetAddress()));
+            FinalizeDnsTransaction(*message, queryMetadata, &nat64Prefix, recordA.GetTtl(), OT_ERROR_NONE);
+            ExitNow();
         }
 
-        // Return the first found IPv6 address.
-        FinalizeDnsTransaction(*message, queryMetadata, &record.GetAddress(), record.GetTtl(), OT_ERROR_NONE);
-
-        ExitNow();
+        offset += sizeof(ResourceRecord) + recordAaaa.GetLength();
     }
 
     ExitNow(error = OT_ERROR_NOT_FOUND);

@@ -45,6 +45,17 @@ otError otDnsClientQuery(otInstance *aInstance, const otDnsQuery *aQuery, otDnsR
 {
     Instance &instance = *static_cast<Instance *>(aInstance);
 
-    return instance.Get<Dns::Client>().Query(aQuery, aHandler, aContext);
+    return instance.Get<Dns::Client>().Query(aQuery, aHandler, aContext, false);
 }
+
+otError otDnsClientQueryDNS64(otInstance *         aInstance,
+                              const otDnsQuery *   aQuery,
+                              otDnsResponseHandler aHandler,
+                              void *               aContext)
+{
+    Instance &instance = *static_cast<Instance *>(aInstance);
+
+    return instance.Get<Dns::Client>().Query(aQuery, aHandler, aContext, true);
+}
+
 #endif

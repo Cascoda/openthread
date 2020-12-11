@@ -65,6 +65,15 @@ using ot::Encoding::BigEndian::HostSwap32;
  */
 
 /**
+ * Data struct for containing an IPv4 address for the purpose of A questions
+ */
+OT_TOOL_PACKED_BEGIN
+struct Ip4Address
+{
+    uint8_t m8[4]; ///< 8-bit fields
+} OT_TOOL_PACKED_END;
+
+/**
  * This class implements DNS header generation and parsing.
  *
  */
@@ -494,6 +503,54 @@ private:
 } OT_TOOL_PACKED_END;
 
 /**
+ * This class implements Resource Record body format of A type.
+ *
+ */
+OT_TOOL_PACKED_BEGIN
+class ResourceRecordA : public ResourceRecord
+{
+public:
+    enum
+    {
+        kType   = 0x01, ///< AAAA Resource Record type.
+        kClass  = 0x01, ///< The value of the Internet class.
+        kLength = 4,    ///< Size of the AAAA Resource Record type.
+    };
+
+    /**
+     * This method initializes the AAAA Resource Record.
+     *
+     */
+    void Init(void)
+    {
+        ResourceRecord::SetType(kType);
+        ResourceRecord::SetClass(kClass);
+        ResourceRecord::SetTtl(0);
+        ResourceRecord::SetLength(kLength);
+        memset(&mAddress, 0, sizeof(mAddress));
+    }
+
+    /**
+     * This method sets the IPv6 address of the resource record.
+     *
+     * @param[in]  aAddress The IPv6 address of the resource record.
+     *
+     */
+    void SetAddress(Ip4Address &aAddress) { mAddress = aAddress; }
+
+    /**
+     * This method returns the reference to IPv6 address of the resource record.
+     *
+     * @returns The reference to IPv6 address of the resource record.
+     */
+    Ip4Address &GetAddress(void) { return mAddress; }
+
+private:
+    Ip4Address mAddress; ///< IPv4 Address of A Resource Record.
+
+} OT_TOOL_PACKED_END;
+
+/**
  * This class implements Question format.
  *
  */
@@ -565,6 +622,40 @@ public:
      *
      */
     QuestionAaaa(void)
+        : Question(kType, kClass)
+    {
+    }
+
+    /**
+     * This method appends request data to the message.
+     *
+     * @param[in]  aMessage  A reference to the message.
+     *
+     * @retval OT_ERROR_NONE     Successfully appended the bytes.
+     * @retval OT_ERROR_NO_BUFS  Insufficient available buffers to grow the message.
+     *
+     */
+    otError AppendTo(Message &aMessage) const { return aMessage.Append(this, sizeof(*this)); }
+};
+
+/**
+ * This class implements Question format of A type.
+ *
+ */
+class QuestionA : public Question
+{
+public:
+    enum
+    {
+        kType  = 0x01, ///< AAAA Resource Record type.
+        kClass = 0x01, ///< The value of the Internet class.
+    };
+
+    /**
+     * Default constructor for AAAA Question.
+     *
+     */
+    QuestionA(void)
         : Question(kType, kClass)
     {
     }

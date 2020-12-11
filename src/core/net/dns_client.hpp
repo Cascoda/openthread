@@ -156,13 +156,14 @@ public:
      * @param[in]  aQuery    A pointer to specify DNS query parameters.
      * @param[in]  aHandler  A function pointer that shall be called on response reception or time-out.
      * @param[in]  aContext  A pointer to arbitrary context information.
+     * @param[in]  aUseIpv4  True if the query is for A record, False if query for AAAA (IPv6) record
      *
      * @retval OT_ERROR_NONE          Successfully sent DNS query.
      * @retval OT_ERROR_NO_BUFS       Failed to allocate retransmission data.
      * @retval OT_ERROR_INVALID_ARGS  Invalid arguments supplied.
      *
      */
-    otError Query(const otDnsQuery *aQuery, otDnsResponseHandler aHandler, void *aContext);
+    otError Query(const otDnsQuery *aQuery, otDnsResponseHandler aHandler, void *aContext, bool aUseIpv4 = false);
 
 private:
     /**
