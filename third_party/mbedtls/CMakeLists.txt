@@ -31,7 +31,6 @@ add_library(mbedcrypto)
 target_compile_definitions(mbedcrypto
     PUBLIC
         "MBEDTLS_CONFIG_FILE=\"mbedtls-config.h\""
-    PRIVATE
         ${OT_PRIVATE_DEFINES}
 )
 
