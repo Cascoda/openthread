@@ -785,9 +785,25 @@ void Dtls::HandleTimer(void)
     }
 }
 
+int Dtls::HandleReceive(void){
+    int rval;
+#if OPENTHREAD_CONFIG_COAP_SECURE_API_ENABLE
+    uint8_t buf[900];
+#else
+    uint8_t buf[768];
+#endif
+    rval = mbedtls_ssl_read(&mSsl, buf, sizeof(buf));
+
+    if (rval > 0)
+    {
+        mReceiveHandler(mContext, buf, static_cast<uint16_t>(rval));
+    }
+
+    return rval;
+}
+
 void Dtls::Process(void)
 {
-    uint8_t buf[MBEDTLS_SSL_MAX_CONTENT_LEN];
     bool    shouldDisconnect = false;
     int     rval;
 
@@ -809,18 +825,15 @@ void Dtls::Process(void)
         }
         else
         {
-            rval = mbedtls_ssl_read(&mSsl, buf, sizeof(buf));
+            rval = HandleReceive();
         }
 
-        if (rval > 0)
-        {
-            mReceiveHandler(mContext, buf, static_cast<uint16_t>(rval));
-        }
-        else if (rval == 0 || rval == MBEDTLS_ERR_SSL_WANT_READ || rval == MBEDTLS_ERR_SSL_WANT_WRITE)
+
+        if (rval == 0 || rval == MBEDTLS_ERR_SSL_WANT_READ || rval == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             break;
         }
-        else
+        else if (rval < 0)
         {
             switch (rval)
             {

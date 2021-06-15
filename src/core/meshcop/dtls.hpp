@@ -430,6 +430,8 @@ private:
     static void HandleUdpTransmit(Tasklet &aTasklet);
     void        HandleUdpTransmit(void);
 
+    int HandleReceive(void);
+
     void Process(void);
 
     State mState;
