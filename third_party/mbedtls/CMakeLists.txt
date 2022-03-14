@@ -61,6 +61,7 @@ target_sources(mbedcrypto PRIVATE
     repo/library/ecjpake.c
     repo/library/ecp.c
     repo/library/ecp_curves.c
+    repo/library/error.c
     repo/library/entropy.c
     repo/library/entropy_poll.c
     repo/library/hkdf.c
