@@ -61,14 +61,17 @@ target_sources(mbedcrypto PRIVATE
     repo/library/ecjpake.c
     repo/library/ecp.c
     repo/library/ecp_curves.c
+    repo/library/error.c
     repo/library/entropy.c
     repo/library/entropy_poll.c
+    repo/library/hkdf.c
     repo/library/md.c
     repo/library/md_wrap.c
     repo/library/memory_buffer_alloc.c
     repo/library/oid.c
     repo/library/pem.c
     repo/library/pk.c
+    repo/library/pkcs5.c
     repo/library/pk_wrap.c
     repo/library/pkparse.c
     repo/library/platform.c
