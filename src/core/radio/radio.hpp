@@ -36,7 +36,11 @@
 
 #include "openthread-core-config.h"
 
-#include <openthread/platform/radio.h>
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+#include <openthread/platform/radio-mac.h>
+#else
+#include <openthread/platform/radio-phy.h>
+#endif
 
 #include <openthread/platform/crypto.h>
 #include "common/locator.hpp"
@@ -125,6 +129,7 @@ public:
         friend class Radio;
 
     public:
+#if !(OPENTHREAD_CONFIG_USE_EXTERNAL_MAC)
         /**
          * This callback method handles a "Receive Done" event from radio platform.
          *
@@ -192,6 +197,7 @@ public:
          */
         void HandleDiagsTransmitDone(Mac::TxFrame &aFrame, Error aError);
 #endif
+#endif
 
     private:
         explicit Callbacks(Instance &aInstance)
@@ -228,6 +234,7 @@ public:
      */
     void GetIeeeEui64(Mac::ExtAddress &aIeeeEui64);
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method gets the radio capabilities.
      *
@@ -235,6 +242,7 @@ public:
      *
      */
     otRadioCaps GetCaps(void);
+#endif
 
     /**
      * This method gets the radio receive sensitivity value.
@@ -252,6 +260,7 @@ public:
     void Init(void);
 #endif
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method sets the PAN ID for address filtering.
      *
@@ -275,6 +284,7 @@ public:
      *
      */
     void SetShortAddress(Mac::ShortAddress aShortAddress);
+#endif
 
     /**
      * This method sets MAC key and key ID.
@@ -325,6 +335,7 @@ public:
      */
     Error SetTransmitPower(int8_t aPower);
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method gets the radio's CCA ED threshold in dBm.
      *
@@ -375,6 +386,7 @@ public:
      *
      */
     otRadioState GetState(void);
+#endif
 
     /**
      * This method enables the radio.
@@ -402,6 +414,7 @@ public:
      */
     bool IsEnabled(void);
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method transitions the radio from Receive to Sleep (turn off the radio).
      *
@@ -504,6 +517,7 @@ public:
      *
      */
     Error Transmit(Mac::TxFrame &aFrame);
+#endif
 
     /**
      * This method gets the most recent RSSI measurement.
@@ -513,6 +527,7 @@ public:
      */
     int8_t GetRssi(void);
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method begins the energy scan sequence on the radio.
      *
@@ -617,6 +632,7 @@ public:
      *
      */
     uint32_t GetPreferredChannelMask(void);
+#endif
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
     /**
@@ -641,7 +657,7 @@ public:
      */
     Error ConfigureEnhAckProbing(otLinkMetrics            aLinkMetrics,
                                  const Mac::ShortAddress &aShortAddress,
-                                 const Mac::ExtAddress &  aExtAddress)
+                                 const Mac::ExtAddress   &aExtAddress)
     {
         return otPlatRadioConfigureEnhAckProbing(GetInstancePtr(), aLinkMetrics, aShortAddress, &aExtAddress);
     }
@@ -695,20 +711,24 @@ inline uint32_t Radio::GetPreferredChannelMask(void)
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline otRadioCaps Radio::GetCaps(void)
 {
     return otPlatRadioGetCaps(GetInstancePtr());
 }
+#endif
 
 inline int8_t Radio::GetReceiveSensitivity(void)
 {
     return otPlatRadioGetReceiveSensitivity(GetInstancePtr());
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline void Radio::SetPanId(Mac::PanId aPanId)
 {
     otPlatRadioSetPanId(GetInstancePtr(), aPanId);
 }
+#endif
 
 inline void Radio::SetMacKey(uint8_t                 aKeyIdMode,
                              uint8_t                 aKeyId,
@@ -737,6 +757,7 @@ inline Error Radio::SetTransmitPower(int8_t aPower)
     return otPlatRadioSetTransmitPower(GetInstancePtr(), aPower);
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline Error Radio::GetCcaEnergyDetectThreshold(int8_t &aThreshold)
 {
     return otPlatRadioGetCcaEnergyDetectThreshold(GetInstancePtr(), &aThreshold);
@@ -761,6 +782,7 @@ inline otRadioState Radio::GetState(void)
 {
     return otPlatRadioGetState(GetInstancePtr());
 }
+#endif
 
 inline Error Radio::Enable(void)
 {
@@ -777,6 +799,7 @@ inline bool Radio::IsEnabled(void)
     return otPlatRadioIsEnabled(GetInstancePtr());
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline Error Radio::Sleep(void)
 {
     return otPlatRadioSleep(GetInstancePtr());
@@ -820,12 +843,14 @@ inline Mac::TxFrame &Radio::GetTransmitBuffer(void)
 {
     return *static_cast<Mac::TxFrame *>(otPlatRadioGetTransmitBuffer(GetInstancePtr()));
 }
+#endif
 
 inline int8_t Radio::GetRssi(void)
 {
     return otPlatRadioGetRssi(GetInstancePtr());
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline Error Radio::EnergyScan(uint8_t aScanChannel, uint16_t aScanDuration)
 {
     return otPlatRadioEnergyScan(GetInstancePtr(), aScanChannel, aScanDuration);
@@ -865,6 +890,7 @@ inline void Radio::ClearSrcMatchExtEntries(void)
 {
     otPlatRadioClearSrcMatchExtEntries(GetInstancePtr());
 }
+#endif
 
 #else //----------------------------------------------------------------------------------------------------------------
 
