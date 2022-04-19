@@ -132,6 +132,7 @@ ot_cli_SOURCES                                                         = \
     main.c                                                               \
     cli_readline.cpp                                                     \
     cli_stdio.cpp                                                        \
+    externmac/radio-externmac.c                                          \
     $(NULL)
 
 ot_cli_LDADD                                                           = \
