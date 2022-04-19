@@ -38,6 +38,7 @@
 
 namespace ot {
 
+#if !(OPENTHREAD_CONFIG_USE_EXTERNAL_MAC)
 void Radio::Callbacks::HandleReceiveDone(Mac::RxFrame *aFrame, Error aError)
 {
     Get<Mac::SubMac>().HandleReceiveDone(aFrame, aError);
@@ -81,4 +82,5 @@ void Radio::Callbacks::HandleDiagsTransmitDone(Mac::TxFrame &aFrame, Error aErro
 }
 #endif // OPENTHREAD_CONFIG_DIAG_ENABLE
 
+#endif // !(OPENTHREAD_CONFIG_USE_EXTERNAL_MAC)
 } // namespace ot
