@@ -35,7 +35,7 @@
 #ifndef OPENTHREAD_LINK_RAW_H_
 #define OPENTHREAD_LINK_RAW_H_
 
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -174,7 +174,7 @@ otRadioFrame *otLinkRawGetTransmitBuffer(otInstance *aInstance);
  *                              OT_ERROR_ABORT when transmission was aborted for other reasons.
  *
  */
-typedef void (*otLinkRawTransmitDone)(otInstance *  aInstance,
+typedef void (*otLinkRawTransmitDone)(otInstance   *aInstance,
                                       otRadioFrame *aFrame,
                                       otRadioFrame *aAckFrame,
                                       otError       aError);
@@ -240,7 +240,7 @@ typedef void (*otLinkRawEnergyScanDone)(otInstance *aInstance, int8_t aEnergySca
  * @retval OT_ERROR_INVALID_STATE    If the raw link-layer isn't enabled.
  *
  */
-otError otLinkRawEnergyScan(otInstance *            aInstance,
+otError otLinkRawEnergyScan(otInstance             *aInstance,
                             uint8_t                 aScanChannel,
                             uint16_t                aScanDuration,
                             otLinkRawEnergyScanDone aCallback);
@@ -345,7 +345,7 @@ otError otLinkRawSrcMatchClearExtEntries(otInstance *aInstance);
  * @retval OT_ERROR_INVALID_STATE    If the raw link-layer isn't enabled.
  *
  */
-otError otLinkRawSetMacKey(otInstance *    aInstance,
+otError otLinkRawSetMacKey(otInstance     *aInstance,
                            uint8_t         aKeyIdMode,
                            uint8_t         aKeyId,
                            const otMacKey *aPrevKey,

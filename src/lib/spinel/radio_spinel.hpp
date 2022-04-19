@@ -34,7 +34,7 @@
 #ifndef RADIO_SPINEL_HPP_
 #define RADIO_SPINEL_HPP_
 
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include "openthread-spinel-config.h"
 #include "spinel.h"
@@ -698,7 +698,7 @@ public:
      */
     otError ConfigureEnhAckProbing(otLinkMetrics        aLinkMetrics,
                                    const otShortAddress aShortAddress,
-                                   const otExtAddress & aExtAddress);
+                                   const otExtAddress  &aExtAddress);
 #endif
 
     /**
@@ -797,9 +797,9 @@ public:
      *
      */
     otError GetWithParam(spinel_prop_key_t aKey,
-                         const uint8_t *   aParam,
+                         const uint8_t    *aParam,
                          spinel_size_t     aParamSize,
-                         const char *      aFormat,
+                         const char       *aFormat,
                          ...);
 
     /**
@@ -899,26 +899,26 @@ private:
 
     otError RequestV(uint32_t aCommand, spinel_prop_key_t aKey, const char *aFormat, va_list aArgs);
     otError Request(uint32_t aCommand, spinel_prop_key_t aKey, const char *aFormat, ...);
-    otError RequestWithPropertyFormat(const char *      aPropertyFormat,
+    otError RequestWithPropertyFormat(const char       *aPropertyFormat,
                                       uint32_t          aCommand,
                                       spinel_prop_key_t aKey,
-                                      const char *      aFormat,
+                                      const char       *aFormat,
                                       ...);
-    otError RequestWithPropertyFormatV(const char *      aPropertyFormat,
+    otError RequestWithPropertyFormatV(const char       *aPropertyFormat,
                                        uint32_t          aCommand,
                                        spinel_prop_key_t aKey,
-                                       const char *      aFormat,
+                                       const char       *aFormat,
                                        va_list           aArgs);
     otError RequestWithExpectedCommandV(uint32_t          aExpectedCommand,
                                         uint32_t          aCommand,
                                         spinel_prop_key_t aKey,
-                                        const char *      aFormat,
+                                        const char       *aFormat,
                                         va_list           aArgs);
     otError WaitResponse(void);
     otError SendCommand(uint32_t          aCommand,
                         spinel_prop_key_t aKey,
                         spinel_tid_t      aTid,
-                        const char *      aFormat,
+                        const char       *aFormat,
                         va_list           aArgs);
     otError ParseRadioFrame(otRadioFrame &aFrame, const uint8_t *aBuffer, uint16_t aLength, spinel_ssize_t &aUnpacked);
     otError ThreadDatasetHandler(const uint8_t *aBuffer, uint16_t aLength);
@@ -972,7 +972,7 @@ private:
     spinel_tid_t      mTxRadioTid;      ///< The transaction id used to send a radio frame.
     spinel_tid_t      mWaitingTid;      ///< The transaction id of current transaction.
     spinel_prop_key_t mWaitingKey;      ///< The property key of current transaction.
-    const char *      mPropertyFormat;  ///< The spinel property format of current transaction.
+    const char       *mPropertyFormat;  ///< The spinel property format of current transaction.
     va_list           mPropertyArgs;    ///< The arguments pack or unpack spinel property of current transaction.
     uint32_t          mExpectedCommand; ///< Expected response command of current transaction.
     otError           mError;           ///< The result of current transaction.
@@ -1035,7 +1035,7 @@ private:
 
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
     bool   mDiagMode;
-    char * mDiagOutput;
+    char  *mDiagOutput;
     size_t mDiagOutputMaxLen;
 #endif
 

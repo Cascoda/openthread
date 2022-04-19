@@ -38,7 +38,7 @@
 #include <openthread/platform/entropy.h>
 #include <openthread/platform/logging.h>
 #include <openthread/platform/misc.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 #include <openthread/platform/settings.h>
 
 #include "mac/mac_frame.hpp"
@@ -496,8 +496,8 @@ void otPlatSettingsWipe(otInstance *aInstance)
 
 otError otPlatDiagProcess(otInstance *aInstance,
                           uint8_t     aArgsLength,
-                          char *      aArgs[],
-                          char *      aOutput,
+                          char       *aArgs[],
+                          char       *aOutput,
                           size_t      aOutputMaxLen)
 {
     OT_UNUSED_VARIABLE(aInstance);

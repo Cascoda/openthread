@@ -44,7 +44,7 @@
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/infra_if.h>
 #include <openthread/platform/otns.h>
-#include <openthread/platform/radio.h>
+#include <openthread/platform/radio-phy.h>
 
 #include "common/code_utils.hpp"
 #include "common/debug.hpp"
