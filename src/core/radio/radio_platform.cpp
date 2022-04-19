@@ -43,11 +43,12 @@ using namespace ot;
 //---------------------------------------------------------------------------------------------------------------------
 // otPlatRadio callbacks
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
 
 extern "C" void otPlatRadioReceiveDone(otInstance *aInstance, otRadioFrame *aFrame, otError aError)
 {
-    Instance &    instance = AsCoreType(aInstance);
+    Instance     &instance = AsCoreType(aInstance);
     Mac::RxFrame *rxFrame  = static_cast<Mac::RxFrame *>(aFrame);
 
     VerifyOrExit(instance.IsInitialized());
@@ -67,7 +68,7 @@ exit:
 
 extern "C" void otPlatRadioTxStarted(otInstance *aInstance, otRadioFrame *aFrame)
 {
-    Instance &    instance = AsCoreType(aInstance);
+    Instance     &instance = AsCoreType(aInstance);
     Mac::TxFrame &txFrame  = *static_cast<Mac::TxFrame *>(aFrame);
 
     VerifyOrExit(instance.IsInitialized());
@@ -84,7 +85,7 @@ exit:
 
 extern "C" void otPlatRadioTxDone(otInstance *aInstance, otRadioFrame *aFrame, otRadioFrame *aAckFrame, otError aError)
 {
-    Instance &    instance = AsCoreType(aInstance);
+    Instance     &instance = AsCoreType(aInstance);
     Mac::TxFrame &txFrame  = *static_cast<Mac::TxFrame *>(aFrame);
     Mac::RxFrame *ackFrame = static_cast<Mac::RxFrame *>(aAckFrame);
 
@@ -172,6 +173,7 @@ extern "C" void otPlatDiagRadioTransmitDone(otInstance *, otRadioFrame *, otErro
 #endif
 
 #endif // // #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+#endif // !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 
 //---------------------------------------------------------------------------------------------------------------------
 // Default/weak implementation of radio platform APIs
@@ -201,7 +203,7 @@ OT_TOOL_WEAK otRadioState otPlatRadioGetState(otInstance *aInstance)
     return OT_RADIO_STATE_INVALID;
 }
 
-OT_TOOL_WEAK void otPlatRadioSetMacKey(otInstance *            aInstance,
+OT_TOOL_WEAK void otPlatRadioSetMacKey(otInstance             *aInstance,
                                        uint8_t                 aKeyIdMode,
                                        uint8_t                 aKeyId,
                                        const otMacKeyMaterial *aPrevKey,
