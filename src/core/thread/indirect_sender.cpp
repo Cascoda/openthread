@@ -120,17 +120,26 @@ exit:
 
 Error IndirectSender::RemoveMessageFromSleepyChild(Message &aMessage, Child &aChild)
 {
-    Error    error      = kErrorNone;
+    Error    error      = kErrorNotFound;
     uint16_t childIndex = Get<ChildTable>().GetChildIndex(aChild);
 
-    VerifyOrExit(aMessage.GetChildMask(childIndex), error = kErrorNotFound);
+    if (aMessage.GetChildMask(childIndex))
+    {
+        error = kErrorNone;
+        aMessage.ClearChildMask(childIndex);
+        mSourceMatchController.DecrementMessageCount(aChild);
 
-    aMessage.ClearChildMask(childIndex);
-    mSourceMatchController.DecrementMessageCount(aChild);
+        if (aChild.GetIndirectMessage() == &aMessage)
+            aChild.SetIndirectMessage(NULL);
+    }
 
-    RequestMessageUpdate(aChild);
+    if (mDataPollHandler.IsFrameBufferedForChild(aChild, aMessage))
+    {
+        error = kErrorNone;
+        aChild.SetWaitingForMessageUpdate(true);
+        mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild, &aMessage);
+    }
 
-exit:
     return error;
 }
 
@@ -145,16 +154,15 @@ void IndirectSender::ClearAllMessagesForSleepyChild(Child &aChild)
         Get<MeshForwarder>().RemoveMessageIfNoPendingTx(message);
     }
 
-    aChild.SetIndirectMessage(nullptr);
     mSourceMatchController.ResetMessageCount(aChild);
 
-    mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild);
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
     mCslTxScheduler.Update();
 #endif
 
 exit:
-    return;
+    aChild.SetIndirectMessage(nullptr);
+    mDataPollHandler.RequestChildPurge(aChild);
 }
 
 void IndirectSender::SetChildUseShortAddress(Child &aChild, bool aUseShortAddress)
@@ -193,7 +201,7 @@ void IndirectSender::HandleChildModeChange(Child &aChild, Mle::DeviceMode aOldMo
         aChild.SetIndirectMessage(nullptr);
         mSourceMatchController.ResetMessageCount(aChild);
 
-        mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild);
+        mDataPollHandler.RequestChildPurge(aChild);
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
         mCslTxScheduler.Update();
 #endif
@@ -217,7 +225,7 @@ Message *IndirectSender::FindIndirectMessage(Child &aChild, bool aSupervisionTyp
         if (message.GetChildMask(childIndex) &&
             (!aSupervisionTypeOnly || (message.GetType() == Message::kTypeSupervision)))
         {
-            msg = &message;
+            RemoveMessageFromSleepyChild(*msg, aChild);
             break;
         }
     }
@@ -225,37 +233,12 @@ Message *IndirectSender::FindIndirectMessage(Child &aChild, bool aSupervisionTyp
     return msg;
 }
 
+// Individual messages, and the logic of checking the child mask will fall short, as that is unset as the
+// message is sent to the MAC.
 void IndirectSender::RequestMessageUpdate(Child &aChild)
 {
     Message *curMessage = aChild.GetIndirectMessage();
     Message *newMessage;
-
-    // Purge the frame if the current message is no longer destined
-    // for the child. This check needs to be done first to cover the
-    // case where we have a pending "replace frame" request and while
-    // waiting for the callback, the current message is removed.
-
-    if ((curMessage != nullptr) && !curMessage->GetChildMask(Get<ChildTable>().GetChildIndex(aChild)))
-    {
-        // Set the indirect message for this child to `nullptr` to ensure
-        // it is not processed on `HandleSentFrameToChild()` callback.
-
-        aChild.SetIndirectMessage(nullptr);
-
-        // Request a "frame purge" using `RequestFrameChange()` and
-        // wait for `HandleFrameChangeDone()` callback for completion
-        // of the request. Note that the callback may be directly
-        // called from the `RequestFrameChange()` itself when the
-        // request can be handled immediately.
-
-        aChild.SetWaitingForMessageUpdate(true);
-        mDataPollHandler.RequestFrameChange(DataPollHandler::kPurgeFrame, aChild);
-#if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
-        mCslTxScheduler.Update();
-#endif
-
-        ExitNow();
-    }
 
     VerifyOrExit(!aChild.IsWaitingForMessageUpdate());
 
@@ -272,6 +255,7 @@ void IndirectSender::RequestMessageUpdate(Child &aChild)
         ExitNow();
     }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     // Current message and new message differ and are both
     // non-`nullptr`. We need to request the frame to be replaced.
     // The current indirect message can be replaced only if it is
@@ -279,12 +263,13 @@ void IndirectSender::RequestMessageUpdate(Child &aChild)
     // already prepared, we wait for the entire message to be
     // delivered.
 
-    VerifyOrExit(aChild.GetIndirectFragmentOffset() == 0);
+    VerifyOrExit(aChild.GetIndirectNextFragmentOffset() == 0);
 
     aChild.SetWaitingForMessageUpdate(true);
     mDataPollHandler.RequestFrameChange(DataPollHandler::kReplaceFrame, aChild);
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
     mCslTxScheduler.Update();
+#endif
 #endif
 
 exit:
@@ -306,7 +291,7 @@ void IndirectSender::UpdateIndirectMessage(Child &aChild)
 
     aChild.SetWaitingForMessageUpdate(false);
     aChild.SetIndirectMessage(message);
-    aChild.SetIndirectFragmentOffset(0);
+    aChild.SetIndirectNextFragmentOffset(0);
     aChild.SetIndirectTxSuccess(true);
 
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
@@ -328,25 +313,45 @@ Error IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &a
 {
     Error    error   = kErrorNone;
     Message *message = aChild.GetIndirectMessage();
+    uint16_t directTxOffset;
 
     VerifyOrExit(mEnabled, error = kErrorAbort);
 
+    if (message == NULL)
+    {
+        UpdateIndirectMessage(aChild);
+        message = aChild.GetIndirectMessage();
+    }
+    // TODO: Remove this for extern mac - move to DataPollHandler of the full mac version
+    // if (message == nullptr)
+    // {
+    //     PrepareEmptyFrame(aFrame, aChild, /* aAckRequest */ true);
+    //     aContext.mMessageNextOffset = 0;
+    //     ExitNow();
+    // }
     if (message == nullptr)
     {
-        PrepareEmptyFrame(aFrame, aChild, /* aAckRequest */ true);
-        aContext.mMessageNextOffset = 0;
+        error = kErrorNotFound;
         ExitNow();
     }
 
+    aContext.mMessage = message;
     switch (message->GetType())
     {
     case Message::kTypeIp6:
+        // Prepare the data frame from child's indirect offset.
+        directTxOffset          = message->GetOffset();
+        aContext.mMessageOffset = aChild.GetIndirectNextFragmentOffset();
+        message->SetOffset(aContext.mMessageOffset);
+        LogDebg("Ind Frag offset %d", aContext.mMessageOffset);
         aContext.mMessageNextOffset = PrepareDataFrame(aFrame, aChild, *message);
+        message->SetOffset(directTxOffset);
         break;
 
     case Message::kTypeSupervision:
         PrepareEmptyFrame(aFrame, aChild, kSupervisionMsgAckRequest);
         aContext.mMessageNextOffset = message->GetLength();
+        aContext.mMessageOffset     = 0;
         break;
 
     default:
@@ -356,48 +361,130 @@ Error IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &a
 
 exit:
     return error;
+} // namespace ot
+
+Error IndirectSender::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aContext, Child &aChild, bool aForceExtDst)
+{
+    Error    error   = kErrorNone;
+    Message *message = aContext.mMessage;
+    uint16_t directTxOffset;
+
+    VerifyOrExit(mEnabled, error = kErrorAbort);
+
+    if (message == nullptr)
+    {
+        error = kErrorNotFound;
+        ExitNow();
+    }
+
+    LogDebg("Regenerating indirect frame");
+
+    switch (message->GetType())
+    {
+    case Message::kTypeIp6:
+        // Prepare the data frame from child's indirect offset.
+        directTxOffset = message->GetOffset();
+        message->SetOffset(aContext.mMessageOffset);
+        aContext.mMessageNextOffset = RegenerateDataFrame(aFrame, aChild, *message, aForceExtDst);
+        message->SetOffset(directTxOffset);
+        break;
+
+    case Message::kTypeSupervision:
+        PrepareEmptyFrame(aFrame, aChild, kSupervisionMsgAckRequest);
+        aContext.mMessageNextOffset = message->GetLength();
+        aContext.mMessageOffset     = 0;
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+
+exit:
+    return error;
 }
 
 uint16_t IndirectSender::PrepareDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage)
 {
-    Ip6::Header  ip6Header;
-    Mac::Address macSource, macDest;
-    uint16_t     directTxOffset;
-    uint16_t     nextOffset;
+    uint16_t nextOffset = GenerateDataFrame(aFrame, aChild, aMessage);
 
-    // Determine the MAC source and destination addresses.
+    // Set `FramePending` if there are more queued messages for the
+    // child. The case where the current message itself requires
+    // fragmentation is already checked and handled in
+    // `PrepareDataFrame()` method.
 
-    IgnoreError(aMessage.Read(0, ip6Header));
-
-    Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
-
-    if (ip6Header.GetDestination().IsLinkLocal())
-    {
-        Get<MeshForwarder>().GetMacDestinationAddress(ip6Header.GetDestination(), macDest);
-    }
-    else
-    {
-        aChild.GetMacAddress(macDest);
-    }
-
-    // Prepare the data frame from previous child's indirect offset.
-
-    directTxOffset = aMessage.GetOffset();
-    aMessage.SetOffset(aChild.GetIndirectFragmentOffset());
-
-    nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
-
-    aMessage.SetOffset(directTxOffset);
-
-    // Set `FramePending` if there are more queued messages (excluding
-    // the current one being sent out) for the child (note `> 1` check).
-    // The case where the current message itself requires fragmentation
-    // is already checked and handled in `PrepareDataFrame()` method.
-
-    if (aChild.GetIndirectMessageCount() > 1)
+    if (aChild.GetIndirectMessageCount())
     {
         aFrame.SetFramePending(true);
     }
+
+    if (nextOffset >= aMessage.GetLength())
+    {
+        LogDebg("Final message fragment queued.");
+        aMessage.ClearChildMask(Get<ChildTable>().GetChildIndex(aChild));
+        UpdateIndirectMessage(aChild);
+        mSourceMatchController.DecrementMessageCount(aChild);
+
+        // Enable short source address matching after the first indirect
+        // message transmission attempt to the child. We intentionally do
+        // not check for successful tx here to address the scenario where
+        // the child does receive "Child ID Response" but parent misses the
+        // 15.4 ack from child. If the "Child ID Response" does not make it
+        // to the child, then the child will need to send a new "Child ID
+        // Request" which will cause the parent to switch to using long
+        // address mode for source address matching.
+
+        mSourceMatchController.SetSrcMatchAsShort(aChild, true);
+    }
+    else
+    {
+        aChild.SetIndirectNextFragmentOffset(nextOffset);
+    }
+
+    return nextOffset;
+}
+
+uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage, bool aForceExtDst)
+{
+    Ip6::Header  ip6Header;
+    Mac::Address macSource, macDest;
+    uint16_t     nextOffset;
+
+    aMessage.Read(0, sizeof(ip6Header), &ip6Header);
+    Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
+
+    if (aForceExtDst)
+        macDest.SetExtended(aChild.GetExtAddress());
+    else
+        aChild.GetMacAddress(macDest);
+
+    nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
+
+    // Set `FramePending` if there are more queued messages for the
+    // child. The case where the current message itself requires
+    // fragmentation is already checked and handled in
+    // `PrepareDataFrame()` method.
+    if (aChild.GetIndirectMessageCount())
+    {
+        aFrame.SetFramePending(true);
+    }
+
+    return nextOffset;
+}
+
+uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, Message &aMessage)
+{
+    Ip6::Header  ip6Header;
+    Mac::Address macSource, macDest;
+    uint16_t     nextOffset;
+
+    aMessage.Read(0, sizeof(ip6Header), &ip6Header);
+
+    Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
+
+    aChild.GetMacAddress(macDest);
+
+    nextOffset = Get<MeshForwarder>().PrepareDataFrame(aFrame, aMessage, macSource, macDest);
 
     return nextOffset;
 }
@@ -406,18 +493,16 @@ void IndirectSender::PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool
 {
     Mac::Address macDest;
     aChild.GetMacAddress(macDest);
+    aChild.SetIndirectMessage(nullptr);
     Get<MeshForwarder>().PrepareEmptyFrame(aFrame, macDest, aAckRequest);
 }
 
-void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
-                                            const FrameContext &aContext,
-                                            Error               aError,
-                                            Child &             aChild)
+void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, Error aError, Child &aChild)
 {
-    Message *message    = aChild.GetIndirectMessage();
-    uint16_t nextOffset = aContext.mMessageNextOffset;
+    Message *sentMessage = aContext.mMessage;
 
     VerifyOrExit(mEnabled);
+    aContext.HandleMacDone();
 
 #if OPENTHREAD_CONFIG_CHILD_SUPERVISION_ENABLE
     if (aError == kErrorNone)
@@ -456,9 +541,16 @@ void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
         // send any remaining fragments in the message to the child, if all tx
         // attempts of current frame already failed.
 
-        if (message != nullptr)
+        if (sentMessage != nullptr)
         {
-            nextOffset = message->GetLength();
+            if (sentMessage == aChild.GetIndirectMessage())
+            {
+                aChild.SetIndirectMessage(nullptr);
+                aChild.SetIndirectNextFragmentOffset(0);
+                if (sentMessage->GetType() == Message::kTypeIp6)
+                    Get<MeshForwarder>().mIpCounters.mTxFailure++;
+                ExitNow();
+            }
         }
 #endif
         break;
@@ -468,37 +560,23 @@ void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
         OT_UNREACHABLE_CODE(break);
     }
 
-    if ((message != nullptr) && (nextOffset < message->GetLength()))
+    if ((aChild.GetIndirectMessage() != nullptr &&
+         (aChild.GetIndirectNextFragmentOffset() < aChild.GetIndirectMessage()->GetLength())))
     {
-        aChild.SetIndirectFragmentOffset(nextOffset);
         mDataPollHandler.HandleNewFrame(aChild);
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
         mCslTxScheduler.Update();
 #endif
-        ExitNow();
     }
 
-    if (message != nullptr)
+    if (sentMessage != nullptr && (aContext.mMessageNextOffset == sentMessage->GetLength()))
     {
         // The indirect tx of this message to the child is done.
 
-        Error        txError    = aError;
-        uint16_t     childIndex = Get<ChildTable>().GetChildIndex(aChild);
+        Error        txError = aError;
         Mac::Address macDest;
 
-        aChild.SetIndirectMessage(nullptr);
         aChild.GetLinkInfo().AddMessageTxStatus(aChild.GetIndirectTxSuccess());
-
-        // Enable short source address matching after the first indirect
-        // message transmission attempt to the child. We intentionally do
-        // not check for successful tx here to address the scenario where
-        // the child does receive "Child ID Response" but parent misses the
-        // 15.4 ack from child. If the "Child ID Response" does not make it
-        // to the child, then the child will need to send a new "Child ID
-        // Request" which will cause the parent to switch to using long
-        // address mode for source address matching.
-
-        mSourceMatchController.SetSrcMatchAsShort(aChild, true);
 
 #if !OPENTHREAD_CONFIG_DROP_MESSAGE_ON_FRAGMENT_TX_FAILURE
 
@@ -516,15 +594,12 @@ void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
         }
 #endif
 
-        if (!aFrame.IsEmpty())
-        {
-            IgnoreError(aFrame.GetDstAddr(macDest));
-            Get<MeshForwarder>().LogMessage(MeshForwarder::kMessageTransmit, *message, &macDest, txError);
-        }
+        aChild.GetMacAddress(macDest);
+        Get<MeshForwarder>().LogMessage(MeshForwarder::kMessageTransmit, *sentMessage, &macDest, txError);
 
-        if (message->GetType() == Message::kTypeIp6)
+        if (sentMessage->GetType() == Message::kTypeIp6)
         {
-            if (aChild.GetIndirectTxSuccess())
+            if (txError)
             {
                 Get<MeshForwarder>().mIpCounters.mTxSuccess++;
             }
@@ -534,16 +609,13 @@ void IndirectSender::HandleSentFrameToChild(const Mac::TxFrame &aFrame,
             }
         }
 
-        if (message->GetChildMask(childIndex))
-        {
-            message->ClearChildMask(childIndex);
-            mSourceMatchController.DecrementMessageCount(aChild);
-        }
-
-        Get<MeshForwarder>().RemoveMessageIfNoPendingTx(*message);
+        Get<MeshForwarder>().RemoveMessageIfNoPendingTx(*sentMessage);
     }
 
-    UpdateIndirectMessage(aChild);
+    if (aChild.GetIndirectMessageCount())
+    {
+        mDataPollHandler.HandleNewFrame(aChild);
+    }
 
 exit:
     if (mEnabled)

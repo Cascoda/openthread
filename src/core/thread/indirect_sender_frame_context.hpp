@@ -36,6 +36,8 @@
 
 #include "openthread-core-config.h"
 
+#include <common/logging.hpp>
+
 #include <stdint.h>
 
 namespace ot {
@@ -75,8 +77,43 @@ public:
         friend class IndirectSender;
         friend class CslTxScheduler;
 
+        /**
+         * Called by Mac layer when this FrameContext has been transferred to the Mac
+         */
+        void HandleSentToMac(void)
+        {
+            if (mMessage && !mSentToMac)
+            {
+                mMessage->IncrementSentToMacCount();
+                mSentToMac = true;
+            }
+        }
+
+        /**
+         * Called by the Mac layer when it has completed operations with this FrameContext.
+         */
+        void HandleMacDone(void)
+        {
+            if (mMessage && mSentToMac)
+            {
+                mMessage->DecrementSentToMacCount();
+                mSentToMac = false;
+                mMessage   = NULL;
+            }
+        }
+
+        /**
+         * Check if this FrameContext is for a given message
+         * @param aMessage The message to check
+         * @return Whether or not this FrameContext is being used for the specified message
+         */
+        bool IsForMessage(Message *aMessage) { return aMessage == mMessage; }
+
     private:
         uint16_t mMessageNextOffset; ///< The next offset into the message associated with the prepared frame.
+        uint16_t mMessageOffset;     ///< The offset of the associated message.
+        Message *mMessage;           ///< The message associated with the prepared frame.
+        bool     mSentToMac : 1;     ///< Has the frame been sent to the MAC l
     };
 };
 
