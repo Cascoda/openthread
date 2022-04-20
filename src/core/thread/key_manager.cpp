@@ -238,6 +238,9 @@ exit:
 void KeyManager::ResetFrameCounters(void)
 {
     Router *parent;
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Mac::Mac &mac = Get<Mac::Mac>();
+#endif
 
     // reset parent frame counters
     parent = &Get<Mle::MleRouter>().GetParent();
@@ -245,6 +248,9 @@ void KeyManager::ResetFrameCounters(void)
     parent->GetLinkFrameCounters().Reset();
     parent->SetLinkAckFrameCounter(0);
     parent->SetMleFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    mac.UpdateDevice(*parent);
+#endif
 
 #if OPENTHREAD_FTD
     // reset router frame counters
@@ -254,6 +260,9 @@ void KeyManager::ResetFrameCounters(void)
         router.GetLinkFrameCounters().Reset();
         router.SetLinkAckFrameCounter(0);
         router.SetMleFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        mac.UpdateDevice(router);
+#endif
     }
 
     // reset child frame counters
@@ -263,6 +272,9 @@ void KeyManager::ResetFrameCounters(void)
         child.GetLinkFrameCounters().Reset();
         child.SetLinkAckFrameCounter(0);
         child.SetMleFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        mac.UpdateDevice(child);
+#endif
     }
 #endif
 }
@@ -392,7 +404,7 @@ void KeyManager::SetCurrentKeySequence(uint32_t aKeySequence)
     UpdateKeyMaterial();
 
     SetAllMacFrameCounters(0);
-    mMleFrameCounter = 0;
+    SetMleFrameCounter(0);
 
     Get<Notifier>().Signal(kEventThreadKeySeqCounterChanged);
 
@@ -422,12 +434,24 @@ const Mac::KeyMaterial &KeyManager::GetTemporaryTrelMacKey(uint32_t aKeySequence
 }
 #endif
 
+uint32_t GetMaximumMacFrameCounter(void)
+{
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    mMacFrameCounters.SetAll(Get<Mac::Mac>().GetFrameCounter());
+#endif
+    return mMacFrameCounters.GetMaximum();
+}
+
 void KeyManager::SetAllMacFrameCounters(uint32_t aMacFrameCounter)
 {
     mMacFrameCounters.SetAll(aMacFrameCounter);
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     Get<Mac::SubMac>().SetFrameCounter(aMacFrameCounter);
+#endif
+
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().SetFrameCounter(mMacFrameCounter);
 #endif
 }
 

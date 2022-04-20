@@ -396,7 +396,16 @@ public:
      * @return The maximum MAC frame Counter among all supported radio links.
      *
      */
-    uint32_t GetMaximumMacFrameCounter(void) const { return mMacFrameCounters.GetMaximum(); }
+    uint32_t GetMaximumMacFrameCounter(void);
+
+    /**
+     * This method returns the maximum cached MAC Frame Counter value among all supported radio links.
+     * Used for external-Mac systems where GetMacMaximumFrameCounter retrieves the value from the MAC.
+     *
+     * @returns The current cached MAC Frame Counter value.
+     *
+     */
+    uint32_t GetCachedMacMaximumFrameCounter(void) const { return mMacFrameCounters.GetMaximum(); }
 
     /**
      * This method sets the current MAC Frame Counter value for all radio links.
