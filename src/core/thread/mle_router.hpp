@@ -583,27 +583,27 @@ private:
     void  HandleDetachStart(void);
     void  HandleChildStart(AttachMode aMode);
     void  HandleLinkRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
-    void  HandleLinkAccept(const Message &         aMessage,
+    void  HandleLinkAccept(const Message          &aMessage,
                            const Ip6::MessageInfo &aMessageInfo,
                            uint32_t                aKeySequence,
-                           Neighbor *              aNeighbor);
-    Error HandleLinkAccept(const Message &         aMessage,
+                           Neighbor               *aNeighbor);
+    Error HandleLinkAccept(const Message          &aMessage,
                            const Ip6::MessageInfo &aMessageInfo,
                            uint32_t                aKeySequence,
-                           Neighbor *              aNeighbor,
+                           Neighbor               *aNeighbor,
                            bool                    aRequest);
-    void  HandleLinkAcceptAndRequest(const Message &         aMessage,
+    void  HandleLinkAcceptAndRequest(const Message          &aMessage,
                                      const Ip6::MessageInfo &aMessageInfo,
                                      uint32_t                aKeySequence,
-                                     Neighbor *              aNeighbor);
+                                     Neighbor               *aNeighbor);
     Error HandleAdvertisement(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *);
     void  HandleParentRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
     void  HandleChildIdRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, uint32_t aKeySequence);
     void  HandleChildUpdateRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
-    void  HandleChildUpdateResponse(const Message &         aMessage,
+    void  HandleChildUpdateResponse(const Message          &aMessage,
                                     const Ip6::MessageInfo &aMessageInfo,
                                     uint32_t                aKeySequence,
-                                    Neighbor *              aNeighbor);
+                                    Neighbor               *aNeighbor);
     void  HandleDataRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, const Neighbor *aNeighbor);
     void  HandleNetworkDataUpdateRouter(void);
     void  HandleDiscoveryRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
@@ -615,27 +615,27 @@ private:
     void  StopAdvertiseTrickleTimer(void);
     Error SendAddressSolicit(ThreadStatusTlv::Status aStatus);
     void  SendAddressRelease(void);
-    void  SendAddressSolicitResponse(const Coap::Message &   aRequest,
-                                     const Router *          aRouter,
+    void  SendAddressSolicitResponse(const Coap::Message    &aRequest,
+                                     const Router           *aRouter,
                                      const Ip6::MessageInfo &aMessageInfo);
     void  SendAdvertisement(void);
     Error SendLinkAccept(const Ip6::MessageInfo &aMessageInfo,
-                         Neighbor *              aNeighbor,
-                         const RequestedTlvs &   aRequestedTlvs,
-                         const Challenge &       aChallenge);
+                         Neighbor               *aNeighbor,
+                         const RequestedTlvs    &aRequestedTlvs,
+                         const Challenge        &aChallenge);
     void  SendParentResponse(Child *aChild, const Challenge &aChallenge, bool aRoutersOnlyRequest);
     Error SendChildIdResponse(Child &aChild);
     Error SendChildUpdateRequest(Child &aChild);
-    void  SendChildUpdateResponse(Child *                 aChild,
+    void  SendChildUpdateResponse(Child                  *aChild,
                                   const Ip6::MessageInfo &aMessageInfo,
-                                  const uint8_t *         aTlvs,
+                                  const uint8_t          *aTlvs,
                                   uint8_t                 aTlvsLength,
-                                  const Challenge &       aChallenge);
+                                  const Challenge        &aChallenge);
     void  SendDataResponse(const Ip6::Address &aDestination,
-                           const uint8_t *     aTlvs,
+                           const uint8_t      *aTlvs,
                            uint8_t             aTlvsLength,
                            uint16_t            aDelay,
-                           const Message *     aRequestMessage = nullptr);
+                           const Message      *aRequestMessage = nullptr);
     Error SendDiscoveryResponse(const Ip6::Address &aDestination, const Message &aDiscoverRequestMessage);
     void  SetStateRouter(uint16_t aRloc16);
     void  SetStateLeader(uint16_t aRloc16);
@@ -645,8 +645,8 @@ private:
     void  UpdateRoutes(const RouteTlv &aRoute, uint8_t aRouterId);
     bool  UpdateLinkQualityOut(const RouteTlv &aRoute, Router &aNeighbor, bool &aResetAdvInterval);
 
-    static void HandleAddressSolicitResponse(void *               aContext,
-                                             otMessage *          aMessage,
+    static void HandleAddressSolicitResponse(void                *aContext,
+                                             otMessage           *aMessage,
                                              const otMessageInfo *aMessageInfo,
                                              Error                aResult);
     void HandleAddressSolicitResponse(Coap::Message *aMessage, const Ip6::MessageInfo *aMessageInfo, Error aResult);
@@ -659,12 +659,13 @@ private:
 
     void HandlePartitionChange(void);
 
-    void SetChildStateToValid(Child &aChild);
-    bool HasChildren(void);
-    void RemoveChildren(void);
-    bool HasMinDowngradeNeighborRouters(void);
-    bool HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId);
-    bool HasSmallNumberOfChildren(void);
+    void    SetChildStateToValid(Child &aChild);
+    bool    HasChildren(void);
+    void    RemoveChildren(void);
+    bool    HasMinDowngradeNeighborRouters(void);
+    bool    HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId);
+    bool    HasSmallNumberOfChildren(void);
+    uint8_t GetSleepyChildrenCount();
 
     static void HandleAdvertiseTrickleTimer(TrickleTimer &aTimer);
     void        HandleAdvertiseTrickleTimer(void);
@@ -719,7 +720,7 @@ private:
 #endif
 
     otThreadDiscoveryRequestCallback mDiscoveryRequestCallback;
-    void *                           mDiscoveryRequestCallbackContext;
+    void                            *mDiscoveryRequestCallbackContext;
 };
 
 #endif // OPENTHREAD_FTD

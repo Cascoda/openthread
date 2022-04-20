@@ -195,7 +195,7 @@ Error Mle::Start(StartMode aMode)
     Error error = kErrorNone;
 
     // cannot bring up the interface if IEEE 802.15.4 promiscuous mode is enabled
-    VerifyOrExit(!Get<Radio>().GetPromiscuous(), error = kErrorInvalidState);
+    VerifyOrExit(Get<Mac::Mac>().IsPromiscuous() == false, error = kErrorInvalidState);
     VerifyOrExit(Get<ThreadNetif>().IsUp(), error = kErrorInvalidState);
 
     if (Get<Mac::Mac>().GetPanId() == Mac::kPanIdBroadcast)
@@ -1034,7 +1034,7 @@ const LeaderData &Mle::GetLeaderData(void)
 
 Message *Mle::NewMleMessage(void)
 {
-    Message *         message;
+    Message          *message;
     Message::Settings settings(Message::kNoLinkSecurity, Message::kPriorityNet);
 
     message = mSocket.NewMessage(0, settings);
@@ -2090,7 +2090,7 @@ void Mle::RemoveDelayedMessage(Message::SubType aSubType, MessageType aMessageTy
 void Mle::SendParentRequest(ParentRequestType aType)
 {
     Error        error = kErrorNone;
-    Message *    message;
+    Message     *message;
     uint8_t      scanMask = 0;
     Ip6::Address destination;
 
@@ -2149,7 +2149,7 @@ Error Mle::SendChildIdRequest(void)
     Error        error   = kErrorNone;
     uint8_t      tlvs[]  = {Tlv::kAddress16, Tlv::kNetworkData, Tlv::kRoute};
     uint8_t      tlvsLen = sizeof(tlvs);
-    Message *    message = nullptr;
+    Message     *message = nullptr;
     Ip6::Address destination;
 
     if (mParent.GetExtAddress() == mParentCandidate.GetExtAddress())
@@ -2193,6 +2193,9 @@ Error Mle::SendChildIdRequest(void)
     SuccessOrExit(error = AppendPendingTimestamp(*message));
 
     mParentCandidate.SetState(Neighbor::kStateValid);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().BuildSecurityTable();
+#endif
 
     destination.SetToLinkLocalAddress(mParentCandidate.GetExtAddress());
     SuccessOrExit(error = SendMessage(*message, destination));
@@ -2213,10 +2216,10 @@ exit:
 }
 
 Error Mle::SendDataRequest(const Ip6::Address &aDestination,
-                           const uint8_t *     aTlvs,
+                           const uint8_t      *aTlvs,
                            uint8_t             aTlvsLength,
                            uint16_t            aDelay,
-                           const uint8_t *     aExtraTlvs,
+                           const uint8_t      *aExtraTlvs,
                            uint8_t             aExtraTlvsLength)
 {
     Error    error = kErrorNone;
@@ -2396,7 +2399,7 @@ Error Mle::SendChildUpdateRequest(void)
 {
     Error                   error = kErrorNone;
     Ip6::Address            destination;
-    Message *               message = nullptr;
+    Message                *message = nullptr;
     AddressRegistrationMode mode    = kAppendAllAddresses;
 
     if (!mParent.IsStateValidOrRestoring())
@@ -2475,7 +2478,7 @@ Error Mle::SendChildUpdateResponse(const uint8_t *aTlvs, uint8_t aNumTlvs, const
 {
     Error        error = kErrorNone;
     Ip6::Address destination;
-    Message *    message;
+    Message     *message;
     bool         checkAddress = false;
 
     VerifyOrExit((message = NewMleMessage()) != nullptr, error = kErrorNoBufs);
@@ -2561,7 +2564,7 @@ void Mle::SendAnnounce(uint8_t aChannel, const Ip6::Address &aDestination, Annou
     Error              error = kErrorNone;
     ChannelTlv         channel;
     MeshCoP::Timestamp activeTimestamp;
-    Message *          message = nullptr;
+    Message           *message = nullptr;
 
     VerifyOrExit(Get<Mac::Mac>().GetSupportedChannelMask().ContainsChannel(aChannel), error = kErrorInvalidArgs);
     VerifyOrExit((message = NewMleMessage()) != nullptr, error = kErrorNoBufs);
@@ -2773,7 +2776,7 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
     uint16_t           length;
     uint8_t            tag[kMleSecurityTagSize];
     uint8_t            command;
-    Neighbor *         neighbor;
+    Neighbor          *neighbor;
     bool               skipLoggingError = false;
 
     LogDebg("Receive UDP message");
@@ -2913,6 +2916,9 @@ void Mle::HandleUdpReceive(Message &aMessage, const Ip6::MessageInfo &aMessageIn
             neighbor->SetKeySequence(keySequence);
             neighbor->GetLinkFrameCounters().Reset();
             neighbor->SetLinkAckFrameCounter(0);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+            Get<Mac::Mac>().UpdateDevice(*neighbor);
+#endif
         }
 
         neighbor->SetMleFrameCounter(frameCounter + 1);
@@ -3639,6 +3645,9 @@ void Mle::HandleParentResponse(const Message &aMessage, const Ip6::MessageInfo &
     mParentCandidate.SetCslClockAccuracy(clockAccuracy.GetCslClockAccuracy());
     mParentCandidate.SetCslClockUncertainty(clockAccuracy.GetCslUncertainty());
 #endif
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().UpdateDevice(mParentCandidate);
+#endif
 
     mParentPriority         = connectivity.GetParentPriority();
     mParentLinkQuality3     = connectivity.GetLinkQuality3();
@@ -3655,9 +3664,9 @@ exit:
     LogProcessError(kTypeParentResponse, error);
 }
 
-void Mle::HandleChildIdResponse(const Message &         aMessage,
+void Mle::HandleChildIdResponse(const Message          &aMessage,
                                 const Ip6::MessageInfo &aMessageInfo,
-                                const Neighbor *        aNeighbor)
+                                const Neighbor         *aNeighbor)
 {
     Error              error = kErrorNone;
     LeaderData         leaderData;
@@ -3894,9 +3903,9 @@ exit:
     LogProcessError(kTypeChildUpdateRequestOfParent, error);
 }
 
-void Mle::HandleChildUpdateResponse(const Message &         aMessage,
+void Mle::HandleChildUpdateResponse(const Message          &aMessage,
                                     const Ip6::MessageInfo &aMessageInfo,
-                                    const Neighbor *        aNeighbor)
+                                    const Neighbor         *aNeighbor)
 {
     Error     error = kErrorNone;
     uint8_t   status;
@@ -3947,6 +3956,9 @@ void Mle::HandleChildUpdateResponse(const Message &         aMessage,
         mParent.GetLinkFrameCounters().SetAll(linkFrameCounter);
         mParent.SetLinkAckFrameCounter(linkFrameCounter);
         mParent.SetMleFrameCounter(mleFrameCounter);
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+        Get<Mac::Mac>().UpdateDevice(mParent);
+#endif
 
         mParent.SetState(Neighbor::kStateValid);
         SetStateChild(GetRloc16());
@@ -4090,9 +4102,9 @@ exit:
 }
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
-void Mle::HandleLinkMetricsManagementRequest(const Message &         aMessage,
+void Mle::HandleLinkMetricsManagementRequest(const Message          &aMessage,
                                              const Ip6::MessageInfo &aMessageInfo,
-                                             Neighbor *              aNeighbor)
+                                             Neighbor               *aNeighbor)
 {
     Error               error = kErrorNone;
     LinkMetrics::Status status;
@@ -4111,9 +4123,9 @@ exit:
 #endif // OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_INITIATOR_ENABLE
-void Mle::HandleLinkMetricsManagementResponse(const Message &         aMessage,
+void Mle::HandleLinkMetricsManagementResponse(const Message          &aMessage,
                                               const Ip6::MessageInfo &aMessageInfo,
-                                              Neighbor *              aNeighbor)
+                                              Neighbor               *aNeighbor)
 {
     Error error = kErrorNone;
 
@@ -4208,7 +4220,7 @@ Error Mle::CheckReachability(uint16_t aMeshDest, Ip6::Header &aIp6Header)
 void Mle::InformPreviousParent(void)
 {
     Error            error   = kErrorNone;
-    Message *        message = nullptr;
+    Message         *message = nullptr;
     Ip6::MessageInfo messageInfo;
 
     VerifyOrExit((message = Get<Ip6::Ip6>().NewMessage(0)) != nullptr, error = kErrorNoBufs);
