@@ -397,55 +397,55 @@ private:
     };
 #endif // OPENTHREAD_FTD
 
-    void  SendIcmpErrorIfDstUnreach(const Message &     aMessage,
+    void  SendIcmpErrorIfDstUnreach(const Message      &aMessage,
                                     const Mac::Address &aMacSource,
                                     const Mac::Address &aMacDest);
-    Error CheckReachability(const uint8_t *     aFrame,
+    Error CheckReachability(const uint8_t      *aFrame,
                             uint16_t            aFrameLength,
                             const Mac::Address &aMeshSource,
                             const Mac::Address &aMeshDest);
-    void  UpdateRoutes(const uint8_t *     aFrame,
+    void  UpdateRoutes(const uint8_t      *aFrame,
                        uint16_t            aFrameLength,
                        const Mac::Address &aMeshSource,
                        const Mac::Address &aMeshDest);
 
-    Error    DecompressIp6Header(const uint8_t *     aFrame,
+    Error    DecompressIp6Header(const uint8_t      *aFrame,
                                  uint16_t            aFrameLength,
                                  const Mac::Address &aMacSource,
                                  const Mac::Address &aMacDest,
-                                 Ip6::Header &       aIp6Header,
-                                 uint8_t &           aHeaderLength,
-                                 bool &              aNextHeaderCompressed);
-    Error    FrameToMessage(const uint8_t *     aFrame,
+                                 Ip6::Header        &aIp6Header,
+                                 uint8_t            &aHeaderLength,
+                                 bool               &aNextHeaderCompressed);
+    Error    FrameToMessage(const uint8_t      *aFrame,
                             uint16_t            aFrameLength,
                             uint16_t            aDatagramSize,
                             const Mac::Address &aMacSource,
                             const Mac::Address &aMacDest,
-                            Message *&          aMessage);
-    Error    GetIp6Header(const uint8_t *     aFrame,
+                            Message           *&aMessage);
+    Error    GetIp6Header(const uint8_t      *aFrame,
                           uint16_t            aFrameLength,
                           const Mac::Address &aMacSource,
                           const Mac::Address &aMacDest,
-                          Ip6::Header &       aIp6Header);
+                          Ip6::Header        &aIp6Header);
     void     GetMacDestinationAddress(const Ip6::Address &aIp6Addr, Mac::Address &aMacAddr);
     void     GetMacSourceAddress(const Ip6::Address &aIp6Addr, Mac::Address &aMacAddr);
     Message *PrepareNextDirectTransmission(void);
-    void     HandleMesh(uint8_t *             aFrame,
+    void     HandleMesh(uint8_t              *aFrame,
                         uint16_t              aFrameLength,
-                        const Mac::Address &  aMacSource,
+                        const Mac::Address   &aMacSource,
                         const ThreadLinkInfo &aLinkInfo);
-    void     HandleFragment(const uint8_t *       aFrame,
+    void     HandleFragment(const uint8_t        *aFrame,
                             uint16_t              aFrameLength,
-                            const Mac::Address &  aMacSource,
-                            const Mac::Address &  aMacDest,
+                            const Mac::Address   &aMacSource,
+                            const Mac::Address   &aMacDest,
                             const ThreadLinkInfo &aLinkInfo);
-    void     HandleLowpanHC(const uint8_t *       aFrame,
+    void     HandleLowpanHC(const uint8_t        *aFrame,
                             uint16_t              aFrameLength,
-                            const Mac::Address &  aMacSource,
-                            const Mac::Address &  aMacDest,
+                            const Mac::Address   &aMacSource,
+                            const Mac::Address   &aMacDest,
                             const ThreadLinkInfo &aLinkInfo);
-    uint16_t PrepareDataFrame(Mac::TxFrame &      aFrame,
-                              Message &           aMessage,
+    uint16_t PrepareDataFrame(Mac::TxFrame       &aFrame,
+                              Message            &aMessage,
                               const Mac::Address &aMacSource,
                               const Mac::Address &aMacDest,
                               bool                aAddMeshHeader = false,
@@ -473,7 +473,7 @@ private:
 
     void          HandleReceivedFrame(Mac::RxFrame &aFrame);
     Mac::TxFrame *HandleFrameRequest(Mac::TxFrames &aTxFrames);
-    Neighbor *    UpdateNeighborOnSentFrame(Mac::TxFrame &      aFrame,
+    Neighbor     *UpdateNeighborOnSentFrame(bool                aAckRequested,
                                             Error               aError,
                                             const Mac::Address &aMacDest,
                                             bool                aIsDataPoll = false);
@@ -481,7 +481,7 @@ private:
                                              Error     aError,
                                              bool      aAllowNeighborRemove,
                                              uint8_t   aFailLimit = Mle::kFailedRouterTransmissions);
-    void          HandleSentFrame(Mac::TxFrame &aFrame, Error aError);
+    void          HandleSentFrame(bool aAckRequested, Error aError, const Mac::Address &aMacDest);
     void          UpdateSendMessage(Error aFrameTxError, Mac::Address &aMacDest, Neighbor *aNeighbor);
     void          RemoveMessageIfNoPendingTx(Message &aMessage);
 
@@ -489,19 +489,19 @@ private:
     static void ScheduleTransmissionTask(Tasklet &aTasklet);
     void        ScheduleTransmissionTask(void);
 
-    Error GetFramePriority(const uint8_t *     aFrame,
+    Error GetFramePriority(const uint8_t      *aFrame,
                            uint16_t            aFrameLength,
                            const Mac::Address &aMacSource,
                            const Mac::Address &aMacDest,
-                           Message::Priority & aPriority);
+                           Message::Priority  &aPriority);
     Error GetFragmentPriority(Lowpan::FragmentHeader &aFragmentHeader,
                               uint16_t                aSrcRloc16,
-                              Message::Priority &     aPriority);
-    void  GetForwardFramePriority(const uint8_t *     aFrame,
+                              Message::Priority      &aPriority);
+    void  GetForwardFramePriority(const uint8_t      *aFrame,
                                   uint16_t            aFrameLength,
                                   const Mac::Address &aMeshSource,
                                   const Mac::Address &aMeshDest,
-                                  Message::Priority & aPriority);
+                                  Message::Priority  &aPriority);
 
     bool     CalcIePresent(const Message *aMessage);
     uint16_t CalcFrameVersion(const Neighbor *aNeighbor, bool aIePresent);
@@ -513,11 +513,11 @@ private:
     void ResumeMessageTransmissions(void);
 
     void LogMessage(MessageAction aAction, const Message &aMessage, const Mac::Address *aAddress, Error aError);
-    void LogFrame(const char *aActionText, const Mac::Frame &aFrame, Error aError);
+    void LogFrame(const char *aActionText, const Mac::RxFrame &aFrame, Error aError);
     void LogFragmentFrameDrop(Error                         aError,
                               uint16_t                      aFrameLength,
-                              const Mac::Address &          aMacSource,
-                              const Mac::Address &          aMacDest,
+                              const Mac::Address           &aMacSource,
+                              const Mac::Address           &aMacDest,
                               const Lowpan::FragmentHeader &aFragmentHeader,
                               bool                          aIsSecure);
     void LogLowpanHcFrameDrop(Error               aError,
@@ -527,10 +527,10 @@ private:
                               bool                aIsSecure);
 
     static Error ParseIp6UdpTcpHeader(const Message &aMessage,
-                                      Ip6::Header &  aIp6Header,
-                                      uint16_t &     aChecksum,
-                                      uint16_t &     aSourcePort,
-                                      uint16_t &     aDestPort);
+                                      Ip6::Header   &aIp6Header,
+                                      uint16_t      &aChecksum,
+                                      uint16_t      &aSourcePort,
+                                      uint16_t      &aDestPort);
 
 #if OPENTHREAD_FTD && OPENTHREAD_CONFIG_BACKBONE_ROUTER_ENABLE
     otError ForwardDuaToBackboneLink(Message &aMessage, const Ip6::Address &aDst);
@@ -541,29 +541,29 @@ private:
     const char *MessagePriorityToString(const Message &aMessage);
 
 #if OPENTHREAD_FTD
-    Error DecompressIp6UdpTcpHeader(const Message &     aMessage,
+    Error DecompressIp6UdpTcpHeader(const Message      &aMessage,
                                     uint16_t            aOffset,
                                     const Mac::Address &aMeshSource,
                                     const Mac::Address &aMeshDest,
-                                    Ip6::Header &       aIp6Header,
-                                    uint16_t &          aChecksum,
-                                    uint16_t &          aSourcePort,
-                                    uint16_t &          aDestPort);
+                                    Ip6::Header        &aIp6Header,
+                                    uint16_t           &aChecksum,
+                                    uint16_t           &aSourcePort,
+                                    uint16_t           &aDestPort);
     Error LogMeshFragmentHeader(MessageAction       aAction,
-                                const Message &     aMessage,
+                                const Message      &aMessage,
                                 const Mac::Address *aMacAddress,
                                 Error               aError,
-                                uint16_t &          aOffset,
-                                Mac::Address &      aMeshSource,
-                                Mac::Address &      aMeshDest,
+                                uint16_t           &aOffset,
+                                Mac::Address       &aMeshSource,
+                                Mac::Address       &aMeshDest,
                                 LogLevel            aLogLevel);
-    void  LogMeshIpHeader(const Message &     aMessage,
+    void  LogMeshIpHeader(const Message      &aMessage,
                           uint16_t            aOffset,
                           const Mac::Address &aMeshSource,
                           const Mac::Address &aMeshDest,
                           LogLevel            aLogLevel);
     void  LogMeshMessage(MessageAction       aAction,
-                         const Message &     aMessage,
+                         const Message      &aMessage,
                          const Mac::Address *aAddress,
                          Error               aError,
                          LogLevel            aLogLevel);
@@ -573,7 +573,7 @@ private:
                                    uint16_t     aDestPort,
                                    LogLevel     aLogLevel);
     void LogIp6Message(MessageAction       aAction,
-                       const Message &     aMessage,
+                       const Message      &aMessage,
                        const Mac::Address *aAddress,
                        Error               aError,
                        LogLevel            aLogLevel);
