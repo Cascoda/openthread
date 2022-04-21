@@ -777,6 +777,24 @@ protected:
      */
     void Init(Instance &aInstance);
 
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    /**
+     * This method gets the index that this device is stored in the device table
+     *
+     * @returns  The index that the device is stored in.
+     *
+     */
+    uint8_t GetDeviceTableIndex(void) { return mDeviceTableIndex; }
+
+    /**
+     * This method sets the index that this device is stored in the device table
+     *
+     * @param[in]  aDeviceTableIndex  The index that the device is stored in.
+     *
+     */
+    void SetDeviceTableIndex(uint8_t aDeviceTableIndex) { mDeviceTableIndex = aDeviceTableIndex; }
+#endif
+
 private:
     enum : uint32_t
     {
@@ -828,6 +846,9 @@ private:
     // Subject (this neighbor). Note that this device is the Initiator
     // and this neighbor is the Subject.
     LinkMetrics::Metrics mEnhAckProbingMetrics;
+#endif
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    uint8_t mDeviceTableIndex; ///< The index used to store this device in the device table.
 #endif
 };
 
@@ -970,7 +991,7 @@ public:
          * @returns A reference to the `Ip6::Address` entry currently pointed by the iterator.
          *
          */
-        const Ip6::Address &operator*(void)const { return *GetAddress(); }
+        const Ip6::Address &operator*(void) const { return *GetAddress(); }
 
         /**
          * This method overloads operator `==` to evaluate whether or not two `Iterator` instances are equal.
@@ -1001,7 +1022,7 @@ public:
 
         void Update(void);
 
-        const Child &            mChild;
+        const Child             &mChild;
         Ip6::Address::TypeFilter mFilter;
         Index                    mIndex;
         Ip6::Address             mMeshLocalAddress;
@@ -1301,7 +1322,7 @@ private:
         AddressIterator end(void) { return AddressIterator(mChild, AddressIterator::kEndIterator); }
 
     private:
-        const Child &            mChild;
+        const Child             &mChild;
         Ip6::Address::TypeFilter mFilter;
     };
 
