@@ -57,6 +57,8 @@ SourceMatchController::SourceMatchController(Instance &aInstance)
     ClearTable();
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+
 void SourceMatchController::IncrementMessageCount(Child &aChild)
 {
     if (aChild.GetIndirectMessageCount() == 0)
@@ -224,6 +226,65 @@ Error SourceMatchController::AddPendingEntries(void)
 exit:
     return error;
 }
+
+#else
+
+void SourceMatchController::IncrementMessageCount(Child &aChild)
+{
+    aChild.IncrementIndirectMessageCount();
+}
+
+void SourceMatchController::DecrementMessageCount(Child &aChild)
+{
+    aChild.DecrementIndirectMessageCount();
+}
+
+void SourceMatchController::ResetMessageCount(Child &aChild)
+{
+    aChild.ResetIndirectMessageCount();
+}
+
+void SourceMatchController::SetSrcMatchAsShort(Child &aChild, bool aUseShortAddress)
+{
+    aChild.SetIndirectSourceMatchShort(aUseShortAddress);
+}
+
+void SourceMatchController::ClearTable(void)
+{
+    return;
+}
+
+void SourceMatchController::Enable(bool aEnable)
+{
+    mEnabled = aEnable;
+}
+
+void SourceMatchController::AddEntry(Child &aChild)
+{
+    (void)aChild;
+    return;
+}
+
+Error SourceMatchController::AddAddress(const Child &aChild)
+{
+    Error error = kErrorNone;
+    (void)aChild;
+    return error;
+}
+
+void SourceMatchController::ClearEntry(Child &aChild)
+{
+    (void)aChild;
+    return;
+}
+
+Error SourceMatchController::AddPendingEntries(void)
+{
+    Error error = kErrorNone;
+    return error;
+}
+
+#endif // !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 
 } // namespace ot
 
