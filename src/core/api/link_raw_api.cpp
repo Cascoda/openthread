@@ -119,7 +119,7 @@ otRadioCaps otLinkRawGetCaps(otInstance *aInstance)
     return AsCoreType(aInstance).Get<Mac::LinkRaw>().GetCaps();
 }
 
-otError otLinkRawEnergyScan(otInstance *            aInstance,
+otError otLinkRawEnergyScan(otInstance             *aInstance,
                             uint8_t                 aScanChannel,
                             uint16_t                aScanDuration,
                             otLinkRawEnergyScanDone aCallback)
@@ -157,7 +157,7 @@ otError otLinkRawSrcMatchAddExtEntry(otInstance *aInstance, const otExtAddress *
 {
     Mac::ExtAddress address;
     Error           error    = kErrorNone;
-    Instance &      instance = AsCoreType(aInstance);
+    Instance       &instance = AsCoreType(aInstance);
 
     VerifyOrExit(instance.Get<Mac::LinkRaw>().IsEnabled(), error = kErrorInvalidState);
 
@@ -184,7 +184,7 @@ otError otLinkRawSrcMatchClearExtEntry(otInstance *aInstance, const otExtAddress
 {
     Mac::ExtAddress address;
     Error           error    = kErrorNone;
-    Instance &      instance = AsCoreType(aInstance);
+    Instance       &instance = AsCoreType(aInstance);
 
     VerifyOrExit(instance.Get<Mac::LinkRaw>().IsEnabled(), error = kErrorInvalidState);
 
@@ -221,7 +221,7 @@ exit:
     return error;
 }
 
-otError otLinkRawSetMacKey(otInstance *    aInstance,
+otError otLinkRawSetMacKey(otInstance     *aInstance,
                            uint8_t         aKeyIdMode,
                            uint8_t         aKeyId,
                            const otMacKey *aPrevKey,
@@ -284,6 +284,16 @@ otError otLinkSetExtendedAddress(otInstance *aInstance, const otExtAddress *aExt
 uint16_t otLinkGetShortAddress(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mac::LinkRaw>().GetShortAddress();
+}
+
+bool otLinkIsPromiscuous(otInstance *aInstance)
+{
+    return otLinkRawGetPromiscuous(aInstance);
+}
+
+otError otLinkSetPromiscuous(otInstance *aInstance, bool aPromiscuous)
+{
+    return otLinkRawSetPromiscuous(aInstance, aPromiscuous);
 }
 
 void otLinkGetFactoryAssignedIeeeEui64(otInstance *aInstance, otExtAddress *aEui64)
