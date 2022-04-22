@@ -426,11 +426,11 @@ typedef void (*otHandleActiveScanResult)(otActiveScanResult *aResult, void *aCon
  * @retval OT_ERROR_BUSY  Already performing an Active Scan.
  *
  */
-otError otLinkActiveScan(otInstance *             aInstance,
+otError otLinkActiveScan(otInstance              *aInstance,
                          uint32_t                 aScanChannels,
                          uint16_t                 aScanDuration,
                          otHandleActiveScanResult aCallback,
-                         void *                   aCallbackContext);
+                         void                    *aCallbackContext);
 
 /**
  * This function indicates whether or not an IEEE 802.15.4 Active Scan is currently in progress.
@@ -464,11 +464,11 @@ typedef void (*otHandleEnergyScanResult)(otEnergyScanResult *aResult, void *aCon
  * @retval OT_ERROR_BUSY  Could not start the energy scan.
  *
  */
-otError otLinkEnergyScan(otInstance *             aInstance,
+otError otLinkEnergyScan(otInstance              *aInstance,
                          uint32_t                 aScanChannels,
                          uint16_t                 aScanDuration,
                          otHandleEnergyScanResult aCallback,
-                         void *                   aCallbackContext);
+                         void                    *aCallbackContext);
 
 /**
  * This function indicates whether or not an IEEE 802.15.4 Energy Scan is currently in progress.
@@ -506,6 +506,18 @@ otError otLinkSendDataRequest(otInstance *aInstance);
  *
  */
 bool otLinkIsInTransmitState(otInstance *aInstance);
+
+/**
+ * This function will trigger openthread to synchronise the PIB of an external 802.15.4 MAC
+ *
+ * Openthread will reset the external MAC layer, and fill the PIB with cached values. This is
+ * useful in the case of the MAC sleeping in a way which does not preserve volatile memory,
+ * or if the external MAC control is being transferred.
+ *
+ * @param[in] aInstance A pointer to an OpenThread instance.
+ *
+ */
+void otLinkSyncExternalMac(otInstance *aInstance);
 
 /**
  * Get the IEEE 802.15.4 channel.
