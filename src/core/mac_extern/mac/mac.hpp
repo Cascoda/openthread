@@ -902,7 +902,7 @@ private:
     void  Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration);
     void  HandleBeginScan(void);
 
-    void  ReportActiveScanResult(const RxFrame *aBeaconFrame);
+    void  ReportActiveScanResult(const otBeaconNotify *aBeacon);
     Error SignalNetworkNameChange(Error aError);
 
     otError BuildDeviceDescriptor(const ExtAddress &aExtAddress,

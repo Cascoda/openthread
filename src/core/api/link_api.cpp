@@ -370,13 +370,18 @@ void otLinkResetCounters(otInstance *aInstance)
     AsCoreType(aInstance).Get<Mac::Mac>().ResetCounters();
 }
 
-otError otLinkActiveScan(otInstance *             aInstance,
+otError otLinkActiveScan(otInstance              *aInstance,
                          uint32_t                 aScanChannels,
                          uint16_t                 aScanDuration,
                          otHandleActiveScanResult aCallback,
-                         void *                   aCallbackContext)
+                         void                    *aCallbackContext)
 {
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    return AsCoreType(aInstance).Get<Mac::Mac>().ActiveScan(aScanChannels, aScanDuration,
+                                                            &Get<Mac::Mac>().ReportActiveScanResult, aCallbackContext);
+#else
     return AsCoreType(aInstance).Get<Mac::Mac>().ActiveScan(aScanChannels, aScanDuration, aCallback, aCallbackContext);
+#endif
 }
 
 bool otLinkIsActiveScanInProgress(otInstance *aInstance)
@@ -384,11 +389,11 @@ bool otLinkIsActiveScanInProgress(otInstance *aInstance)
     return AsCoreType(aInstance).Get<Mac::Mac>().IsActiveScanInProgress();
 }
 
-otError otLinkEnergyScan(otInstance *             aInstance,
+otError otLinkEnergyScan(otInstance              *aInstance,
                          uint32_t                 aScanChannels,
                          uint16_t                 aScanDuration,
                          otHandleEnergyScanResult aCallback,
-                         void *                   aCallbackContext)
+                         void                    *aCallbackContext)
 {
     return AsCoreType(aInstance).Get<Mac::Mac>().EnergyScan(aScanChannels, aScanDuration, aCallback, aCallbackContext);
 }
@@ -402,6 +407,15 @@ bool otLinkIsInTransmitState(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mac::Mac>().IsInTransmitState();
 }
+
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+void otLinkSyncExternalMac(otInstance *aInstance)
+{
+    Instance &instance = *static_cast<Instance *>(aInstance);
+
+    instance.Get<Mac::Mac>().Start();
+}
+#endif
 
 uint16_t otLinkGetCcaFailureRate(otInstance *aInstance)
 {

@@ -333,11 +333,11 @@ exit:
     return error;
 }
 
-void Mac::ReportActiveScanResult(const RxFrame *aBeaconFrame)
+void Mac::ReportActiveScanResult(const otBeaconNotify *aBeacon)
 {
     VerifyOrExit(mActiveScanHandler != nullptr);
 
-    if (aBeaconFrame == nullptr)
+    if (aBeacon == nullptr)
     {
         mActiveScanHandler(nullptr, mScanHandlerContext);
     }
@@ -345,7 +345,7 @@ void Mac::ReportActiveScanResult(const RxFrame *aBeaconFrame)
     {
         ActiveScanResult result;
 
-        SuccessOrExit(ConvertBeaconToActiveScanResult(aBeaconFrame, result));
+        SuccessOrExit(ConvertBeaconToActiveScanResult(aBeacon, result));
         mActiveScanHandler(&result, mScanHandlerContext);
     }
 
