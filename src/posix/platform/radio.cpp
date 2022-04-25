@@ -33,6 +33,8 @@
 
 #include "platform-posix.h"
 
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC == 0
+
 #include <string.h>
 
 #include "common/new.hpp"
@@ -135,7 +137,7 @@ void Radio::Init(void)
     if (maxPowerTable != nullptr)
     {
         constexpr int8_t kPowerDefault = 30; // Default power 1 watt (30 dBm).
-        const char *     str           = nullptr;
+        const char      *str           = nullptr;
         uint8_t          channel       = ot::Radio::kChannelMin;
         int8_t           power         = kPowerDefault;
         otError          error;
@@ -478,8 +480,8 @@ exit:
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
 otError otPlatDiagProcess(otInstance *aInstance,
                           uint8_t     aArgsLength,
-                          char *      aArgs[],
-                          char *      aOutput,
+                          char       *aArgs[],
+                          char       *aOutput,
                           size_t      aOutputMaxLen)
 {
     // deliver the platform specific diags commands to radio only ncp.
@@ -563,7 +565,7 @@ otRadioState otPlatRadioGetState(otInstance *aInstance)
     return sRadioSpinel.GetState();
 }
 
-void otPlatRadioSetMacKey(otInstance *            aInstance,
+void otPlatRadioSetMacKey(otInstance             *aInstance,
                           uint8_t                 aKeyIdMode,
                           uint8_t                 aKeyId,
                           const otMacKeyMaterial *aPrevKey,
@@ -620,10 +622,10 @@ otError otPlatRadioGetRegion(otInstance *aInstance, uint16_t *aRegionCode)
 }
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
-otError otPlatRadioConfigureEnhAckProbing(otInstance *         aInstance,
+otError otPlatRadioConfigureEnhAckProbing(otInstance          *aInstance,
                                           otLinkMetrics        aLinkMetrics,
                                           const otShortAddress aShortAddress,
-                                          const otExtAddress * aExtAddress)
+                                          const otExtAddress  *aExtAddress)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
@@ -639,3 +641,5 @@ otError otPlatRadioReceiveAt(otInstance *aInstance, uint8_t aChannel, uint32_t a
     OT_UNUSED_VARIABLE(aDuration);
     return OT_ERROR_NOT_IMPLEMENTED;
 }
+
+#endif // OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
