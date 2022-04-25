@@ -394,16 +394,16 @@ private:
 #ifdef MBEDTLS_SSL_EXPORT_KEYS
 #if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
 
-    static void HandleMbedtlsExportKeys(void *                      aContext,
+    static void HandleMbedtlsExportKeys(void                       *aContext,
                                         mbedtls_ssl_key_export_type aType,
-                                        const unsigned char *       aMasterSecret,
+                                        const unsigned char        *aMasterSecret,
                                         size_t                      aMasterSecretLen,
                                         const unsigned char         aClientRandom[32],
                                         const unsigned char         aServerRandom[32],
                                         mbedtls_tls_prf_types       aTlsPrfType);
 
     void HandleMbedtlsExportKeys(mbedtls_ssl_key_export_type aType,
-                                 const unsigned char *       aMasterSecret,
+                                 const unsigned char        *aMasterSecret,
                                  size_t                      aMasterSecretLen,
                                  const unsigned char         aClientRandom[32],
                                  const unsigned char         aServerRandom[32],
@@ -411,7 +411,7 @@ private:
 
 #else
 
-    static int HandleMbedtlsExportKeys(void *               aContext,
+    static int HandleMbedtlsExportKeys(void                *aContext,
                                        const unsigned char *aMasterSecret,
                                        const unsigned char *aKeyBlock,
                                        size_t               aMacLength,
@@ -434,6 +434,8 @@ private:
     void  HandleDtlsReceive(const uint8_t *aBuf, uint16_t aLength);
     Error HandleDtlsSend(const uint8_t *aBuf, uint16_t aLength, Message::SubType aMessageSubType);
 
+    int HandleReceive(void);
+
     void Process(void);
 
     State mState;
@@ -454,11 +456,11 @@ private:
 
 #if OPENTHREAD_CONFIG_COAP_SECURE_API_ENABLE
 #ifdef MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
-    const uint8_t *    mCaChainSrc;
+    const uint8_t     *mCaChainSrc;
     uint32_t           mCaChainLength;
-    const uint8_t *    mOwnCertSrc;
+    const uint8_t     *mOwnCertSrc;
     uint32_t           mOwnCertLength;
-    const uint8_t *    mPrivateKeySrc;
+    const uint8_t     *mPrivateKeySrc;
     uint32_t           mPrivateKeyLength;
     mbedtls_x509_crt   mCaChain;
     mbedtls_x509_crt   mOwnCert;
@@ -492,13 +494,13 @@ private:
 
     ConnectedHandler mConnectedHandler;
     ReceiveHandler   mReceiveHandler;
-    void *           mContext;
+    void            *mContext;
 
     Ip6::MessageInfo mMessageInfo;
     Ip6::Udp::Socket mSocket;
 
     TransportCallback mTransportCallback;
-    void *            mTransportContext;
+    void             *mTransportContext;
 
     Message::SubType mMessageSubType;
     Message::SubType mMessageDefaultSubType;

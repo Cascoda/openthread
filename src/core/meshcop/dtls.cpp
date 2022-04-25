@@ -749,9 +749,9 @@ void Dtls::HandleMbedtlsSetTimer(uint32_t aIntermediate, uint32_t aFinish)
 
 #if (MBEDTLS_VERSION_NUMBER >= 0x03000000)
 
-void Dtls::HandleMbedtlsExportKeys(void *                      aContext,
+void Dtls::HandleMbedtlsExportKeys(void                       *aContext,
                                    mbedtls_ssl_key_export_type aType,
-                                   const unsigned char *       aMasterSecret,
+                                   const unsigned char        *aMasterSecret,
                                    size_t                      aMasterSecretLen,
                                    const unsigned char         aClientRandom[32],
                                    const unsigned char         aServerRandom[32],
@@ -762,7 +762,7 @@ void Dtls::HandleMbedtlsExportKeys(void *                      aContext,
 }
 
 void Dtls::HandleMbedtlsExportKeys(mbedtls_ssl_key_export_type aType,
-                                   const unsigned char *       aMasterSecret,
+                                   const unsigned char        *aMasterSecret,
                                    size_t                      aMasterSecretLen,
                                    const unsigned char         aClientRandom[32],
                                    const unsigned char         aServerRandom[32],
@@ -790,13 +790,17 @@ void Dtls::HandleMbedtlsExportKeys(mbedtls_ssl_key_export_type aType,
     LogDebg("Generated KEK");
     Get<KeyManager>().SetKek(kek.GetBytes());
 
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().BuildSecurityTable();
+#endif
+
 exit:
     return;
 }
 
 #else
 
-int Dtls::HandleMbedtlsExportKeys(void *               aContext,
+int Dtls::HandleMbedtlsExportKeys(void                *aContext,
                                   const unsigned char *aMasterSecret,
                                   const unsigned char *aKeyBlock,
                                   size_t               aMacLength,
@@ -863,11 +867,28 @@ void Dtls::HandleTimer(void)
     }
 }
 
+int Dtls::HandleReceive(void)
+{
+    int rval;
+#if OPENTHREAD_CONFIG_COAP_SECURE_API_ENABLE
+    uint8_t buf[900];
+#else
+    uint8_t buf[768];
+#endif
+    rval = mbedtls_ssl_read(&mSsl, buf, sizeof(buf));
+
+    if (rval > 0)
+    {
+        mReceiveHandler(mContext, buf, static_cast<uint16_t>(rval));
+    }
+
+    return rval;
+}
+
 void Dtls::Process(void)
 {
-    uint8_t buf[OPENTHREAD_CONFIG_DTLS_MAX_CONTENT_LEN];
-    bool    shouldDisconnect = false;
-    int     rval;
+    bool shouldDisconnect = false;
+    int  rval;
 
     while ((mState == kStateConnecting) || (mState == kStateConnected))
     {
@@ -887,21 +908,14 @@ void Dtls::Process(void)
         }
         else
         {
-            rval = mbedtls_ssl_read(&mSsl, buf, sizeof(buf));
+            rval = HandleReceive();
         }
 
-        if (rval > 0)
-        {
-            if (mReceiveHandler != nullptr)
-            {
-                mReceiveHandler(mContext, buf, static_cast<uint16_t>(rval));
-            }
-        }
-        else if (rval == 0 || rval == MBEDTLS_ERR_SSL_WANT_READ || rval == MBEDTLS_ERR_SSL_WANT_WRITE)
+        if (rval == 0 || rval == MBEDTLS_ERR_SSL_WANT_READ || rval == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             break;
         }
-        else
+        else if (rval < 0)
         {
             switch (rval)
             {

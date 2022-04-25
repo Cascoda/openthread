@@ -68,6 +68,7 @@ Joiner::Joiner(Instance &aInstance)
     , mFinalizeMessage(nullptr)
     , mTimer(aInstance, Joiner::HandleTimer)
     , mJoinerEntrust(UriPath::kJoinerEntrust, &Joiner::HandleJoinerEntrust, this)
+    , mRestorePanId(Mac::kPanIdBroadcast)
 {
     SetIdFromIeeeEui64();
     mDiscerner.Clear();
@@ -128,14 +129,29 @@ exit:
     return;
 }
 
-Error Joiner::Start(const char *     aPskd,
-                    const char *     aProvisioningUrl,
-                    const char *     aVendorName,
-                    const char *     aVendorModel,
-                    const char *     aVendorSwVersion,
-                    const char *     aVendorData,
+Error Joiner::GetCounterpartAddress(Mac::ExtAddress &aExtAddr) const
+{
+    Error               error        = kErrorNone;
+    const JoinerRouter &joinerRouter = mJoinerRouters[mJoinerRouterIndex - 1];
+
+    VerifyOrExit(mState >= OT_JOINER_STATE_CONNECT, error = OT_ERROR_INVALID_STATE);
+    VerifyOrExit(mJoinerRouterIndex <= OT_ARRAY_LENGTH(mJoinerRouters), error = kErrorInvalidState);
+    VerifyOrExit(joinerRouter.mPriority != 0);
+
+    aExtAddr = joinerRouter.mExtAddr;
+
+exit:
+    return error;
+}
+
+Error Joiner::Start(const char      *aPskd,
+                    const char      *aProvisioningUrl,
+                    const char      *aVendorName,
+                    const char      *aVendorModel,
+                    const char      *aVendorSwVersion,
+                    const char      *aVendorData,
                     otJoinerCallback aCallback,
-                    void *           aContext)
+                    void            *aContext)
 {
     Error                        error;
     JoinerPskd                   joinerPskd;
@@ -182,8 +198,9 @@ Error Joiner::Start(const char *     aPskd,
     SuccessOrExit(error = Get<Mle::DiscoverScanner>().Discover(Mac::ChannelMask(0), Get<Mac::Mac>().GetPanId(),
                                                                /* aJoiner */ true, /* aEnableFiltering */ true,
                                                                &filterIndexes, HandleDiscoverResult, this));
-    mCallback = aCallback;
-    mContext  = aContext;
+    mCallback     = aCallback;
+    mContext      = aContext;
+    mRestorePanId = Get<Mac::Mac>().GetPanId();
 
     SetState(kStateDiscover);
 
@@ -226,6 +243,11 @@ void Joiner::Finish(Error aError)
     case kStateDiscover:
         Get<Coap::CoapSecure>().Stop();
         break;
+    }
+
+    if (aError)
+    {
+        Get<Mac::Mac>().SetPanId(mRestorePanId);
     }
 
     SetState(kStateIdle);
@@ -523,8 +545,8 @@ exit:
     return;
 }
 
-void Joiner::HandleJoinerFinalizeResponse(void *               aContext,
-                                          otMessage *          aMessage,
+void Joiner::HandleJoinerFinalizeResponse(void                *aContext,
+                                          otMessage           *aMessage,
                                           const otMessageInfo *aMessageInfo,
                                           Error                aResult)
 {
@@ -597,7 +619,7 @@ exit:
 void Joiner::SendJoinerEntrustResponse(const Coap::Message &aRequest, const Ip6::MessageInfo &aRequestInfo)
 {
     Error            error = kErrorNone;
-    Coap::Message *  message;
+    Coap::Message   *message;
     Ip6::MessageInfo responseInfo(aRequestInfo);
 
     VerifyOrExit((message = Get<Tmf::Agent>().NewPriorityMessage()) != nullptr, error = kErrorNoBufs);
