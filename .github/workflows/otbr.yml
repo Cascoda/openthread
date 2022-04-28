@@ -65,7 +65,7 @@ jobs:
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       run: |
-        ./script/git-tool clone https://github.com/openthread/ot-br-posix.git --depth 1 "/tmp/otbr_unique_action_id"
+        ./script/git-tool clone --branch cascoda-updated https://github.com/cascoda/ot-br-posix.git --depth 1 "/tmp/otbr_unique_action_id"
         echo ::set-output  name=id::${GITHUB_WORKFLOW}-${GITHUB_JOB}-${GITHUB_RUN_ID}-$(cd /tmp/otbr_unique_action_id/ && git rev-parse HEAD)
     - name: Check cached result
       id: check_cache_result
@@ -181,7 +181,7 @@ jobs:
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       run: |
-        ./script/git-tool clone https://github.com/openthread/ot-br-posix.git --depth 1 "/tmp/otbr_unique_action_id"
+        ./script/git-tool clone --branch cascoda-updated https://github.com/cascoda/ot-br-posix.git --depth 1 "/tmp/otbr_unique_action_id"
         echo ::set-output  name=id::${GITHUB_WORKFLOW}-${GITHUB_JOB}-${GITHUB_RUN_ID}-$(cd /tmp/otbr_unique_action_id/ && git rev-parse HEAD)-${{matrix.otbr_mdns}}-trel${{matrix.otbr_trel}}
     - name: Check cached result
       id: check_cache_result
