@@ -306,14 +306,12 @@ if(OT_MTD)
 endif()
 
 if(NOT OPENTHREAD_USE_EXTERNAL_MAC)
-{
     if(OT_RCP)
         include(radio.cmake)
         if (OT_APP_CLI)
             include(radio_cli.cmake)
         endif()
     endif()
-}
 
 set_property(SOURCE api/instance_api.cpp
     APPEND PROPERTY COMPILE_DEFINITIONS "PACKAGE_VERSION=\"${OT_PACKAGE_VERSION}\""
