@@ -48,6 +48,7 @@ endif
 
 CPPFLAGS_COMMON                            = \
     -I$(top_srcdir)/include                  \
+    -I$(top_srcdir)/src/core/mac_extern      \
     $(OPENTHREAD_TARGET_DEFINES)             \
     $(NULL)
 
@@ -215,17 +216,17 @@ SOURCES_COMMON                                  = \
     crypto/sha256.cpp                             \
     crypto/storage.cpp                            \
     diags/factory_diags.cpp                       \
-    mac/channel_mask.cpp                          \
-    mac/data_poll_handler.cpp                     \
-    mac/data_poll_sender.cpp                      \
-    mac/link_raw.cpp                              \
-    mac/mac.cpp                                   \
-    mac/mac_filter.cpp                            \
-    mac/mac_frame.cpp                             \
-    mac/mac_links.cpp                             \
-    mac/mac_types.cpp                             \
-    mac/sub_mac.cpp                               \
-    mac/sub_mac_callbacks.cpp                     \
+    mac_extern/channel_mask.cpp                   \
+    mac_extern/data_poll_handler.cpp              \
+    mac_extern/data_poll_sender.cpp               \
+    mac_extern/link_raw.cpp                       \
+    mac_extern/mac.cpp                            \
+    mac_extern/mac_filter.cpp                     \
+    mac_extern/mac_frame.cpp                      \
+    mac_extern/mac_links.cpp                      \
+    mac_extern/mac_types.cpp                      \
+    mac_extern/sub_mac.cpp                        \
+    mac_extern/sub_mac_callbacks.cpp              \
     meshcop/announce_begin_client.cpp             \
     meshcop/border_agent.cpp                      \
     meshcop/commissioner.cpp                      \
@@ -518,16 +519,16 @@ HEADERS_COMMON                                  = \
     crypto/sha256.hpp                             \
     crypto/storage.hpp                            \
     diags/factory_diags.hpp                       \
-    mac/channel_mask.hpp                          \
-    mac/data_poll_handler.hpp                     \
-    mac/data_poll_sender.hpp                      \
-    mac/link_raw.hpp                              \
-    mac/mac.hpp                                   \
-    mac/mac_filter.hpp                            \
-    mac/mac_frame.hpp                             \
-    mac/mac_links.hpp                             \
-    mac/mac_types.hpp                             \
-    mac/sub_mac.hpp                               \
+    mac_extern/channel_mask.hpp                   \
+    mac_extern/data_poll_handler.hpp              \
+    mac_extern/data_poll_sender.hpp               \
+    mac_extern/link_raw.hpp                       \
+    mac_extern/mac.hpp                            \
+    mac_extern/mac_filter.hpp                     \
+    mac_extern/mac_frame.hpp                      \
+    mac_extern/mac_links.hpp                      \
+    mac_extern/mac_types.hpp                      \
+    mac_extern/sub_mac.hpp                        \
     meshcop/announce_begin_client.hpp             \
     meshcop/border_agent.hpp                      \
     meshcop/commissioner.hpp                      \

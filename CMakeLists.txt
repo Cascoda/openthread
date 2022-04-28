@@ -165,6 +165,11 @@ list(APPEND OT_PUBLIC_INCLUDES ${PROJECT_BINARY_DIR}/etc/cmake)
 list(APPEND OT_PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/etc/cmake)
 list(APPEND OT_PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include)
 
+if(OPENTHREAD_USE_EXTERN_MAC)
+    target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_USE_EXTERNAL_MAC=1")
+    target_include_directories(ot-config INTERFACE ${PROJECT_SOURCE_DIR}/src/core/mac_extern)
+endif()
+
 if(OT_PLATFORM STREQUAL "posix")
     target_include_directories(ot-config INTERFACE ${PROJECT_SOURCE_DIR}/src/posix/platform)
     add_subdirectory("${PROJECT_SOURCE_DIR}/src/posix/platform")

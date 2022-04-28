@@ -59,6 +59,7 @@ PLATFORM_SOURCES                          = \
     uart.c                                  \
     virtual_time/alarm-sim.c                \
     virtual_time/platform-sim.c             \
+    externmac/radio-externmac.c             \
     $(NULL)
 
 libopenthread_simulation_a_SOURCES        = \

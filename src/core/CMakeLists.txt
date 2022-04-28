@@ -125,17 +125,6 @@ set(COMMON_SOURCES
     crypto/sha256.cpp
     crypto/storage.cpp
     diags/factory_diags.cpp
-    mac/channel_mask.cpp
-    mac/data_poll_handler.cpp
-    mac/data_poll_sender.cpp
-    mac/link_raw.cpp
-    mac/mac.cpp
-    mac/mac_filter.cpp
-    mac/mac_frame.cpp
-    mac/mac_links.cpp
-    mac/mac_types.cpp
-    mac/sub_mac.cpp
-    mac/sub_mac_callbacks.cpp
     meshcop/announce_begin_client.cpp
     meshcop/border_agent.cpp
     meshcop/commissioner.cpp
@@ -236,39 +225,71 @@ set(COMMON_SOURCES
     utils/srp_client_buffers.cpp
 )
 
-set(RADIO_COMMON_SOURCES
-    api/diags_api.cpp
-    api/error_api.cpp
-    api/instance_api.cpp
-    api/link_raw_api.cpp
-    api/logging_api.cpp
-    api/random_noncrypto_api.cpp
-    api/tasklet_api.cpp
-    common/binary_search.cpp
-    common/error.cpp
-    common/instance.cpp
-    common/log.cpp
-    common/random_manager.cpp
-    common/string.cpp
-    common/tasklet.cpp
-    common/timer.cpp
-    common/uptime.cpp
-    crypto/aes_ccm.cpp
-    crypto/aes_ecb.cpp
-    crypto/crypto_platform.cpp
-    crypto/storage.cpp
-    diags/factory_diags.cpp
-    mac/link_raw.cpp
-    mac/mac_frame.cpp
-    mac/mac_types.cpp
-    mac/sub_mac.cpp
-    mac/sub_mac_callbacks.cpp
-    radio/radio.cpp
-    radio/radio_callbacks.cpp
-    radio/radio_platform.cpp
-    thread/link_quality.cpp
-    utils/parse_cmdline.cpp
-)
+# TODO: Properly extract this into some externally injectable module.
+if(OPENTHREAD_USE_EXTERN_MAC)
+    list(APPEND COMMON_SOURCES
+        mac_extern/channel_mask.cpp
+        mac_extern/data_poll_handler.cpp
+        mac_extern/data_poll_sender.cpp
+        mac_extern/link_raw.cpp
+        mac_extern/mac.cpp
+        mac_extern/mac_filter.cpp
+        mac_extern/mac_frame.cpp
+        mac_extern/mac_links.cpp
+        mac_extern/mac_types.cpp
+        mac_extern/sub_mac.cpp
+    )
+else()
+    list(APPEND COMMON_SOURCES
+        macaroni/channel_mask.cpp
+        macaroni/data_poll_handler.cpp
+        macaroni/data_poll_sender.cpp
+        macaroni/link_raw.cpp
+        macaroni/mac.cpp
+        macaroni/mac_filter.cpp
+        macaroni/mac_frame.cpp
+        macaroni/mac_links.cpp
+        macaroni/mac_types.cpp
+        macaroni/sub_mac.cpp
+        macaroni/sub_mac_callbacks.cpp
+    )
+endif()
+
+if(NOT OPENTHREAD_USE_EXTERNAL_MAC)
+    set(RADIO_COMMON_SOURCES
+        api/diags_api.cpp
+        api/error_api.cpp
+        api/instance_api.cpp
+        api/link_raw_api.cpp
+        api/logging_api.cpp
+        api/random_noncrypto_api.cpp
+        api/tasklet_api.cpp
+        common/binary_search.cpp
+        common/error.cpp
+        common/instance.cpp
+        common/log.cpp
+        common/random_manager.cpp
+        common/string.cpp
+        common/tasklet.cpp
+        common/timer.cpp
+        common/uptime.cpp
+        crypto/aes_ccm.cpp
+        crypto/aes_ecb.cpp
+        crypto/crypto_platform.cpp
+        crypto/storage.cpp
+        diags/factory_diags.cpp
+        mac/link_raw.cpp
+        mac/mac_frame.cpp
+        mac/mac_types.cpp
+        mac/sub_mac.cpp
+        mac/sub_mac_callbacks.cpp
+        radio/radio.cpp
+        radio/radio_callbacks.cpp
+        radio/radio_platform.cpp
+        thread/link_quality.cpp
+        utils/parse_cmdline.cpp
+    )
+endif()
 
 set(OT_VENDOR_EXTENSION "" CACHE STRING "specify a C++ source file built as part of OpenThread core library")
 if(OT_VENDOR_EXTENSION)
@@ -284,12 +305,15 @@ if(OT_MTD)
     include(mtd.cmake)
 endif()
 
-if(OT_RCP)
-    include(radio.cmake)
-    if (OT_APP_CLI)
-        include(radio_cli.cmake)
+if(NOT OPENTHREAD_USE_EXTERNAL_MAC)
+{
+    if(OT_RCP)
+        include(radio.cmake)
+        if (OT_APP_CLI)
+            include(radio_cli.cmake)
+        endif()
     endif()
-endif()
+}
 
 set_property(SOURCE api/instance_api.cpp
     APPEND PROPERTY COMPILE_DEFINITIONS "PACKAGE_VERSION=\"${OT_PACKAGE_VERSION}\""

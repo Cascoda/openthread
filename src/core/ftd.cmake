@@ -26,26 +26,31 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-add_library(openthread-ftd)
+# Provide object libraries for capable platforms
+add_library(openthread-ftd-obj OBJECT)
 
-target_compile_definitions(openthread-ftd PRIVATE
+# Provide static libraries for non-cmake consumers
+add_library(openthread-ftd $<TARGET_OBJECTS:openthread-ftd-obj>)
+target_link_libraries(openthread-ftd PUBLIC openthread-ftd-obj)
+
+target_compile_definitions(openthread-ftd-obj PRIVATE
     OPENTHREAD_FTD=1
 )
 
-target_compile_options(openthread-ftd PRIVATE
+target_compile_options(openthread-ftd-obj PRIVATE
     ${OT_CFLAGS}
 )
 
-target_include_directories(openthread-ftd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
+target_include_directories(openthread-ftd-obj PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 
-target_sources(openthread-ftd PRIVATE ${COMMON_SOURCES})
+target_sources(openthread-ftd-obj PRIVATE ${COMMON_SOURCES})
 
-target_link_libraries(openthread-ftd
+target_link_libraries(openthread-ftd-obj
     PRIVATE
         ${OT_MBEDTLS}
         ot-config
 )
 
 if(NOT OT_EXCLUDE_TCPLP_LIB)
-    target_link_libraries(openthread-ftd PRIVATE tcplp)
+    target_link_libraries(openthread-ftd-obj PRIVATE tcplp)
 endif()

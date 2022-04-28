@@ -98,6 +98,10 @@ build_all_features()
         "-DOPENTHREAD_CONFIG_MLR_ENABLE=1"
     )
 
+    local options_ext_mac=(
+        "-DOPENTHREAD_CONFIG_USE_EXTERNAL_MAC=1"
+    )
+
     # Build Thread 1.1 with full features and no log
     export CPPFLAGS="${options[*]} -DOPENTHREAD_CONFIG_LOG_OUTPUT=OT_LOG_OUTPUT_NONE"
     reset_source
@@ -127,6 +131,11 @@ build_all_features()
     export CPPFLAGS="${options[*]}"
     reset_source
     make -f examples/Makefile-simulation THREAD_VERSION=1.1 OTNS=1
+
+    # Build Thread 1.1 for external mac
+    export CPPFLAGS="${options[*]} ${options_ext_mac[*]}" 
+    reset_source
+    make -f examples/Makefile-simulation THREAD_VERSION=1.1 
 }
 
 build_nest_common()

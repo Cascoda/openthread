@@ -109,8 +109,8 @@ ot_platform_headers                     = \
     openthread/platform/misc.h            \
     openthread/platform/otns.h            \
     openthread/platform/radio.h           \
-    openthread/platform/radio-mac.h       \
     openthread/platform/radio-phy.h       \
+    openthread/platform/radio-mac.h       \
     openthread/platform/settings.h        \
     openthread/platform/spi-slave.h       \
     openthread/platform/time.h            \
