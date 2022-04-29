@@ -255,7 +255,7 @@ else()
     )
 endif()
 
-if(NOT OPENTHREAD_USE_EXTERNAL_MAC)
+if(NOT OPENTHREAD_USE_EXTERN_MAC)
     set(RADIO_COMMON_SOURCES
         api/diags_api.cpp
         api/error_api.cpp
@@ -278,11 +278,11 @@ if(NOT OPENTHREAD_USE_EXTERNAL_MAC)
         crypto/crypto_platform.cpp
         crypto/storage.cpp
         diags/factory_diags.cpp
-        mac/link_raw.cpp
-        mac/mac_frame.cpp
-        mac/mac_types.cpp
-        mac/sub_mac.cpp
-        mac/sub_mac_callbacks.cpp
+        macaroni/link_raw.cpp
+        macaroni/mac_frame.cpp
+        macaroni/mac_types.cpp
+        macaroni/sub_mac.cpp
+        macaroni/sub_mac_callbacks.cpp
         radio/radio.cpp
         radio/radio_callbacks.cpp
         radio/radio_platform.cpp
@@ -305,13 +305,14 @@ if(OT_MTD)
     include(mtd.cmake)
 endif()
 
-if(NOT OPENTHREAD_USE_EXTERNAL_MAC)
+if(NOT OPENTHREAD_USE_EXTERN_MAC)
     if(OT_RCP)
         include(radio.cmake)
         if (OT_APP_CLI)
             include(radio_cli.cmake)
         endif()
     endif()
+endif()
 
 set_property(SOURCE api/instance_api.cpp
     APPEND PROPERTY COMPILE_DEFINITIONS "PACKAGE_VERSION=\"${OT_PACKAGE_VERSION}\""
