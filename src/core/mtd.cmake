@@ -26,31 +26,26 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-# Provide object libraries for capable platforms
-add_library(openthread-mtd-obj OBJECT)
+add_library(openthread-mtd)
 
-# Provide static libraries for non-cmake consumers
-add_library(openthread-mtd $<TARGET_OBJECTS:openthread-mtd-obj>)
-target_link_libraries(openthread-mtd PUBLIC openthread-mtd-obj)
-
-target_compile_definitions(openthread-mtd-obj PRIVATE
+target_compile_definitions(openthread-mtd PRIVATE
     OPENTHREAD_MTD=1
 )
 
-target_compile_options(openthread-mtd-obj PRIVATE
+target_compile_options(openthread-mtd PRIVATE
     ${OT_CFLAGS}
 )
 
-target_include_directories(openthread-mtd-obj PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
+target_include_directories(openthread-mtd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 
-target_sources(openthread-mtd-obj PRIVATE ${COMMON_SOURCES})
+target_sources(openthread-mtd PRIVATE ${COMMON_SOURCES})
 
-target_link_libraries(openthread-mtd-obj
+target_link_libraries(openthread-mtd
     PRIVATE
         ${OT_MBEDTLS}
         ot-config
 )
 
 if(NOT OT_EXCLUDE_TCPLP_LIB)
-    target_link_libraries(openthread-mtd-obj PRIVATE tcplp)
+    target_link_libraries(openthread-mtd PRIVATE tcplp)
 endif()

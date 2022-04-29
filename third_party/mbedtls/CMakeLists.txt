@@ -114,7 +114,7 @@ target_compile_definitions(mbedcrypto
 target_include_directories(mbedcrypto
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/repo/include>
-    PRIVATE
+    PRIVATE 
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
 )
