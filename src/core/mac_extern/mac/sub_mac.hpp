@@ -119,15 +119,6 @@ public:
     explicit SubMac(Instance &aInstance);
 
     /**
-     * This method indicates whether the sub-mac is busy transmitting or scanning.
-     *
-     * @retval TRUE if the sub-mac is busy transmitting or scanning.
-     * @retval FALSE if the sub-mac is not busy transmitting or scanning.
-     *
-     */
-    bool IsTransmittingOrScanning(void) const { return (mState == kStateTransmit) || (mState == kStateEnergyScan); }
-
-    /**
      * This method returns the noise floor value (currently use the radio receive sensitivity value).
      *
      * @returns The noise floor value in dBm.
@@ -377,10 +368,6 @@ private:
      *
      */
     void Init(void);
-
-    bool RadioSupportsTransmitSecurity(void) const { return ((mRadioCaps & OT_RADIO_CAPS_TRANSMIT_SEC) != 0); }
-    bool RadioSupportsTransmitTiming(void) const { return ((mRadioCaps & OT_RADIO_CAPS_TRANSMIT_TIMING) != 0); }
-    bool RadioSupportsReceiveTiming(void) const { return ((mRadioCaps & OT_RADIO_CAPS_RECEIVE_TIMING) != 0); }
 
     bool ShouldHandleTransmitSecurity(void) const;
     bool ShouldHandleTransmitTargetTime(void) const;

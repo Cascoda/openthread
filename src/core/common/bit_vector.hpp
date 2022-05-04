@@ -109,9 +109,6 @@ public:
     {
         bool rval = false;
 
-        if (IsSentToMac())
-            ExitNow(rval = true);
-
         for (uint8_t b : mMask)
         {
             if (b != 0)

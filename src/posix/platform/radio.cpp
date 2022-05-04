@@ -33,7 +33,7 @@
 
 #include "platform-posix.h"
 
-#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC == 0
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 
 #include <string.h>
 

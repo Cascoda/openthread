@@ -145,6 +145,11 @@ void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
     }
 }
 
+uint16_t Frame::GetFrameControlField(void) const
+{
+    return ReadUint16(mPsdu);
+}
+
 bool Frame::IsDstPanIdPresent(uint16_t aFcf)
 {
     bool present = true;

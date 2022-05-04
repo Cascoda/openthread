@@ -216,8 +216,8 @@ Error Message::ResizeMessage(uint16_t aLength)
     // requested length.
 
     Error    error     = kErrorNone;
-    Buffer * curBuffer = this;
-    Buffer * lastBuffer;
+    Buffer  *curBuffer = this;
+    Buffer  *lastBuffer;
     uint16_t curLength = kHeadBufferDataSize;
 
     while (curLength < aLength)
@@ -705,7 +705,15 @@ void Message::SetChildMask(uint16_t aChildIndex)
 
 bool Message::IsChildPending(void) const
 {
+    bool rval = false;
+
+    if (IsSentToMac())
+        ExitNow(rval = true);
+
     return GetMetadata().mChildMask.HasAny();
+
+exit:
+    return rval;
 }
 
 void Message::SetLinkInfo(const ThreadLinkInfo &aLinkInfo)
@@ -904,8 +912,8 @@ const Message *PriorityQueue::GetTail(void) const
 void PriorityQueue::Enqueue(Message &aMessage)
 {
     Message::Priority priority;
-    Message *         tail;
-    Message *         next;
+    Message          *tail;
+    Message          *next;
 
     OT_ASSERT(!aMessage.IsInAQueue());
 
@@ -936,7 +944,7 @@ void PriorityQueue::Enqueue(Message &aMessage)
 void PriorityQueue::Dequeue(Message &aMessage)
 {
     Message::Priority priority;
-    Message *         tail;
+    Message          *tail;
 
     OT_ASSERT(aMessage.GetPriorityQueue() == this);
 

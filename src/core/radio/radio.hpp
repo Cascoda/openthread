@@ -218,22 +218,6 @@ public:
     {
     }
 
-    /**
-     * This method gets the radio version string.
-     *
-     * @returns A pointer to the OpenThread radio version.
-     *
-     */
-    const char *GetVersionString(void);
-
-    /**
-     * This method gets the factory-assigned IEEE EUI-64 for the device.
-     *
-     * @param[out] aIeeeEui64  A reference to `Mac::ExtAddress` to place the factory-assigned IEEE EUI-64.
-     *
-     */
-    void GetIeeeEui64(Mac::ExtAddress &aIeeeEui64);
-
 #if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method gets the radio capabilities.
@@ -245,6 +229,14 @@ public:
 #endif
 
     /**
+     * This method gets the radio version string.
+     *
+     * @returns A pointer to the OpenThread radio version.
+     *
+     */
+    const char *GetVersionString(void);
+
+    /**
      * This method gets the radio receive sensitivity value.
      *
      * @returns The radio receive sensitivity value in dBm.
@@ -252,13 +244,13 @@ public:
      */
     int8_t GetReceiveSensitivity(void);
 
-#if OPENTHREAD_RADIO
     /**
-     * This method initializes the states of the Thread radio.
+     * This method gets the factory-assigned IEEE EUI-64 for the device.
+     *
+     * @param[out] aIeeeEui64  A reference to `Mac::ExtAddress` to place the factory-assigned IEEE EUI-64.
      *
      */
-    void Init(void);
-#endif
+    void GetIeeeEui64(Mac::ExtAddress &aIeeeEui64);
 
 #if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
@@ -284,6 +276,14 @@ public:
      *
      */
     void SetShortAddress(Mac::ShortAddress aShortAddress);
+#endif
+
+#if OPENTHREAD_RADIO
+    /**
+     * This method initializes the states of the Thread radio.
+     *
+     */
+    void Init(void);
 #endif
 
     /**
@@ -695,6 +695,7 @@ inline void Radio::GetIeeeEui64(Mac::ExtAddress &aIeeeEui64)
     otPlatRadioGetIeeeEui64(GetInstancePtr(), aIeeeEui64.m8);
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline uint32_t Radio::GetSupportedChannelMask(void)
 {
     return otPlatRadioGetSupportedChannelMask(GetInstancePtr());
@@ -704,6 +705,7 @@ inline uint32_t Radio::GetPreferredChannelMask(void)
 {
     return otPlatRadioGetPreferredChannelMask(GetInstancePtr());
 }
+#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 // If IEEE 802.15.4 is among supported radio links, provide inline
@@ -894,16 +896,19 @@ inline void Radio::ClearSrcMatchExtEntries(void)
 
 #else //----------------------------------------------------------------------------------------------------------------
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline otRadioCaps Radio::GetCaps(void)
 {
     return OT_RADIO_CAPS_ACK_TIMEOUT | OT_RADIO_CAPS_CSMA_BACKOFF | OT_RADIO_CAPS_TRANSMIT_RETRIES;
 }
+#endif
 
 inline int8_t Radio::GetReceiveSensitivity(void)
 {
     return -110;
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline void Radio::SetPanId(Mac::PanId)
 {
 }
@@ -915,6 +920,7 @@ inline void Radio::SetExtendedAddress(const Mac::ExtAddress &)
 inline void Radio::SetShortAddress(Mac::ShortAddress)
 {
 }
+#endif
 
 inline void Radio::SetMacKey(uint8_t,
                              uint8_t,
@@ -934,6 +940,7 @@ inline Error Radio::SetTransmitPower(int8_t)
     return kErrorNotImplemented;
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 inline Error Radio::GetCcaEnergyDetectThreshold(int8_t &)
 {
     return kErrorNotImplemented;
@@ -957,6 +964,7 @@ inline otRadioState Radio::GetState(void)
 {
     return OT_RADIO_STATE_DISABLED;
 }
+#endif
 
 inline Error Radio::Enable(void)
 {

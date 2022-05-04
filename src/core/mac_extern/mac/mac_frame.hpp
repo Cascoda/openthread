@@ -271,7 +271,7 @@ public:
  * This class implements IEEE 802.15.4 MAC frame generation and parsing.
  *
  */
-class Frame
+class Frame : public otRadioFrame
 {
 public:
     static constexpr uint8_t kFcfSize             = sizeof(uint16_t);
@@ -577,6 +577,14 @@ public:
     void SetRadioType(RadioType aRadioType) { mRadioType = static_cast<uint8_t>(aRadioType); }
 #endif
 
+    /**
+     * This method returns the Frame Control field of the frame.
+     *
+     * @returns The Frame Control field.
+     *
+     */
+    uint16_t GetFrameControlField(void) const;
+
 protected:
     static constexpr uint8_t kInvalidIndex  = 0xff;
     static constexpr uint8_t kInvalidSize   = kInvalidIndex;
@@ -597,7 +605,7 @@ protected:
  * This class supports received IEEE 802.15.4 MAC frame processing.
  *
  */
-class RxFrame : public Frame
+class RxFrame : public otDataIndication, public Frame
 {
 public:
     friend class TxFrame;
@@ -608,7 +616,7 @@ public:
      * @returns The IEEE 802.15.4 channel used for transmission or reception.
      *
      */
-    uint8_t GetChannel(void) const { return mChannel; }
+    uint8_t GetChannel(void) const { return otDataIndication::mChannel; }
 
     /**
      * This method sets the IEEE 802.15.4 channel used for transmission or reception.
@@ -616,7 +624,7 @@ public:
      * @param[in]  aChannel  The IEEE 802.15.4 channel used for transmission or reception.
      *
      */
-    void SetChannel(uint8_t aChannel) { mChannel = aChannel; }
+    void SetChannel(uint8_t aChannel) { otDataIndication::mChannel = aChannel; }
 
     /**
      * This method returns the RSSI in dBm used for reception.
@@ -748,7 +756,7 @@ public:
      * @returns The timestamp when the frame was received, in microseconds.
      *
      */
-    uint64_t GetTimestamp(void) const { return Encoding::LittleEndian::ReadUint64(mTimestamp); }
+    uint64_t GetTimestamp(void) const { return Encoding::LittleEndian::ReadUint64(mTimeStamp); }
 
     /**
      * This method performs AES CCM on the frame which is received.
@@ -868,12 +876,34 @@ class TxFrame : public otDataRequest, public Frame
 {
 public:
     /**
+     * This method sets the maximum number of backoffs the CSMA-CA algorithm will attempt before declaring a channel
+     * access failure.
+     *
+     * Equivalent to macMaxCSMABackoffs in IEEE 802.15.4-2006.
+     *
+     * @param[in]  aMaxCsmaBackoffs  The maximum number of backoffs the CSMA-CA algorithm will attempt before declaring
+     *                               a channel access failure.
+     *
+     */
+    void SetMaxCsmaBackoffs(uint8_t aMaxCsmaBackoffs) { mInfo.mTxInfo.mMaxCsmaBackoffs = aMaxCsmaBackoffs; }
+
+    /**
+     * This method sets the maximum number of retries allowed after a transmission failure.
+     *
+     * Equivalent to macMaxFrameRetries in IEEE 802.15.4-2006.
+     *
+     * @param[in]  aMaxFrameRetries  The maximum number of retries allowed after a transmission failure.
+     *
+     */
+    void SetMaxFrameRetries(uint8_t aMaxFrameRetries) { mInfo.mTxInfo.mMaxFrameRetries = aMaxFrameRetries; }
+
+    /**
      * This method returns the IEEE 802.15.4 channel used for transmission or reception.
      *
      * @returns The IEEE 802.15.4 channel used for transmission or reception.
      *
      */
-    uint8_t GetChannel(void) const { return mChannel; }
+    uint8_t GetChannel(void) const { return otDataRequest::mChannel; }
 
     /**
      * This method sets the IEEE 802.15.4 channel used for transmission or reception.
@@ -881,7 +911,23 @@ public:
      * @param[in]  aChannel  The IEEE 802.15.4 channel used for transmission or reception.
      *
      */
-    void SetChannel(uint8_t aChannel) { mChannel = aChannel; }
+    void SetChannel(uint8_t aChannel) { otDataRequest::mChannel = aChannel; }
+
+    /**
+     * This method sets the Sequence Number value.
+     *
+     * @param[in]  aSequence  The Sequence Number value.
+     *
+     */
+    void SetSequence(uint8_t aSequence) { GetPsdu()[kSequenceIndex] = aSequence; }
+
+    /**
+     * This method returns a pointer to the PSDU.
+     *
+     * @returns A pointer to the PSDU.
+     *
+     */
+    uint8_t *GetPsdu(void) { return mPsdu; }
 
     /**
      * This method sets the retransmission flag attribute.
@@ -1048,6 +1094,14 @@ public:
     void SetSrcAddr(const Address &aAddress) { mSrcAddrMode = static_cast<uint8_t>(aAddress.GetType()); }
 
     /**
+     * This method sets the MAC Frame Length.
+     *
+     * @param[in]  aLength  The MAC Frame Length.
+     *
+     */
+    void SetLength(uint16_t aLength) { mLength = aLength; }
+
+    /**
      * This method returns the current MAC Payload length.
      *
      * @returns The current MAC Payload length.
@@ -1084,6 +1138,14 @@ public:
      *
      */
     const uint8_t *GetPayload(void) const { return mMsdu; }
+
+    /**
+     * This method sets the CSMA-CA enabled attribute.
+     *
+     * @param[in]  aCsmaCaEnabled  TRUE if CSMA-CA must be enabled for this packet, FALSE otherwise.
+     *
+     */
+    void SetCsmaCaEnabled(bool aCsmaCaEnabled) { mInfo.mTxInfo.mCsmaCaEnabled = aCsmaCaEnabled; }
 
     /**
      * This method returns information about the frame object as an `InfoString` object.

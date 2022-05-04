@@ -310,7 +310,8 @@ public:
     void SetPanId(PanId aPanId)
     {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mSubMac.SetPanId(aPanId);
+        // mSubMac.SetPanId(aPanId);
+        (void)aPanId;
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTrel.SetPanId(aPanId);
@@ -323,15 +324,7 @@ public:
      * @returns The MAC Short Address.
      *
      */
-    ShortAddress GetShortAddress(void) const
-    {
-        return
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-            mSubMac.GetShortAddress();
-#else
-            mShortAddress;
-#endif
-    }
+    ShortAddress GetShortAddress(void) const { return mShortAddress; }
 
     /**
      * This method sets the MAC Short Address.
@@ -339,14 +332,7 @@ public:
      * @param[in] aShortAddress   A MAC Short Address.
      *
      */
-    void SetShortAddress(ShortAddress aShortAddress)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mSubMac.SetShortAddress(aShortAddress);
-#else
-        mShortAddress = aShortAddress;
-#endif
-    }
+    void SetShortAddress(ShortAddress aShortAddress) { mShortAddress = aShortAddress; }
 
     /**
      * This method gets the MAC Extended Address.
@@ -354,15 +340,7 @@ public:
      * @returns The MAC Extended Address.
      *
      */
-    const ExtAddress &GetExtAddress(void) const
-    {
-        return
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-            mSubMac.GetExtAddress();
-#else
-            mExtAddress;
-#endif
-    }
+    const ExtAddress &GetExtAddress(void) const { return mExtAddress; }
 
     /**
      * This method sets the MAC Extended Address.
@@ -372,11 +350,7 @@ public:
      */
     void SetExtAddress(const ExtAddress &aExtAddress)
     {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mSubMac.SetExtAddress(aExtAddress);
-#else
         mExtAddress = aExtAddress;
-#endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTrel.HandleExtAddressChange();
 #endif
@@ -392,9 +366,6 @@ public:
      */
     void SetPcapCallback(otLinkPcapCallback aPcapCallback, void *aCallbackContext)
     {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mSubMac.SetPcapCallback(aPcapCallback, aCallbackContext);
-#endif
         OT_UNUSED_VARIABLE(aPcapCallback);
         OT_UNUSED_VARIABLE(aCallbackContext);
     }
@@ -405,13 +376,7 @@ public:
      * @param[in]  aRxOnWhenBackoff  TRUE to keep radio in Receive, FALSE to put to Sleep during CSMA backoff.
      *
      */
-    void SetRxOnWhenBackoff(bool aRxOnWhenBackoff)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mSubMac.SetRxOnWhenBackoff(aRxOnWhenBackoff);
-#endif
-        OT_UNUSED_VARIABLE(aRxOnWhenBackoff);
-    }
+    void SetRxOnWhenBackoff(bool aRxOnWhenBackoff) { OT_UNUSED_VARIABLE(aRxOnWhenBackoff); }
 
     /**
      * This method enables all radio links.
@@ -419,9 +384,6 @@ public:
      */
     void Enable(void)
     {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        IgnoreError(mSubMac.Enable());
-#endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTrel.Enable();
 #endif
@@ -433,9 +395,6 @@ public:
      */
     void Disable(void)
     {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        IgnoreError(mSubMac.Disable());
-#endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTrel.Disable();
 #endif
@@ -447,9 +406,6 @@ public:
      */
     void Sleep(void)
     {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        IgnoreError(mSubMac.Sleep());
-#endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTrel.Sleep();
 #endif
@@ -476,21 +432,15 @@ public:
     }
 #endif // OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method transitions all radio links to Receive.
      *
      * @param[in]  aChannel   The channel to use for receiving.
      *
      */
-    void Receive(uint8_t aChannel)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        IgnoreError(mSubMac.Receive(aChannel));
+    void Receive(uint8_t aChannel) { mTrel.Receive(aChannel); }
 #endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTrel.Receive(aChannel);
-#endif
-    }
 
     /**
      * This method gets the radio transmit frames.
@@ -502,21 +452,15 @@ public:
 
 #if !OPENTHREAD_CONFIG_MULTI_RADIO
 
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method sends a prepared frame.
      *
      * The prepared frame is from `GetTxFrames()`. This method is available only in single radio link mode.
      *
      */
-    void Send(void)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        SuccessOrAssert(mSubMac.Send());
+    void Send(void) { mTrel.Send(); }
 #endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTrel.Send();
-#endif
-    }
 
 #else // #if !OPENTHREAD_CONFIG_MULTI_RADIO
 
@@ -533,37 +477,24 @@ public:
 
 #endif // !OPENTHREAD_CONFIG_MULTI_RADIO
 
+#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     /**
      * This method gets the number of transmit retries for the last transmitted frame.
      *
      * @returns Number of transmit retries.
      *
      */
-    uint8_t GetTransmitRetries(void) const
-    {
-        return
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-            mSubMac.GetTransmitRetries();
-#else
-            0;
+    uint8_t GetTransmitRetries(void) const { return 0; }
 #endif
-    }
 
+#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     /**
      * This method gets the most recent RSSI measurement from radio link.
      *
      * @returns The RSSI in dBm when it is valid. `kInvalidRssiValue` when RSSI is invalid.
      *
      */
-    int8_t GetRssi(void) const
-    {
-        return
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-            mSubMac.GetRssi();
-#else
-            kInvalidRssiValue;
-#endif
-    }
+    int8_t GetRssi(void) const { return kInvalidRssiValue; }
 
     /**
      * This method begins energy scan.
@@ -581,13 +512,9 @@ public:
         OT_UNUSED_VARIABLE(aScanChannel);
         OT_UNUSED_VARIABLE(aScanDuration);
 
-        return
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-            mSubMac.EnergyScan(aScanChannel, aScanDuration);
-#else
-            kErrorNotImplemented;
-#endif
+        return kErrorNotImplemented;
     }
+#endif
 
     /**
      * This method returns the noise floor value (currently use the radio receive sensitivity value).
@@ -669,10 +596,8 @@ private:
     // constructor.
     TxFrames mTxFrames;
 
-#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     ShortAddress mShortAddress;
     ExtAddress   mExtAddress;
-#endif
 };
 
 /**
