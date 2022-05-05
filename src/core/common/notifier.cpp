@@ -141,6 +141,7 @@ void Notifier::EmitEvents(void)
 
     Get<Mle::Mle>().HandleNotifierEvents(events);
     Get<EnergyScanServer>().HandleNotifierEvents(events);
+    Get<Mac::Mac>().HandleNotifierEvents(events);
 #if OPENTHREAD_FTD
     Get<MeshCoP::JoinerRouter>().HandleNotifierEvents(events);
 #if OPENTHREAD_CONFIG_BACKBONE_ROUTER_ENABLE

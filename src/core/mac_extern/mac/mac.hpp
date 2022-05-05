@@ -121,6 +121,7 @@ typedef otEnergyScanResult EnergyScanResult;
 class Mac : public InstanceLocator, private NonCopyable
 {
     friend class ot::Instance;
+    friend class ot::Notifier;
 
 public:
     /**
@@ -924,8 +925,7 @@ private:
 
     otError RadioReceive(uint8_t aChannel);
 
-    static void sStateChangedCallback(Notifier::Callback &aCallback, uint32_t aFlags);
-    void        stateChangedCallback(uint32_t aFlags);
+    void HandleNotifierEvents(Events aEvents);
 
     static const char *OperationToString(Operation aOperation);
 
@@ -968,8 +968,6 @@ private:
 
     uint8_t mDeviceCurrentKeys[OPENTHREAD_CONFIG_EXTERNAL_MAC_DEVICE_TABLE_SIZE];
 
-    Notifier::Callback mNotifierCallback;
-
     ExtendedPanId mExtendedPanId;
     NetworkName   mNetworkName;
 #if (OPENTHREAD_CONFIG_THREAD_VERSION >= OT_THREAD_VERSION_1_2)
@@ -993,7 +991,7 @@ private:
         TxFrame        mIndirectDataReq;
         otScanRequest  mScanReq;
         otStartRequest mStartReq;
-    }
+    };
 
     void *mScanHandlerContext;
 

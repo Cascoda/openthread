@@ -88,7 +88,6 @@ Mac::Mac(Instance &aInstance)
     , mMode2DevHandle(0)
     , mSupportedChannelMask(Get<Radio>().GetSupportedChannelMask())
     , mDeviceCurrentKeys()
-    , mNotifierCallback(aInstance, sStateChangedCallback, this)
     , mScanChannels(0)
     , mScanDuration(0)
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
@@ -1393,17 +1392,10 @@ exit:
 }
 #endif
 
-void Mac::sStateChangedCallback(Notifier::Callback &aCallback, uint32_t aFlags)
+void Mac::HandleNotifierEvents(Events aEvents)
 {
-    aCallback.GetOwner<Mac>().stateChangedCallback(aFlags);
-}
-
-void Mac::stateChangedCallback(uint32_t aFlags)
-{
-    uint32_t keyUpdateFlags = (kEventThreadKeySeqCounterChanged | kEventThreadChildAdded | kEventThreadChildRemoved |
-                               kEventThreadRoleChanged);
-
-    if (aFlags & keyUpdateFlags)
+    if (aEvents.ContainsAny(kEventThreadKeySeqCounterChanged | kEventThreadChildAdded | kEventThreadChildRemoved |
+                            kEventThreadRoleChanged))
     {
         BuildSecurityTable();
     }
