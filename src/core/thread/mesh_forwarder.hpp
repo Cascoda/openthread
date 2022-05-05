@@ -482,7 +482,7 @@ private:
                                              bool      aAllowNeighborRemove,
                                              uint8_t   aFailLimit = Mle::kFailedRouterTransmissions);
     void          HandleSentFrame(bool aAckRequested, Error aError, const Mac::Address &aMacDest);
-    void          UpdateSendMessage(Error aFrameTxError, Mac::Address &aMacDest, Neighbor *aNeighbor);
+    void          UpdateSendMessage(Error aFrameTxError, const Mac::Address &aMacDest, Neighbor *aNeighbor);
     void          RemoveMessageIfNoPendingTx(Message &aMessage);
 
     void        HandleTimeTick(void);

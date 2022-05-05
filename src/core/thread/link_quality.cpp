@@ -138,6 +138,7 @@ void LinkQualityInfo::Clear(void)
     mMessageErrorRate.Clear();
 }
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 void LinkQualityInfo::AddRss(int8_t aRss)
 {
     uint8_t oldLinkQuality = kNoLinkQuality;
@@ -163,6 +164,7 @@ uint8_t LinkQualityInfo::GetLinkMargin(void) const
 {
     return ConvertRssToLinkMargin(Get<Mac::SubMac>().GetNoiseFloor(), GetAverageRss());
 }
+#endif
 
 LinkQualityInfo::InfoString LinkQualityInfo::ToInfoString(void) const
 {

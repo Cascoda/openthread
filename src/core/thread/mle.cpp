@@ -3636,7 +3636,9 @@ void Mle::HandleParentResponse(const Message &aMessage, const Ip6::MessageInfo &
     mParentCandidate.SetDeviceMode(DeviceMode(DeviceMode::kModeFullThreadDevice | DeviceMode::kModeRxOnWhenIdle |
                                               DeviceMode::kModeFullNetworkData));
     mParentCandidate.GetLinkInfo().Clear();
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     mParentCandidate.GetLinkInfo().AddRss(linkInfo->GetRss());
+#endif
     mParentCandidate.ResetLinkFailures();
     mParentCandidate.SetLinkQualityOut(LinkQualityInfo::ConvertLinkMarginToLinkQuality(linkMarginFromTlv));
     mParentCandidate.SetState(Neighbor::kStateParentResponse);

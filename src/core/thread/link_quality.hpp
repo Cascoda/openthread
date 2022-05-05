@@ -256,6 +256,7 @@ public:
      */
     void Clear(void);
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method adds a new received signal strength (RSS) value to the average.
      *
@@ -263,6 +264,7 @@ public:
      *
      */
     void AddRss(int8_t aRss);
+#endif
 
     /**
      * This method returns the current average received signal strength value.
@@ -289,6 +291,7 @@ public:
      */
     InfoString ToInfoString(void) const;
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method returns the link margin. The link margin is calculated using the link's current average received
      * signal strength (RSS) and average noise floor.
@@ -297,6 +300,7 @@ public:
      *
      */
     uint8_t GetLinkMargin(void) const;
+#endif
 
     /**
      * Returns the current one-way link quality value. The link quality value is a number 0-3.

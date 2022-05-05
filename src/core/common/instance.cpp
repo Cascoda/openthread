@@ -216,8 +216,6 @@ void Instance::Finalize(void)
     Get<Settings>().Deinit();
 #endif
 
-    IgnoreError(Get<Mac::SubMac>().Disable());
-
 #if !OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
 
     /**

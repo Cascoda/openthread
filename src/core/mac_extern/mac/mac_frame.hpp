@@ -677,6 +677,21 @@ public:
     bool GetFramePending(void) const { return mIsFramePending; }
 
     /**
+     * This method gets the Destination PAN Identifier.
+     *
+     * @param[out]  aPanId  The Destination PAN Identifier.
+     *
+     * @retval OT_ERROR_NONE   Successfully retrieved the Destination PAN Identifier.
+     * @retval OT_ERROR_PARSE  Failed to parse the PAN Identifier.
+     *
+     */
+    otError GetDstPanId(PanId &aPanId) const
+    {
+        aPanId = static_cast<const FullAddr *>(&mDst)->GetPanId();
+        return kErrorNone;
+    }
+
+    /**
      * This method gets the Destination Address.
      *
      * @param[out]  aAddress  The Destination Address.

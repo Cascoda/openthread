@@ -63,7 +63,7 @@ void Radio::Init(void)
 #endif // OPENTHREAD_RADIO
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 void Radio::SetExtendedAddress(const Mac::ExtAddress &aExtAddress)
 {
     otPlatRadioSetExtendedAddress(GetInstancePtr(), &aExtAddress);
@@ -90,6 +90,7 @@ Error Radio::Transmit(Mac::TxFrame &aFrame)
 
     return otPlatRadioTransmit(GetInstancePtr(), &aFrame);
 }
+#endif // !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 #endif // OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
 
 } // namespace ot

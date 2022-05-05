@@ -357,6 +357,7 @@ void KeyManager::UpdateKeyMaterial(void)
     mMleKey.SetFrom(hashKeys.GetMleKey());
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     {
         Mac::KeyMaterial curKey;
         Mac::KeyMaterial prevKey;
@@ -372,6 +373,7 @@ void KeyManager::UpdateKeyMaterial(void)
 
         Get<Mac::SubMac>().SetMacKey(Mac::Frame::kKeyIdMode1, (mKeySequence & 0x7f) + 1, prevKey, curKey, nextKey);
     }
+#endif
 #endif
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
@@ -434,7 +436,7 @@ const Mac::KeyMaterial &KeyManager::GetTemporaryTrelMacKey(uint32_t aKeySequence
 }
 #endif
 
-uint32_t GetMaximumMacFrameCounter(void)
+uint32_t KeyManager::GetMaximumMacFrameCounter(void)
 {
 #if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     mMacFrameCounters.SetAll(Get<Mac::Mac>().GetFrameCounter());
@@ -447,11 +449,13 @@ void KeyManager::SetAllMacFrameCounters(uint32_t aMacFrameCounter)
     mMacFrameCounters.SetAll(aMacFrameCounter);
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     Get<Mac::SubMac>().SetFrameCounter(aMacFrameCounter);
+#endif
 #endif
 
 #if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-    Get<Mac::Mac>().SetFrameCounter(mMacFrameCounter);
+    Get<Mac::Mac>().SetFrameCounter(aMacFrameCounter);
 #endif
 }
 

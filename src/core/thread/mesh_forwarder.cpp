@@ -189,8 +189,8 @@ void MeshForwarder::PrepareEmptyFrame(Mac::TxFrame &aFrame, const Mac::Address &
     {
         aFrame.SetDstPanId(Get<Mac::Mac>().GetPanId());
     }
-    IgnoreError(aFrame.SetSrcPanId(Get<Mac::Mac>().GetPanId()));
 
+    aFrame.SetSrcPanId(Get<Mac::Mac>().GetPanId());
     aFrame.SetDstAddr(aMacDest);
     aFrame.SetSrcAddr(macSource);
     aFrame.SetFramePending(false);
@@ -699,7 +699,7 @@ start:
         aFrame.SetDstPanId(dstpan);
     }
 
-    IgnoreError(aFrame.SetSrcPanId(Get<Mac::Mac>().GetPanId()));
+    aFrame.SetSrcPanId(Get<Mac::Mac>().GetPanId());
     aFrame.SetDstAddr(aMacDest);
     aFrame.SetSrcAddr(aMacSource);
 
@@ -999,13 +999,13 @@ void MeshForwarder::HandleSentFrame(bool aAckRequested, Error aError, const Mac:
 
     neighbor = UpdateNeighborOnSentFrame(aAckRequested, aError, aMacDest);
 
-    UpdateSendMessage(aError, macDest, neighbor);
+    UpdateSendMessage(aError, aMacDest, neighbor);
 
 exit:
     return;
 }
 
-void MeshForwarder::UpdateSendMessage(Error aFrameTxError, Mac::Address &aMacDest, Neighbor *aNeighbor)
+void MeshForwarder::UpdateSendMessage(Error aFrameTxError, const Mac::Address &aMacDest, Neighbor *aNeighbor)
 {
     Error txError = aFrameTxError;
 

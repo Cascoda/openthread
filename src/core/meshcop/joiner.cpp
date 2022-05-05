@@ -134,7 +134,7 @@ Error Joiner::GetCounterpartAddress(Mac::ExtAddress &aExtAddr) const
     Error               error        = kErrorNone;
     const JoinerRouter &joinerRouter = mJoinerRouters[mJoinerRouterIndex - 1];
 
-    VerifyOrExit(mState >= OT_JOINER_STATE_CONNECT, error = OT_ERROR_INVALID_STATE);
+    VerifyOrExit(mState >= kStateConnected, error = OT_ERROR_INVALID_STATE);
     VerifyOrExit(mJoinerRouterIndex <= OT_ARRAY_LENGTH(mJoinerRouters), error = kErrorInvalidState);
     VerifyOrExit(joinerRouter.mPriority != 0);
 

@@ -376,12 +376,7 @@ otError otLinkActiveScan(otInstance              *aInstance,
                          otHandleActiveScanResult aCallback,
                          void                    *aCallbackContext)
 {
-#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-    return AsCoreType(aInstance).Get<Mac::Mac>().ActiveScan(aScanChannels, aScanDuration,
-                                                            &Get<Mac::Mac>().ReportActiveScanResult, aCallbackContext);
-#else
     return AsCoreType(aInstance).Get<Mac::Mac>().ActiveScan(aScanChannels, aScanDuration, aCallback, aCallbackContext);
-#endif
 }
 
 bool otLinkIsActiveScanInProgress(otInstance *aInstance)
