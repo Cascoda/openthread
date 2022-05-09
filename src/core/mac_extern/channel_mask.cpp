@@ -31,7 +31,7 @@
  *   This file implements MAC Channel Mask.
  */
 
-#include "channel_mask.hpp"
+#include "mac/channel_mask.hpp"
 
 #include "common/code_utils.hpp"
 #include "common/random.hpp"

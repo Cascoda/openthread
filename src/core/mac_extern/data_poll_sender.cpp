@@ -103,7 +103,7 @@ Error DataPollSender::SendDataPoll(void)
 
     usePC  = Get<Mle::MleRouter>().Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring();
     parent = usePC ? &Get<Mle::Mle>().GetParentCandidate() : &Get<Mle::Mle>().GetParent();
-    VerifyOrExit(GetParent().IsStateValidOrRestoring(), error = kErrorInvalidState);
+    VerifyOrExit(parent->IsStateValidOrRestoring(), error = kErrorInvalidState);
 
     mTimer.Stop();
 
@@ -583,76 +583,6 @@ uint32_t DataPollSender::GetDefaultPollPeriod(void) const
     }
 
     return period;
-}
-
-Mac::TxFrame *DataPollSender::PrepareDataRequest(Mac::TxFrames &aTxFrames)
-{
-    Mac::TxFrame *frame = nullptr;
-    Mac::Address  src, dst;
-    uint16_t      fcf;
-    bool          iePresent;
-
-#if OPENTHREAD_CONFIG_MULTI_RADIO
-    Mac::RadioType radio;
-
-    SuccessOrExit(GetPollDestinationAddress(dst, radio));
-    frame = &aTxFrames.GetTxFrame(radio);
-#else
-    SuccessOrExit(GetPollDestinationAddress(dst));
-    frame = &aTxFrames.GetTxFrame();
-#endif
-
-    fcf = Mac::Frame::kFcfFrameMacCmd | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfAckRequest |
-          Mac::Frame::kFcfSecurityEnabled;
-
-    iePresent = Get<MeshForwarder>().CalcIePresent(nullptr);
-
-    if (iePresent)
-    {
-        fcf |= Mac::Frame::kFcfIePresent;
-    }
-
-    fcf |= Get<MeshForwarder>().CalcFrameVersion(Get<NeighborTable>().FindNeighbor(dst), iePresent);
-
-    if (dst.IsExtended())
-    {
-        fcf |= Mac::Frame::kFcfDstAddrExt | Mac::Frame::kFcfSrcAddrExt;
-        src.SetExtended(Get<Mac::Mac>().GetExtAddress());
-    }
-    else
-    {
-        fcf |= Mac::Frame::kFcfDstAddrShort | Mac::Frame::kFcfSrcAddrShort;
-        src.SetShort(Get<Mac::Mac>().GetShortAddress());
-    }
-
-    frame->InitMacHeader(fcf, Mac::Frame::kKeyIdMode1 | Mac::Frame::kSecEncMic32);
-
-    if (frame->IsDstPanIdPresent())
-    {
-        frame->SetDstPanId(Get<Mac::Mac>().GetPanId());
-    }
-
-    frame->SetSrcAddr(src);
-    frame->SetDstAddr(dst);
-#if OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
-    if (iePresent)
-    {
-        Get<MeshForwarder>().AppendHeaderIe(nullptr, *frame);
-    }
-
-#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
-    if (frame->GetHeaderIe(Mac::CslIe::kHeaderIeId) != nullptr)
-    {
-        // Disable frame retransmission when the data poll has CSL IE included
-        aTxFrames.SetMaxFrameRetries(0);
-    }
-#endif
-#endif
-
-    IgnoreError(frame->SetCommandId(Mac::Frame::kMacCmdDataRequest));
-
-exit:
-    return frame;
 }
 
 } // namespace ot
