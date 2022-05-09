@@ -266,14 +266,14 @@ void DataPollHandler::HandleDataPoll(Mac::RxPoll &aPollInd)
     {
         LogWarn("Data poll did not trigger queued message for child %04x!", child->GetRloc16());
         LogDebg("Dumping framecache...");
-        for (int i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+        for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
         {
             FrameCache &frameCache = mFrameCache[i];
 
             if (!frameCache.IsValid())
                 continue;
 
-            logDebg("Child 0x%04x, MH %02x, PP %d, FP %d, PRP %d, PR %d, UEA %d", frameCache.GetChild().GetRloc16(),
+            LogDebg("Child 0x%04x, MH %02x, PP %d, FP %d, PRP %d, PR %d, UEA %d", frameCache.GetChild().GetRloc16(),
                     frameCache.GetMsduHandle(), frameCache.mPurgePending, frameCache.mFramePending,
                     frameCache.mPendingRetransmitPurge, frameCache.mPendingRetransmit, frameCache.mUseExtAddr);
         }
@@ -288,10 +288,10 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
     Mac::TxFrame *frame        = nullptr;
     Child        *pendingChild = nullptr;
     uint8_t       maxBufferCount;
-
-    VerifyOrExit(mIndirectTxChild != nullptr);
+    Error         error = kErrorNone;
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
+    VerifyOrExit(mIndirectTxChild != nullptr);
     frame = &aTxFrames.GetTxFrame(mIndirectTxChild->GetLastPollRadioType());
 #else
     frame = &aTxFrames.GetTxFrame();
@@ -315,9 +315,9 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
                 continue;
         }
 
-        error              = mCallbacks.RegenerateFrame(aFrame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
-        aFrame.mMsduHandle = fc.GetMsduHandle();
-        fc.mFramePending   = aFrame.GetFramePending();
+        error              = mCallbacks.RegenerateFrame(*frame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
+        frame->mMsduHandle = fc.GetMsduHandle();
+        fc.mFramePending   = frame->GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : nullptr;
         assert(error == kErrorNone);
         fc.mPendingRetransmit = false;
@@ -333,6 +333,7 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
 
     // Now check for new frames that need sending
     for (Child &child : Get<ChildTable>().Iterate(Child::kInStateAnyExceptInvalid))
+    {
         // TODO: Add fairness to child buffering (only relevant when more SEDs than SED slots).
         if (child.GetFrameCount() < maxBufferCount && child.GetIndirectMessageCount())
         {
@@ -341,10 +342,10 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
             VerifyOrExit(fc != nullptr, error = kErrorNoBufs);
 
             fc->Allocate(child, Get<Mac::Mac>().GetValidMsduHandle());
-            error              = mCallbacks.PrepareFrameForChild(aFrame, fc->mContext, child);
-            aFrame.mMsduHandle = fc->GetMsduHandle();
-            fc->mFramePending  = aFrame.GetFramePending();
-            fc->mUseExtAddr    = aFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT;
+            error              = mCallbacks.PrepareFrameForChild(*frame, fc->mContext, child);
+            frame->mMsduHandle = fc->GetMsduHandle();
+            fc->mFramePending  = frame->GetFramePending();
+            fc->mUseExtAddr    = frame->mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT;
             pendingChild       = fc->mFramePending ? &fc->GetChild() : nullptr;
             fc->mContext.HandleSentToMac();
             if (error)
@@ -361,13 +362,14 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
                 ExitNow();
             }
         }
-}
+    }
 
-exit : if (!error && pendingChild)
-{
-    HandleNewFrame(*pendingChild);
-}
-return frame;
+exit:
+    if (!error && pendingChild)
+    {
+        HandleNewFrame(*pendingChild);
+    }
+    return frame;
 }
 
 void DataPollHandler::HandleSentFrame(otError aError, uint8_t aMsduHandle)
@@ -410,7 +412,7 @@ void DataPollHandler::HandleSentFrame(Error aError, FrameCache &aFrameCache)
         break;
 
     case kErrorNoAck:
-        otLogInfoMac("Indirect tx to child %04x failed", child.GetRloc16());
+        LogInfo("Indirect tx to child %04x failed", child.GetRloc16());
 
         // Fall through
 

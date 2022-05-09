@@ -39,6 +39,9 @@
 #include "common/debug.hpp"
 #include "common/log.hpp"
 #include "radio/trel_link.hpp"
+#if !OPENTHREAD_RADIO || OPENTHREAD_CONFIG_MAC_SOFTWARE_TX_SECURITY_ENABLE
+#include "crypto/aes_ccm.hpp"
+#endif
 
 namespace ot {
 namespace Mac {
@@ -204,6 +207,118 @@ void Frame::SetSecurityControlField(uint8_t aSecurityControlField)
     mPsdu[index] = aSecurityControlField;
 }
 
+uint8_t Frame::FindSecurityHeaderIndex(void) const
+{
+    uint8_t index;
+
+    VerifyOrExit(kFcfSize < mLength, index = kInvalidIndex);
+    VerifyOrExit(GetSecurityEnabled(), index = kInvalidIndex);
+    index = SkipAddrFieldIndex();
+
+exit:
+    return index;
+}
+
+Error Frame::GetSecurityLevel(uint8_t &aSecurityLevel) const
+{
+    Error   error = kErrorNone;
+    uint8_t index = FindSecurityHeaderIndex();
+
+    VerifyOrExit(index != kInvalidIndex, error = kErrorParse);
+
+    aSecurityLevel = mPsdu[index] & kSecLevelMask;
+
+exit:
+    return error;
+}
+
+Error Frame::GetFrameCounter(uint32_t &aFrameCounter) const
+{
+    Error   error = kErrorNone;
+    uint8_t index = FindSecurityHeaderIndex();
+
+    VerifyOrExit(index != kInvalidIndex, error = kErrorParse);
+
+    // Security Control
+    index += kSecurityControlSize;
+
+    aFrameCounter = ReadUint32(&mPsdu[index]);
+
+exit:
+    return error;
+}
+
+Error Frame::GetKeyId(uint8_t &aKeyId) const
+{
+    Error   error = kErrorNone;
+    uint8_t keySourceLength;
+    uint8_t index = FindSecurityHeaderIndex();
+
+    VerifyOrExit(index != kInvalidIndex, error = kErrorParse);
+
+    keySourceLength = GetKeySourceLength(mPsdu[index] & kKeyIdModeMask);
+
+    aKeyId = mPsdu[index + kSecurityControlSize + kFrameCounterSize + keySourceLength];
+
+exit:
+    return error;
+}
+
+uint8_t Frame::GetKeySourceLength(uint8_t aKeyIdMode)
+{
+    uint8_t len = 0;
+
+    switch (aKeyIdMode)
+    {
+    case kKeyIdMode0:
+        len = kKeySourceSizeMode0;
+        break;
+
+    case kKeyIdMode1:
+        len = kKeySourceSizeMode1;
+        break;
+
+    case kKeyIdMode2:
+        len = kKeySourceSizeMode2;
+        break;
+
+    case kKeyIdMode3:
+        len = kKeySourceSizeMode3;
+        break;
+    }
+
+    return len;
+}
+
+void Frame::SetKeyId(uint8_t aKeyId)
+{
+    uint8_t keySourceLength;
+    uint8_t index = FindSecurityHeaderIndex();
+
+    OT_ASSERT(index != kInvalidIndex);
+
+    keySourceLength = GetKeySourceLength(mPsdu[index] & kKeyIdModeMask);
+
+    mPsdu[index + kSecurityControlSize + kFrameCounterSize + keySourceLength] = aKeyId;
+}
+
+uint8_t Frame::GetHeaderLength(void) const
+{
+    return static_cast<uint8_t>(GetPayload() - mPsdu);
+}
+
+uint8_t Frame::GetFooterLength(void) const
+{
+    uint8_t footerLength = static_cast<uint8_t>(GetFcsSize());
+    uint8_t index        = FindSecurityHeaderIndex();
+
+    VerifyOrExit(index != kInvalidIndex);
+    footerLength += CalculateMicSize(mPsdu[index]);
+
+exit:
+    return footerLength;
+}
+
 uint8_t Frame::CalculateMicSize(uint8_t aSecurityControl)
 {
     uint8_t micSize = 0;
@@ -232,6 +347,32 @@ uint8_t Frame::CalculateMicSize(uint8_t aSecurityControl)
     }
 
     return micSize;
+}
+
+uint8_t Frame::SkipSecurityHeaderIndex(void) const
+{
+    uint8_t index = SkipAddrFieldIndex();
+
+    VerifyOrExit(index != kInvalidIndex);
+
+    if (GetSecurityEnabled())
+    {
+        uint8_t securityControl;
+        uint8_t headerSize;
+
+        VerifyOrExit(index < mLength, index = kInvalidIndex);
+        securityControl = mPsdu[index];
+
+        headerSize = CalculateSecurityHeaderSize(securityControl);
+        VerifyOrExit(headerSize != kInvalidSize, index = kInvalidIndex);
+
+        index += headerSize;
+
+        VerifyOrExit(index <= mLength, index = kInvalidIndex);
+    }
+
+exit:
+    return index;
 }
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
@@ -272,7 +413,7 @@ uint16_t TxFrame::GetMaxPayloadLength(void) const
     // Table 95 to calculate auth tag length
     footerLen = 2 << (mSecurity.mSecurityLevel % 4);
     footerLen = footerLen == 2 ? 0 : footerLen;
-    footerLen += Mac::Frame::kFcsSize;
+    footerLen += Mac::Frame::kFcfSize;
 
     headerLen = Mac::Frame::kFcfSize + Mac::Frame::kDsnSize;
     if (mSrcAddrMode == OT_MAC_ADDRESS_MODE_SHORT)
@@ -422,6 +563,74 @@ exit:
     return size;
 }
 
+uint8_t Frame::FindPayloadIndex(void) const
+{
+    // We use `uint16_t` for `index` to handle its potential roll-over
+    // while parsing and verifying Header IE(s).
+
+    uint16_t index = SkipSecurityHeaderIndex();
+
+    VerifyOrExit(index != kInvalidIndex);
+
+#if OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
+    if (IsIePresent())
+    {
+        uint8_t footerLength = GetFooterLength();
+
+        do
+        {
+            const HeaderIe *ie = reinterpret_cast<const HeaderIe *>(&mPsdu[index]);
+
+            index += sizeof(HeaderIe);
+            VerifyOrExit(index + footerLength <= mLength, index = kInvalidIndex);
+
+            index += ie->GetLength();
+            VerifyOrExit(index + footerLength <= mLength, index = kInvalidIndex);
+
+            if (ie->GetId() == Termination2Ie::kHeaderIeId)
+            {
+                break;
+            }
+
+            // If the `index + footerLength == mLength`, we exit the `while()`
+            // loop. This covers the case where frame contains one or more
+            // Header IEs but no data payload. In this case, spec does not
+            // require Header IE termination to be included (it is optional)
+            // since the end of frame can be determined from frame length and
+            // footer length.
+
+        } while (index + footerLength < mLength);
+
+        // Assume no Payload IE in current implementation
+    }
+#endif // OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
+
+    if (!IsVersion2015() && (GetFrameControlField() & kFcfFrameTypeMask) == kFcfFrameMacCmd)
+    {
+        index += kCommandIdSize;
+    }
+
+exit:
+    return static_cast<uint8_t>(index);
+}
+
+const uint8_t *Frame::GetPayload(void) const
+{
+    uint8_t        index = FindPayloadIndex();
+    const uint8_t *payload;
+
+    VerifyOrExit(index != kInvalidIndex, payload = nullptr);
+    payload = &mPsdu[index];
+
+exit:
+    return payload;
+}
+
+const uint8_t *Frame::GetFooter(void) const
+{
+    return mPsdu + mLength - GetFooterLength();
+}
+
 #if OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
 Error Frame::InitIeHeaderAt(uint8_t &aIndex, uint8_t ieId, uint8_t ieContentSize)
 {
@@ -496,8 +705,6 @@ exit:
     return header;
 }
 #endif // OPENTHREAD_CONFIG_MLE_LINK_METRICS_INITIATOR_ENABLE || OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
-
-#endif // OPENTHREAD_CONFIG_MAC_HEADER_IE_SUPPORT
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 void Frame::SetCslIe(uint16_t aCslPeriod, uint16_t aCslPhase)
@@ -598,7 +805,7 @@ void TxFrame::GenerateImmAck(const RxFrame &aFrame, bool aIsFramePending)
 {
     uint16_t fcf = kFcfFrameAck | aFrame.GetVersion();
 
-    mChannel = aFrame.mChannel;
+    otDataRequest::mChannel = aFrame.otDataIndication::mChannel;
     memset(&mInfo.mTxInfo, 0, sizeof(mInfo.mTxInfo));
 
     if (aIsFramePending)
@@ -624,7 +831,7 @@ Error TxFrame::GenerateEnhAck(const RxFrame &aFrame, bool aIsFramePending, const
     uint8_t  securityControlField;
     uint8_t  keyId;
 
-    mChannel = aFrame.mChannel;
+    otDataRequest::mChannel = aFrame.otDataIndication::mChannel;
     memset(&mInfo.mTxInfo, 0, sizeof(mInfo.mTxInfo));
 
     // Set frame control field

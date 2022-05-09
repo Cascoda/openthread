@@ -354,7 +354,7 @@ void DataPollSender::ProcessRxFrame(const Mac::RxFrame &aFrame)
     VerifyOrExit(mEnabled);
 
     mPollTimeoutCounter = 0;
-
+    LogDebg("CheckFramePending: %d", aFrame.GetFramePending());
     if (aFrame.GetFramePending())
     {
         IgnoreError(SendDataPoll());

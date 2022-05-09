@@ -768,15 +768,6 @@ public:
      */
     static const char *StateToString(State aState);
 
-protected:
-    /**
-     * This method initializes the `Neighbor` object.
-     *
-     * @param[in] aInstance  A reference to OpenThread instance.
-     *
-     */
-    void Init(Instance &aInstance);
-
 #if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method gets the index that this device is stored in the device table
@@ -794,6 +785,15 @@ protected:
      */
     void SetDeviceTableIndex(uint8_t aDeviceTableIndex) { mDeviceTableIndex = aDeviceTableIndex; }
 #endif
+
+protected:
+    /**
+     * This method initializes the `Neighbor` object.
+     *
+     * @param[in] aInstance  A reference to OpenThread instance.
+     *
+     */
+    void Init(Instance &aInstance);
 
 private:
     enum : uint32_t

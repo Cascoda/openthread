@@ -150,6 +150,13 @@ public:
      *
      */
     TxFrame &GetTxFrame(void) { return mTxFrame802154; }
+
+    /**
+     * This method sets the tx frame.
+     *
+     * @param[in] aTxFrame  A const reference to the `TxFrame`.
+     */
+    void SetTxFrame(const TxFrame &aTxFrame) { mTxFrame802154 = aTxFrame; }
 #elif OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method gets the tx frame.

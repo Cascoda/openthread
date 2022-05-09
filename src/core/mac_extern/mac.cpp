@@ -79,14 +79,14 @@ const char Mac::sDomainNameInit[] = "DefaultDomain";
 Mac::Mac(Instance &aInstance)
     : InstanceLocator(aInstance)
     , mOperation(kOperationIdle)
-    , mPendingOperations(0)
     , mShortAddress(kShortAddrInvalid)
     , mPanId(kPanIdBroadcast)
+    , mPendingOperations(0)
     , mChannel(OPENTHREAD_CONFIG_DEFAULT_CHANNEL)
     , mNextMsduHandle(1)
     , mDynamicKeyIndex(0)
     , mMode2DevHandle(0)
-    , mSupportedChannelMask(Get<Radio>().GetSupportedChannelMask())
+    , mSupportedChannelMask(Radio::kSupportedChannels)
     , mDeviceCurrentKeys()
     , mScanChannels(0)
     , mScanDuration(0)
@@ -138,6 +138,8 @@ exit:
     {
         mActiveScanHandler = nullptr;
     }
+
+    return error;
 }
 
 Error Mac::EnergyScan(uint32_t aScanChannels, uint16_t aScanDuration, EnergyScanHandler aHandler, void *aContext)
@@ -154,6 +156,8 @@ exit:
     {
         mEnergyScanHandler = nullptr;
     }
+
+    return error;
 }
 
 Error Mac::Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration)
@@ -257,9 +261,9 @@ void Mac::HandleScanConfirm(otScanConfirm *aScanConfirm)
             result.mChannel = curChannel;
 
             mScanChannels &= ~(1 << curChannel);
-            mEnergyScanHandler(GetInstance(), &result);
+            mEnergyScanHandler(&result, mScanHandlerContext);
         }
-        mEnergyScanHandler(GetInstance(), NULL);
+        mEnergyScanHandler(NULL, mScanHandlerContext);
     }
 
 exit:
@@ -294,20 +298,15 @@ exit:
     return;
 }
 
-Error Mac::ConvertBeaconToActiveScanResult(otBeaconNotify *aBeaconNotify, ActiveScanResult &aResult)
+Error Mac::ConvertBeaconToActiveScanResult(const otBeaconNotify *aBeaconNotify, ActiveScanResult &aResult)
 {
     Error                error         = kErrorNone;
     const BeaconPayload *beaconPayload = nullptr;
 
     memset(&aResult, 0, sizeof(aResult));
 
-    VerifyOrExit(aBeaconFrame != nullptr, error = kErrorInvalidArgs);
+    VerifyOrExit(aBeaconNotify != nullptr, error = kErrorInvalidArgs);
     VerifyOrExit(aBeaconNotify->mPanDescriptor.Coord.mAddressMode == OT_MAC_ADDRESS_MODE_EXT, error = kErrorParse);
-
-    if (kErrorNone != aBeaconFrame->GetSrcPanId(aResult.mPanId))
-    {
-        IgnoreError(aBeaconFrame->GetDstPanId(aResult.mPanId));
-    }
 
     memcpy(&aResult.mExtAddress, aBeaconNotify->mPanDescriptor.Coord.mAddress, sizeof(aResult.mExtAddress));
     aResult.mPanId   = Encoding::LittleEndian::ReadUint16(aBeaconNotify->mPanDescriptor.Coord.mPanId);
@@ -428,7 +427,7 @@ exit:
 Error Mac::SetTemporaryChannel(uint8_t aChannel)
 {
     Error   error      = kErrorNone;
-    uint8_t newChannel = aTempChannel;
+    uint8_t newChannel = aChannel;
     uint8_t oldChannel = GetCurrentChannel();
 
     mUseTempRxChannel = true;
@@ -512,7 +511,7 @@ void Mac::SetSupportedChannelMask(const ChannelMask &aMask)
     VerifyOrExit(newMask != mSupportedChannelMask, Get<Notifier>().SignalIfFirst(kEventSupportedChannelMaskChanged));
 
     mSupportedChannelMask = newMask;
-    IgnoreError(Get<Notifier>().Signal(kEventSupportedChannelMaskChanged));
+    Get<Notifier>().Signal(kEventSupportedChannelMaskChanged);
 
 exit:
     return;
@@ -520,28 +519,12 @@ exit:
 
 Error Mac::SetNetworkName(const char *aNetworkName)
 {
-    NetworkName::Data data(aNetworkName, NetworkName::kMaxSize + 1);
-
-    return SetNetworkName(data);
+    return SignalNetworkNameChange(mNetworkName.Set(aNetworkName));
 }
 
-Error Mac::SetNetworkName(const NetworkName::Data &aName)
+Error Mac::SetNetworkName(const NameData &aNameData)
 {
-    Error error = mNetworkName.Set(aName);
-
-    if (error == kErrorAlready)
-    {
-        error = kErrorNone;
-        Get<Notifier>().SignalIfFirst(kEventThreadNetworkNameChanged);
-        BuildBeacon();
-    }
-    else if (error == kErrorNone)
-    {
-        Get<Notifier>().Signal(kEventThreadNetworkNameChanged);
-        BuildBeacon();
-    }
-
-    return error;
+    return SignalNetworkNameChange(mNetworkName.Set(aNameData));
 }
 
 Error Mac::SignalNetworkNameChange(Error aError)
@@ -550,11 +533,13 @@ Error Mac::SignalNetworkNameChange(Error aError)
     {
     case kErrorNone:
         Get<Notifier>().Signal(kEventThreadNetworkNameChanged);
+        BuildBeacon();
         break;
 
     case kErrorAlready:
         Get<Notifier>().SignalIfFirst(kEventThreadNetworkNameChanged);
         aError = kErrorNone;
+        BuildBeacon();
         break;
 
     default:
@@ -768,7 +753,7 @@ void Mac::BuildBeacon()
     uint8_t       beaconLength  = 0;
     BeaconPayload beaconPayload = BeaconPayload();
 
-    if (Get<KeyManager>().GetSecurityPolicyFlags() & OT_SECURITY_POLICY_BEACONS)
+    if (Get<KeyManager>().GetSecurityPolicy().mBeaconsEnabled)
     {
         beaconPayload.Init();
 
@@ -861,7 +846,7 @@ Error Mac::BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex)
 
     for (int i = 0; i < reps; i++)
     {
-        uint32_t fc = aNeighbor.GetLinkFrameCounter();
+        uint32_t fc = aNeighbor.GetLinkFrameCounters().Get();
 
         if (i < keyOffset) // No way to track old FCs or modify them in higher layer so receiving to old key is
                            // inherently unsafe
@@ -882,29 +867,28 @@ exit:
     return error;
 }
 
+#if OPENTHREAD_FTD
 Error Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRouterId)
 {
     Error error = kErrorNone;
 
-    for (ChildTable::Iterator iter(GetInstance(), Child::kInStateValidOrRestoring); !iter.IsDone(); iter++)
+    for (Child &child : Get<ChildTable>().Iterate(Child::kInStateValidOrRestoring))
     {
         LogDebg("Building Child DD...");
-        BuildDeviceDescriptor(*iter.GetChild(), aDevIndex);
+        BuildDeviceDescriptor(child, aDevIndex);
         mActiveNeighborCount++;
     }
 
-    for (RouterTable::Iterator iter(GetInstance()); !iter.IsDone(); iter++)
+    for (Router &router : Get<RouterTable>().Iterate())
     {
-        Router *router = iter.GetRouter();
-
-        if (router->GetRouterId() == aIgnoreRouterId)
+        if (router.GetRouterId() == aIgnoreRouterId)
             continue; // Ignore self
 
-        if (Get<Mle::MleRouter>().GetNeighbor(router->GetRloc16()) == NULL)
+        if (Get<NeighborTable>().FindNeighbor(router.GetRloc16()) == NULL)
             continue; // Ignore non-neighbors
 
         LogDebg("Building Router DD...");
-        error = BuildDeviceDescriptor(*router, aDevIndex);
+        error = BuildDeviceDescriptor(router, aDevIndex);
         VerifyOrExit(error == kErrorNone);
         mActiveNeighborCount++;
     }
@@ -912,6 +896,7 @@ Error Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRoute
 exit:
     return error;
 }
+#endif
 
 void Mac::CacheDevice(Neighbor &aNeighbor)
 {
@@ -929,7 +914,7 @@ void Mac::CacheDevice(Neighbor &aNeighbor)
     CopyReversedExtAddr(deviceDesc.mExtAddress, addr);
     VerifyOrExit(memcmp(&addr, &(aNeighbor.GetExtAddress()), sizeof(addr)) == 0);
 
-    aNeighbor.SetLinkFrameCounter(Encoding::LittleEndian::ReadUint32(deviceDesc.mFrameCounter));
+    aNeighbor.GetLinkFrameCounters().Set(Encoding::LittleEndian::ReadUint32(deviceDesc.mFrameCounter));
 
 exit:
     if (error != kErrorNone)
@@ -970,7 +955,7 @@ Error Mac::UpdateDevice(Neighbor &aNeighbor)
     CopyReversedExtAddr(deviceDesc.mExtAddress, addr);
     VerifyOrExit(memcmp(&addr, &(aNeighbor.GetExtAddress()), sizeof(addr)) == 0, error = kErrorNotFound);
 
-    Encoding::LittleEndian::WriteUint32(aNeighbor.GetLinkFrameCounter(), deviceDesc.mFrameCounter);
+    Encoding::LittleEndian::WriteUint32(aNeighbor.GetLinkFrameCounters().Get(), deviceDesc.mFrameCounter);
     error =
         otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, index, len, reinterpret_cast<uint8_t *>(&deviceDesc));
 
@@ -1008,11 +993,11 @@ void Mac::CacheDeviceTable()
             addr.SetExtended(deviceDesc.mExtAddress, ExtAddress::kReverseByteOrder);
         }
 
-        neighbor = Get<Mle::MleRouter>().GetNeighbor(addr);
+        neighbor = Get<NeighborTable>().FindNeighbor(addr);
 
         if (neighbor != NULL)
         {
-            neighbor->SetLinkFrameCounter(Encoding::LittleEndian::ReadUint32(deviceDesc.mFrameCounter));
+            neighbor->GetLinkFrameCounters().Set(Encoding::LittleEndian::ReadUint32(deviceDesc.mFrameCounter));
         }
     }
 }
@@ -1024,7 +1009,7 @@ void Mac::BuildJoinerKeyDescriptor(uint8_t aIndex)
     ExtAddress      counterpart;
 
     memset(&keyTableEntry, 0, sizeof(keyTableEntry));
-    memcpy(keyTableEntry.mKey, Get<KeyManager>().GetKek(), sizeof(keyTableEntry.mKey));
+    memcpy(keyTableEntry.mKey, &Get<KeyManager>().GetKek(), sizeof(keyTableEntry.mKey));
     keyTableEntry.mKeyIdLookupListEntries = 1;
     keyTableEntry.mKeyUsageListEntries    = 1;
     keyTableEntry.mKeyDeviceListEntries   = 1;
@@ -1056,6 +1041,7 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
     otKeyTableEntry keyTableEntry;
     uint32_t        keySequence = Get<KeyManager>().GetCurrentKeySequence() - 1;
     uint8_t         ddReps      = 3;
+    const Frame    &dummyFrame  = Frame();
 
 #if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
     ddReps = 1;
@@ -1077,7 +1063,8 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
 
     for (int i = 0; i < 3; i++)
     {
-        const uint8_t *key = Get<KeyManager>().GetTemporaryMacKey(keySequence);
+        // dummyFrame won't be used in that function.
+        const KeyMaterial *key = mLinks.GetTemporaryMacKey(dummyFrame, keySequence);
         memcpy(keyTableEntry.mKey, key, sizeof(keyTableEntry.mKey));
         keyTableEntry.mKeyIdLookupDesc[0].mLookupData[0] = (keySequence & 0x7F) + 1;
 
@@ -1119,6 +1106,7 @@ exit:
 void Mac::BuildMode2KeyDescriptor(uint8_t aIndex)
 {
     otKeyTableEntry keyTableEntry;
+    Key             key;
 
     memset(&keyTableEntry, 0, sizeof(keyTableEntry));
 
@@ -1135,7 +1123,8 @@ void Mac::BuildMode2KeyDescriptor(uint8_t aIndex)
     keyTableEntry.mKeyDeviceDesc[0].mUniqueDevice = true; // Assumed errata in thread spec says this should be false
     keyTableEntry.mKeyDeviceDesc[0].mDeviceDescriptorHandle = mMode2DevHandle;
 
-    memcpy(keyTableEntry.mKey, sMode2Key, sizeof(keyTableEntry.mKey));
+    mMode2KeyMaterial.ExtractKey(key);
+    memcpy(keyTableEntry.mKey, &key, sizeof(keyTableEntry.mKey));
 
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_KEY_TABLE, aIndex, sizeof(keyTableEntry),
                   reinterpret_cast<uint8_t *>(&keyTableEntry));
@@ -1156,8 +1145,7 @@ void Mac::HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr)
 
     keyTableEntry.mKeyUsageDesc[0].mFrameType = Frame::kFcfFrameData;
 
-    const uint8_t *key = Get<KeyManager>().GetKek();
-    memcpy(keyTableEntry.mKey, key, sizeof(keyTableEntry.mKey));
+    memcpy(keyTableEntry.mKey, &Get<KeyManager>().GetKek(), sizeof(keyTableEntry.mKey));
 
     LogDebg("Built joiner router key descriptor at index %d", mDynamicKeyIndex);
     LogDebg("Lookup Data: %02x%02x%02x%02x%02x%02x%02x%02x%02x", keyTableEntry.mKeyIdLookupDesc[0].mLookupData[0],
@@ -1178,7 +1166,7 @@ void Mac::BuildKeyTable()
     bool    isJoining = false;
 
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
-    isJoining = (Get<MeshCoP::Joiner>().GetState() == OT_JOINER_STATE_CONNECT);
+    isJoining = (Get<MeshCoP::Joiner>().GetState() == ot::MeshCoP::Joiner::kStateConnect);
 #endif
 
     if (isJoining)
@@ -1198,17 +1186,17 @@ void Mac::BuildKeyTable()
 
 void Mac::BuildSecurityTable()
 {
-    otDeviceRole role                = Get<Mle::Mle>().GetRole();
-    uint8_t      devIndex            = 0;
-    uint8_t      nextHopForNeighbors = Mle::kInvalidRouterId;
-    bool         isJoining           = false;
-    bool         isFFD               = (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice());
+    ot::Mle::DeviceRole role                = Get<Mle::Mle>().GetRole();
+    uint8_t             devIndex            = 0;
+    uint8_t             nextHopForNeighbors = Mle::kInvalidRouterId;
+    bool                isJoining           = false;
+    bool                isFFD               = (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice());
 
     mActiveNeighborCount = 0;
     LogDebg("Current KeySequenceNumber: %d", Get<KeyManager>().GetCurrentKeySequence());
 
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
-    isJoining = (Get<MeshCoP::Joiner>().GetState() == OT_JOINER_STATE_CONNECT);
+    isJoining = (Get<MeshCoP::Joiner>().GetState() == ot::MeshCoP::Joiner::kStateConnect);
 #endif
 
     // Cache the frame counters so that they remain correct after flushing device table
@@ -1228,21 +1216,26 @@ void Mac::BuildSecurityTable()
         BuildDeviceDescriptor(parent, devIndex);
         mActiveNeighborCount++;
     }
-    if (((role == OT_DEVICE_ROLE_CHILD) || (role == OT_DEVICE_ROLE_DETACHED)) &&
+    if (((role == ot::Mle::kRoleChild) || (role == ot::Mle::kRoleDetached)) &&
         Get<Mle::Mle>().GetParent().IsStateValidOrRestoring())
     {
         Router &parent = Get<Mle::Mle>().GetParent();
         LogDebg("Building Parent DD...");
         BuildDeviceDescriptor(parent, devIndex);
         mActiveNeighborCount++;
-        nextHopForNeighbors = Get<Mle::Mle>().GetRouterId(parent.GetRloc16());
+        nextHopForNeighbors = parent.GetRouterId();
     }
-    if (isFFD)
-    {
-        BuildRouterDeviceDescriptors(devIndex, nextHopForNeighbors);
-    }
+
+#if OPENTHREAD_FTD
+    assert(isFFD == true && "Device should be an FTD, but it is not.");
+    BuildRouterDeviceDescriptors(devIndex, nextHopForNeighbors);
+#else
+    assert(isFFD == false && "Device should not be an FTD, but it is.");
+    OT_UNUSED_VARIABLE(nextHopForNeighbors);
+#endif
+
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
-    if (role == OT_DEVICE_ROLE_DISABLED && isJoining)
+    if (role == ot::Mle::kRoleDisabled && isJoining)
     {
         ExtAddress counterpart;
         Get<MeshCoP::Joiner>().GetCounterpartAddress(counterpart);
@@ -1266,13 +1259,13 @@ void Mac::ProcessTransmitSecurity(otSecSpec &aSecSpec)
 
     VerifyOrExit(aSecSpec.mSecurityLevel > 0);
 
-    switch (aSecSpec.mSecurityLevel > 0)
+    switch (aSecSpec.mKeyIdMode)
     {
     case 0:
         break;
 
     case 1:
-        keyManager.IncrementMacFrameCounter;
+        keyManager.Increment154MacFrameCounter();
         aSecSpec.mKeyIndex = (keyManager.GetCurrentKeySequence() & 0x7f) + 1;
         break;
 
@@ -1293,15 +1286,20 @@ exit:
 
 void Mac::HandleBeginDirect(void)
 {
-    TxFrame &sendFrame = mDirectDataReq;
-    Error    error     = kErrorNone;
-    Address  dstAddr;
+    TxFrames &txFrames  = mLinks.GetTxFrames();
+    TxFrame  &sendFrame = mDirectDataReq;
+    TxFrame  *frame     = nullptr;
+    Error     error     = kErrorNone;
+    Address   dstAddr;
 
     LogDebg("Mac::HandleBeginDirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
-    SuccessOrExit(error = Get<MeshForwarder>().HandleFrameRequest(sendFrame));
+    txFrames.SetTxFrame(sendFrame);
+
+    frame = Get<MeshForwarder>().HandleFrameRequest(txFrames);
+    SuccessOrExit(frame != nullptr);
 
     if (sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
         Encoding::LittleEndian::ReadUint16(sendFrame.mDst.mAddress) == kShortAddrBroadcast)
@@ -1325,8 +1323,8 @@ void Mac::HandleBeginDirect(void)
         bool isJoining = false;
 
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
-        isJoining = (Get<MeshCoP::Joiner>().GetState() != OT_JOINER_STATE_IDLE &&
-                     Get<MeshCoP::Joiner>().GetState() != OT_JOINER_STATE_JOINED);
+        isJoining = (Get<MeshCoP::Joiner>().GetState() != ot::MeshCoP::Joiner::kStateIdle &&
+                     Get<MeshCoP::Joiner>().GetState() != ot::MeshCoP::Joiner::kStateJoined);
 #endif
 
         if (!isJoining)
@@ -1365,15 +1363,19 @@ exit:
 #if OPENTHREAD_FTD
 void Mac::HandleBeginIndirect(void)
 {
-    TxFrame &sendFrame = mIndirectDataReq;
-    Error    error     = kErrorNone;
-    Address  dstAddr;
+    TxFrame  *frame     = nullptr;
+    TxFrames &txFrames  = mLinks.GetTxFrames();
+    TxFrame  &sendFrame = mIndirectDataReq;
+    Error     error     = kErrorNone;
+    Address   dstAddr;
 
     LogDebg("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
-    SuccessOrExit(error = Get<DataPollHandler>().HandleFrameRequest(sendFrame));
+    txFrames.SetTxFrame(sendFrame);
+    frame = Get<DataPollHandler>().HandleFrameRequest(txFrames);
+    VerifyOrExit(frame != nullptr);
 
     mCounters.mTxUnicast++;
 
@@ -1698,18 +1700,19 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     dataInd.SetChannel(GetCurrentChannel());
     dataInd.GetSrcAddr(srcaddr);
     dataInd.GetDstAddr(dstaddr);
-    neighbor = Get<Mle::MleRouter>().GetNeighbor(srcaddr);
+    neighbor = Get<NeighborTable>().FindNeighbor(srcaddr);
 
     if (dstaddr.IsBroadcast())
         mCounters.mRxBroadcast++;
     else
         mCounters.mRxUnicast++;
 
+#if OPENTHREAD_FTD
+    assert(Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice() == true && "Device should be an FTD, but it is not.");
     // Allow  multicasts from neighbor routers if FFD
-    if (neighbor == NULL && dstaddr.IsBroadcast() && (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice()))
-    {
-        neighbor = Get<Mle::MleRouter>().GetRxOnlyNeighborRouter(srcaddr);
-    }
+    if (neighbor == NULL && dstaddr.IsBroadcast())
+        neighbor = Get<NeighborTable>().FindRxOnlyNeighborRouter(srcaddr);
+#endif
 
     // Source Address Filtering
     if (srcaddr.IsShort())
@@ -1753,7 +1756,6 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     if (neighbor != NULL)
     {
 #if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
-
         // make assigned rssi to take effect quickly
         if (rssi != OT_MAC_FILTER_FIXED_RSS_DISABLED)
         {
@@ -1787,7 +1789,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     Get<MeshForwarder>().HandleReceivedFrame(dataInd);
 
     // Process Frame Pending
-    Get<DataPollSender>().CheckFramePending(dataInd);
+    Get<DataPollSender>().ProcessRxFrame(dataInd);
 
 exit:
 
@@ -1844,7 +1846,7 @@ void Mac::ProcessCommStatusIndication(otCommStatusIndication *aCommStatusIndicat
         uint16_t  srcAddr = Encoding::LittleEndian::ReadUint16(aCommStatusIndication->mSrcAddr);
         Neighbor *neighbor;
         DumpDebg("From: ", aCommStatusIndication->mSrcAddr, 2);
-        if ((neighbor = Get<Mle::MleRouter>().GetNeighbor(srcAddr)) != NULL)
+        if ((neighbor = Get<NeighborTable>().FindNeighbor(srcAddr)) != NULL)
         {
             uint8_t buffer[128];
             uint8_t len;
@@ -1989,7 +1991,7 @@ Error Mac::Start()
     CopyReversedExtAddr(mExtAddress, buf);
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_IEEE_ADDRESS, 0, 8, buf);
 
-    SetFrameCounter(Get<KeyManager>().GetCachedMacFrameCounter());
+    SetFrameCounter(Get<KeyManager>().GetCachedMacMaximumFrameCounter());
 
     if (mBeaconsEnabled)
     {
@@ -2036,20 +2038,20 @@ const char *Mac::OperationToString(Operation aOperation)
         "Idle",                 // (0) kOperationIdle
         "ActiveScan",           // (1) kOperationActiveScan
         "EnergyScan",           // (2) kOperationEnergyScan
-        "TransmitDataDirect",   // (4) kOperationTransmitDataDirect
-        "TransmitDataIndirect", // (7) kOperationTransmitDataIndirect
+        "TransmitDataDirect",   // (3) kOperationTransmitDataDirect
+        "TransmitDataIndirect", // (4) kOperationTransmitDataIndirect
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
-        "TransmitDataCsl", // (8) kOperationTransmitDataCsl
+        "TransmitDataCsl", // (5) kOperationTransmitDataCsl
 #endif
     };
 
     static_assert(kOperationIdle == 0, "kOperationIdle value is incorrect");
     static_assert(kOperationActiveScan == 1, "kOperationActiveScan value is incorrect");
     static_assert(kOperationEnergyScan == 2, "kOperationEnergyScan value is incorrect");
-    static_assert(kOperationTransmitDataDirect == 4, "kOperationTransmitDataDirect value is incorrect");
-    static_assert(kOperationTransmitDataIndirect == 7, "kOperationTransmitDataIndirect value is incorrect");
+    static_assert(kOperationTransmitDataDirect == 3, "kOperationTransmitDataDirect value is incorrect");
+    static_assert(kOperationTransmitDataIndirect == 4, "kOperationTransmitDataIndirect value is incorrect");
 #if OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
-    static_assert(kOperationTransmitDataCsl == 8, "TransmitDataCsl value is incorrect");
+    static_assert(kOperationTransmitDataCsl == 5, "TransmitDataCsl value is incorrect");
 #endif
 
     return kOperationStrings[aOperation];

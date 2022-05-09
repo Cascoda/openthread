@@ -149,7 +149,7 @@ public:
     /**
      * This method converts a beacon notify indication to an active scan result of type `otActiveScanResult`.
      *
-     * @param[in]  aBeaconFrame             A pointer to a beacon notify.
+     * @param[in]  aBeaconNotify            A pointer to a beacon notify.
      * @param[out] aResult                  A reference to `otActiveScanResult` where the result is stored.
      *
      * @retval kErrorNone           Successfully converted the beacon into active scan result.
@@ -157,7 +157,7 @@ public:
      * @retval kErrorParse          Failed parsing the beacon frame.
      *
      */
-    Error ConvertBeaconToActiveScanResult(otBeaconNotify *aBeaconFrame, otActiveScanResult &aResult);
+    Error ConvertBeaconToActiveScanResult(const otBeaconNotify *aBeaconNotify, otActiveScanResult &aResult);
 
     /**
      * This method starts an IEEE 802.15.4 Energy Scan.
@@ -913,7 +913,7 @@ private:
     void HandleBeginIndirect(void);
 #endif
     Error ProcessTransmitStatus(Error aTransmitError);
-    void  Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration);
+    Error Scan(Operation aScanOperation, uint32_t aScanChannels, uint16_t aScanDuration);
     void  HandleBeginScan(void);
 
     void  ReportActiveScanResult(const otBeaconNotify *aBeacon);
@@ -925,12 +925,14 @@ private:
                                   uint16_t          shortAddr,
                                   uint8_t           aIndex);
     otError BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex);
+#if OPENTHREAD_FTD
     otError BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRouterId);
-    void    BuildJoinerKeyDescriptor(uint8_t aIndex);
-    void    BuildMainKeyDescriptors(uint8_t &aIndex);
-    void    BuildMode2KeyDescriptor(uint8_t aIndex);
-    void    HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr);
-    void    BuildKeyTable(void);
+#endif
+    void BuildJoinerKeyDescriptor(uint8_t aIndex);
+    void BuildMainKeyDescriptors(uint8_t &aIndex);
+    void BuildMode2KeyDescriptor(uint8_t aIndex);
+    void HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr);
+    void BuildKeyTable(void);
 
     uint8_t GetCurrentChannel(void);
     otError SetTempTxChannel(TxFrame &aTxFrame);
@@ -967,8 +969,8 @@ private:
     Address      mDirectDstAddress;
     ExtAddress   mExtAddress;
     ShortAddress mShortAddress;
-    uint16_t     mPendingOperations;
     PanId        mPanId;
+    uint16_t     mPendingOperations;
     uint8_t      mChannel;
     uint8_t      mTempRxChannel;
     uint8_t      mTempTxChannel;

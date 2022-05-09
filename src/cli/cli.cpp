@@ -847,10 +847,12 @@ template <> otError Interpreter::Process<Cmd("channel")>(Arg aArgs[])
     {
         OutputLine("0x%x", otLinkGetSupportedChannelMask(GetInstancePtr()));
     }
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     else if (aArgs[0] == "preferred")
     {
         OutputLine("0x%x", otLinkGetPreferredChannelMask(GetInstancePtr()));
     }
+#endif
 #endif // OPENTHREAD_FTD || OPENTHREAD_MTD
 #if OPENTHREAD_CONFIG_CHANNEL_MONITOR_ENABLE
     else if (aArgs[0] == "monitor")

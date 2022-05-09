@@ -119,6 +119,14 @@ public:
     explicit SubMac(Instance &aInstance);
 
     /**
+     * This method gets the radio transmit frame.
+     *
+     * @returns The transmit frame.
+     *
+     */
+    TxFrame &GetTransmitFrame(void) { return mTransmitFrame; }
+
+    /**
      * This method returns the noise floor value (currently use the radio receive sensitivity value).
      *
      * @returns The noise floor value in dBm.
@@ -388,6 +396,7 @@ private:
     KeyMaterial mPrevKey;
     KeyMaterial mCurrKey;
     KeyMaterial mNextKey;
+    TxFrame    &mTransmitFrame;
     uint32_t    mFrameCounter;
     uint8_t     mKeyId;
 #if OPENTHREAD_CONFIG_MAC_ADD_DELAY_ON_NO_ACK_ERROR_BEFORE_RETRY

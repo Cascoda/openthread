@@ -244,16 +244,6 @@ public:
      */
     uint32_t GetDefaultPollPeriod(void) const;
 
-    /**
-     * This method prepares and returns a data request command frame.
-     *
-     * @param[in] aTxFrames  The set of TxFrames for all radio links.
-     *
-     * @returns The data poll frame.
-     *
-     */
-    Mac::TxFrame *PrepareDataRequest(Mac::TxFrames &aTxFrames);
-
 private:
     static constexpr uint8_t kQuickPollsAfterTimeout = 5; // Quick data poll tx in case of back-to-back poll timeouts.
     static constexpr uint8_t kMaxPollRetxAttempts    = OPENTHREAD_CONFIG_FAILED_CHILD_TRANSMISSIONS;

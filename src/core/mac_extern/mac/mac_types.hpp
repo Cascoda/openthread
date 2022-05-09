@@ -982,6 +982,12 @@ public:
      *
      */
     void Set154(uint32_t aCounter) { m154Counter = aCounter; }
+
+    /**
+     * This method increments the Link Frame Counter for 802.15.4 radio link.
+     *
+     */
+    void Increment154(void) { m154Counter++; }
 #endif
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE

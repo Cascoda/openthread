@@ -256,7 +256,16 @@ public:
      */
     void Clear(void);
 
-#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    /**
+     * This method adds a new received signal strength (RSS) value to the average.
+     *
+     * @param[in] aNoiseFloor  The noise floor value (in dBm).
+     * @param[in] aRss         A new received signal strength value (in dBm) to be added to the average.
+     *
+     */
+    void AddRss(int8_t aNoiseFloor, int8_t aRss);
+#else
     /**
      * This method adds a new received signal strength (RSS) value to the average.
      *
@@ -291,7 +300,19 @@ public:
      */
     InfoString ToInfoString(void) const;
 
-#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    /**
+     * This method returns the link margin. The link margin is calculated using the link's
+     * current average received signal strength (RSS) and average noise floor.
+     *
+     * @param[in]  aNoiseFloor  The noise floor value (in dBm).
+     *
+     * @returns Link margin derived from average received signal strength and average noise
+     * floor.
+     *
+     */
+    uint8_t GetLinkMargin(int8_t aNoiseFloor) const;
+#else
     /**
      * This method returns the link margin. The link margin is calculated using the link's current average received
      * signal strength (RSS) and average noise floor.

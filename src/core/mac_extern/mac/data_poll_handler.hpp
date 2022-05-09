@@ -105,12 +105,14 @@ public:
         uint8_t GetFrameCount(void) const { return mFrameCount; }
         void    IncrementFrameCount(void) { mFrameCount++; }
         void    DecrementFrameCount(void) { mFrameCount--; }
-
 #if OPENTHREAD_CONFIG_MULTI_RADIO
         Mac::RadioType mLastPollRadioType; // The radio link last data poll frame was received on.
         Mac::RadioType GetLastPollRadioType(void) const { return mLastPollRadioType; }
         void           SetLastPollRadioType(Mac::RadioType aRadioType) { mLastPollRadioType = aRadioType; }
 #endif
+
+        bool    mFrameReplacePending : 1; ///< Indicates a pending replace request for the current indirect frame.
+        uint8_t mFrameCount : 7;          ///< Count of frames that are being processed by the MAC layer.
     };
 
     /**

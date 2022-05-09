@@ -372,6 +372,12 @@ public:
      *
      */
     uint32_t Get154MacFrameCounter(void) const { return mMacFrameCounters.Get154(); }
+
+    /**
+     * This method increments the current MAC Frame Counter value for 15.4 radio link.
+     *
+     */
+    void Increment154MacFrameCounter(void);
 #endif
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE

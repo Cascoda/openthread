@@ -450,7 +450,7 @@ uint16_t IndirectSender::RegenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild
     Mac::Address macSource, macDest;
     uint16_t     nextOffset;
 
-    aMessage.Read(0, sizeof(ip6Header), &ip6Header);
+    aMessage.Read(0, &ip6Header, sizeof(ip6Header));
     Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
 
     if (aForceExtDst)
@@ -478,7 +478,7 @@ uint16_t IndirectSender::GenerateDataFrame(Mac::TxFrame &aFrame, Child &aChild, 
     Mac::Address macSource, macDest;
     uint16_t     nextOffset;
 
-    aMessage.Read(0, sizeof(ip6Header), &ip6Header);
+    aMessage.Read(0, &ip6Header, sizeof(ip6Header));
 
     Get<MeshForwarder>().GetMacSourceAddress(ip6Header.GetSource(), macSource);
 
@@ -500,6 +500,7 @@ void IndirectSender::PrepareEmptyFrame(Mac::TxFrame &aFrame, Child &aChild, bool
 void IndirectSender::HandleSentFrameToChild(FrameContext &aContext, Error aError, Child &aChild)
 {
     Message *sentMessage = aContext.mMessage;
+    uint16_t nextOffset  = aContext.mMessageNextOffset;
 
     VerifyOrExit(mEnabled);
     aContext.HandleMacDone();

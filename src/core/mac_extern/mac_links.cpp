@@ -31,7 +31,7 @@
  *   This file implements the MAC radio links.
  */
 
-#include "mac_links.hpp"
+#include "mac/mac_links.hpp"
 
 #include "common/code_utils.hpp"
 #include "common/instance.hpp"

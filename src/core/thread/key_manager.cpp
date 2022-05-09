@@ -496,6 +496,18 @@ void KeyManager::IncrementTrelMacFrameCounter(void)
 }
 #endif
 
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+void KeyManager::Increment154MacFrameCounter(void)
+{
+    mMacFrameCounters.Increment154();
+
+    if (mMacFrameCounters.Get154() >= mStoredMacFrameCounter)
+    {
+        IgnoreError(Get<Mle::MleRouter>().Store());
+    }
+}
+#endif
+
 void KeyManager::IncrementMleFrameCounter(void)
 {
     mMleFrameCounter++;

@@ -138,7 +138,28 @@ void LinkQualityInfo::Clear(void)
     mMessageErrorRate.Clear();
 }
 
-#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+void LinkQualityInfo::AddRss(int8_t aNoiseFloor, int8_t aRss)
+{
+    uint8_t oldLinkQuality = kNoLinkQuality;
+
+    VerifyOrExit(aRss != OT_RADIO_RSSI_INVALID);
+
+    mLastRss = aRss;
+
+    if (mRssAverager.HasAverage())
+    {
+        oldLinkQuality = GetLinkQuality();
+    }
+
+    SuccessOrExit(mRssAverager.Add(aRss));
+
+    SetLinkQuality(CalculateLinkQuality(GetLinkMargin(aNoiseFloor), oldLinkQuality));
+
+exit:
+    return;
+}
+#else
 void LinkQualityInfo::AddRss(int8_t aRss)
 {
     uint8_t oldLinkQuality = kNoLinkQuality;
@@ -159,7 +180,14 @@ void LinkQualityInfo::AddRss(int8_t aRss)
 exit:
     return;
 }
+#endif
 
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+uint8_t LinkQualityInfo::GetLinkMargin(int8_t aNoiseFloor) const
+{
+    return ConvertRssToLinkMargin(aNoiseFloor, GetAverageRss());
+}
+#else
 uint8_t LinkQualityInfo::GetLinkMargin(void) const
 {
     return ConvertRssToLinkMargin(Get<Mac::SubMac>().GetNoiseFloor(), GetAverageRss());
