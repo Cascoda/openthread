@@ -147,6 +147,19 @@ public:
     Error ActiveScan(uint32_t aScanChannels, uint16_t aScanDuration, ActiveScanHandler aHandler, void *aContext);
 
     /**
+     * This method converts a beacon notify indication to an active scan result of type `otActiveScanResult`.
+     *
+     * @param[in]  aBeaconFrame             A pointer to a beacon notify.
+     * @param[out] aResult                  A reference to `otActiveScanResult` where the result is stored.
+     *
+     * @retval kErrorNone           Successfully converted the beacon into active scan result.
+     * @retval kErrorInvalidArgs    The @a aBeaconFrame was NULL.
+     * @retval kErrorParse          Failed parsing the beacon frame.
+     *
+     */
+    Error ConvertBeaconToActiveScanResult(otBeaconNotify *aBeaconFrame, otActiveScanResult &aResult);
+
+    /**
      * This method starts an IEEE 802.15.4 Energy Scan.
      *
      * @param[in]  aScanChannels     A bit vector indicating on which channels to scan.

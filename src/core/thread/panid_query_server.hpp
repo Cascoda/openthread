@@ -65,13 +65,8 @@ private:
     static void HandleQuery(void *aContext, otMessage *aMessage, const otMessageInfo *aMessageInfo);
     void        HandleQuery(Coap::Message &aMessage, const Ip6::MessageInfo &aMessageInfo);
 
-#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-    static void HandleScanResult(otBeaconNotify *aBeaconNotify, void *aContext);
-    void        HandleScanResult(otBeaconNotify *aBeaconNotify);
-#else
     static void HandleScanResult(Mac::ActiveScanResult *aScanResult, void *aContext);
     void        HandleScanResult(Mac::ActiveScanResult *aScanResult);
-#endif
 
     static void HandleTimer(Timer &aTimer);
     void        HandleTimer(void);

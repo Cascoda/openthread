@@ -238,7 +238,7 @@ void Mac::HandleScanConfirm(otScanConfirm *aScanConfirm)
     if (IsActiveScanInProgress())
     {
         VerifyOrExit(mActiveScanHandler != NULL);
-        mActiveScanHandler(GetInstance(), NULL);
+        mActiveScanHandler(NULL, mScanHandlerContext);
     }
     else
     {
@@ -286,7 +286,10 @@ void Mac::HandleBeaconNotification(otBeaconNotify *aBeaconNotify)
     VerifyOrExit(mActiveScanHandler != NULL);
     VerifyOrExit(aBeaconNotify != NULL);
 
-    mActiveScanHandler(GetInstance(), aBeaconNotify);
+    ActiveScanResult result;
+    SuccessOrExit(ConvertBeaconToActiveScanResult(aBeaconNotify, result));
+
+    mActiveScanHandler(&result, mScanHandlerContext);
 exit:
     return;
 }
