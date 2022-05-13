@@ -52,9 +52,9 @@ extern "C" {
 typedef struct otCliCommand
 {
     const char *mName; ///< A pointer to the command string.
-    void (*mCommand)(void *  aContext,
+    void (*mCommand)(void   *aContext,
                      uint8_t aArgsLength,
-                     char *  aArgs[]); ///< A function pointer to process the command.
+                     char   *aArgs[]); ///< A function pointer to process the command.
 } otCliCommand;
 
 /**
@@ -96,6 +96,14 @@ void otCliInit(otInstance *aInstance, otCliOutputCallback aCallback, void *aCont
  *
  */
 void otCliInputLine(char *aBuf);
+
+/**
+ * This function initializes the CLI app.
+ *
+ * @param[in]  aInstance  The OpenThread instance structure.
+ *
+ */
+void otAppCliInit(otInstance *aInstance);
 
 /**
  * Set a user command table.

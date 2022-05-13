@@ -95,14 +95,6 @@ void otAppNcpUpdate(otSysMainloopContext *aContext);
 void otAppNcpProcess(const otSysMainloopContext *aContext);
 
 /**
- * This function initializes CLI app.
- *
- * @param[in]  aInstance    A pointer to the OpenThread instance.
- *
- */
-void otAppCliInit(otInstance *aInstance);
-
-/**
  * This function deinitializes CLI app.
  *
  */
