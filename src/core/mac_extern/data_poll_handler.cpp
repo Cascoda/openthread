@@ -372,6 +372,72 @@ exit:
     return frame;
 }
 
+DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
+{
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (fc.GetMsduHandle() == aMsduHandle)
+            return &fc;
+    }
+    return NULL;
+}
+
+DataPollHandler::FrameCache *DataPollHandler::GetNextFrameCache(Child &aChild, FrameCache *aPrevCache)
+{
+    size_t i = 0;
+
+    // Start looking after the previous cache.
+    if (aPrevCache)
+        i = (aPrevCache - mFrameCache) + 1;
+
+    for (; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (!fc.IsValid())
+            continue;
+
+        if (&(fc.GetChild()) == &aChild)
+            return &fc;
+    }
+    return NULL;
+}
+
+uint8_t DataPollHandler::GetDoubleBufferCount()
+{
+    uint8_t count = 0;
+
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (!fc.IsValid())
+            continue;
+
+        for (size_t j = i + 1; j < OT_ARRAY_LENGTH(mFrameCache); j++)
+        {
+            FrameCache &fc2 = mFrameCache[j];
+            if (!fc2.IsValid())
+                continue;
+
+            if (&fc.GetChild() == &fc2.GetChild())
+                count++;
+        }
+    }
+    return count;
+}
+
+DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
+{
+    for (size_t i = 0; i < OT_ARRAY_LENGTH(mFrameCache); i++)
+    {
+        FrameCache &fc = mFrameCache[i];
+        if (!fc.IsValid())
+            return &fc;
+    }
+    LogWarn("Failed to GetEmptyFrameCache");
+    return NULL;
+}
+
 void DataPollHandler::HandleSentFrame(otError aError, uint8_t aMsduHandle)
 {
     FrameCache *frameCache = GetFrameCache(aMsduHandle);

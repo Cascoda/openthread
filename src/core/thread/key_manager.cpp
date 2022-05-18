@@ -414,6 +414,16 @@ exit:
     return;
 }
 
+const Mle::KeyMaterial &KeyManager::GetTemporaryMacKey(uint32_t aKeySequence)
+{
+    HashKeys hashKeys;
+
+    ComputeKeys(aKeySequence, hashKeys);
+    mTemporaryMacKey.SetFrom(hashKeys.GetMacKey());
+
+    return mTemporaryMacKey;
+}
+
 const Mle::KeyMaterial &KeyManager::GetTemporaryMleKey(uint32_t aKeySequence)
 {
     HashKeys hashKeys;

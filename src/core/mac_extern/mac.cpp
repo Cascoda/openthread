@@ -1041,7 +1041,6 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
     otKeyTableEntry keyTableEntry;
     uint32_t        keySequence = Get<KeyManager>().GetCurrentKeySequence() - 1;
     uint8_t         ddReps      = 3;
-    const Frame    &dummyFrame  = Frame();
 
 #if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
     ddReps = 1;
@@ -1063,8 +1062,7 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
 
     for (int i = 0; i < 3; i++)
     {
-        // dummyFrame won't be used in that function.
-        const KeyMaterial *key = mLinks.GetTemporaryMacKey(dummyFrame, keySequence);
+        const KeyMaterial *key = &Get<KeyManager>().GetTemporaryMacKey(keySequence);
         memcpy(keyTableEntry.mKey, key, sizeof(keyTableEntry.mKey));
         keyTableEntry.mKeyIdLookupDesc[0].mLookupData[0] = (keySequence & 0x7F) + 1;
 
@@ -2055,6 +2053,11 @@ const char *Mac::OperationToString(Operation aOperation)
 #endif
 
     return kOperationStrings[aOperation];
+}
+
+int8_t Mac::GetNoiseFloor(void)
+{
+    return otPlatRadioGetReceiveSensitivity(&GetInstance());
 }
 
 Error FullAddr::GetAddress(Address &aAddress) const

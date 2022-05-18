@@ -513,10 +513,10 @@ template <> inline Mac::Mac &Instance::Get(void)
     return mThreadNetif.mMac;
 }
 
-template <> inline Mac::SubMac &Instance::Get(void)
-{
-    return mThreadNetif.mMac.mLinks.mSubMac;
-}
+// template <> inline Mac::SubMac &Instance::Get(void)
+// {
+//     return mThreadNetif.mMac.mLinks.mSubMac;
+// }
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
 template <> inline Trel::Link &Instance::Get(void)

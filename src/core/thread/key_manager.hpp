@@ -355,6 +355,16 @@ public:
     const Mle::KeyMaterial &GetCurrentMleKey(void) const { return mMleKey; }
 
     /**
+     * This method returns a pointer to a temporary MAC key computed from the given key sequence.
+     *
+     * @param[in]  aKeySequence  The key sequence value.
+     *
+     * @returns A pointer to the temporary MAC key.
+     *
+     */
+    const Mle::KeyMaterial &GetTemporaryMacKey(uint32_t aKeySequence);
+
+    /**
      * This method returns a temporary MLE key Material computed from the given key sequence.
      *
      * @param[in]  aKeySequence  The key sequence value.
@@ -616,6 +626,7 @@ private:
     uint32_t         mKeySequence;
     Mle::KeyMaterial mMleKey;
     Mle::KeyMaterial mTemporaryMleKey;
+    Mle::KeyMaterial mTemporaryMacKey;
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     Mac::KeyMaterial mTrelKey;

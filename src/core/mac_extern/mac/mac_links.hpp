@@ -277,7 +277,7 @@ private:
     explicit TxFrames(Instance &aInstance);
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-    TxFrame &mTxFrame802154;
+    TxFrame mTxFrame802154;
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     TxFrame &mTxFrameTrel;
@@ -523,22 +523,7 @@ public:
     }
 #endif
 
-    /**
-     * This method returns the noise floor value (currently use the radio receive sensitivity value).
-     *
-     * @returns The noise floor value in dBm.
-     *
-     */
-    int8_t GetNoiseFloor(void)
-    {
-        return
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-            mSubMac.GetNoiseFloor();
-#else
-            kDefaultNoiseFloor;
-#endif
-    }
-
+#if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
     /**
      * This methods gets a reference to the `SubMac` instance.
      *
@@ -554,7 +539,9 @@ public:
      *
      */
     const SubMac &GetSubMac(void) const { return mSubMac; }
+#endif
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
      * This method returns a reference to the current MAC key (for Key Mode 1) for a given Frame.
      *
@@ -576,6 +563,7 @@ public:
      *
      */
     const KeyMaterial *GetTemporaryMacKey(const Frame &aFrame, uint32_t aKeySequence) const;
+#endif
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
@@ -593,7 +581,7 @@ public:
 private:
     static constexpr int8_t kDefaultNoiseFloor = -100;
 
-    SubMac mSubMac;
+    // SubMac mSubMac;
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     Trel::Link mTrel;
 #endif

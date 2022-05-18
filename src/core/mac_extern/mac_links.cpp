@@ -45,9 +45,9 @@ namespace Mac {
 
 TxFrames::TxFrames(Instance &aInstance)
     : InstanceLocator(aInstance)
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-    , mTxFrame802154(aInstance.Get<SubMac>().GetTransmitFrame())
-#endif
+// #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+//     , mTxFrame802154(aInstance.Get<SubMac>().GetTransmitFrame())
+// #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     , mTxFrameTrel(aInstance.Get<Trel::Link>().GetTransmitFrame())
 #endif
@@ -122,7 +122,7 @@ TxFrame &TxFrames::GetBroadcastTxFrame(void)
 
 Links::Links(Instance &aInstance)
     : InstanceLocator(aInstance)
-    , mSubMac(aInstance)
+// , mSubMac(aInstance)
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     , mTrel(aInstance)
 #endif
@@ -169,6 +169,7 @@ void Links::Send(TxFrame &aFrame, RadioTypes aRadioTypes)
 
 #endif // #if OPENTHREAD_CONFIG_MULTI_RADIO
 
+#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 const KeyMaterial *Links::GetCurrentMacKey(const Frame &aFrame) const
 {
     // Gets the security MAC key (for Key Mode 1) based on radio link type of `aFrame`.
@@ -246,6 +247,7 @@ const KeyMaterial *Links::GetTemporaryMacKey(const Frame &aFrame, uint32_t aKeyS
 exit:
     return key;
 }
+#endif // #if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
 void Links::SetMacFrameCounter(TxFrame &aFrame)

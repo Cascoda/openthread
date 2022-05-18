@@ -118,21 +118,21 @@ public:
      */
     explicit SubMac(Instance &aInstance);
 
-    /**
-     * This method gets the radio transmit frame.
-     *
-     * @returns The transmit frame.
-     *
-     */
-    TxFrame &GetTransmitFrame(void) { return mTransmitFrame; }
+    // /**
+    //  * This method gets the radio transmit frame.
+    //  *
+    //  * @returns The transmit frame.
+    //  *
+    //  */
+    // TxFrame &GetTransmitFrame(void) { return mTransmitFrame; }
 
-    /**
-     * This method returns the noise floor value (currently use the radio receive sensitivity value).
-     *
-     * @returns The noise floor value in dBm.
-     *
-     */
-    int8_t GetNoiseFloor(void);
+    // /**
+    //  * This method returns the noise floor value (currently use the radio receive sensitivity value).
+    //  *
+    //  * @returns The noise floor value in dBm.
+    //  *
+    //  */
+    // int8_t GetNoiseFloor(void);
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 

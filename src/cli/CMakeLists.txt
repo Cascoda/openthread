@@ -29,6 +29,7 @@
 set(COMMON_INCLUDES
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/examples/platforms
 )
 
 set(COMMON_SOURCES
