@@ -66,6 +66,14 @@ extern "C" {
 typedef int (*otNcpHdlcSendCallback)(const uint8_t *aBuf, uint16_t aBufLength);
 
 /**
+ * Initialize the NCP.
+ *
+ * @param[in]  aInstance  The OpenThread instance structure.
+ *
+ */
+void otAppNcpInit(otInstance *aInstance);
+
+/**
  * This function is called after NCP send finished.
  *
  */
