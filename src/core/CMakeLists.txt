@@ -28,6 +28,7 @@
 
 set(COMMON_INCLUDES
     ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/src/core/mac_extern
 )
 
 set(COMMON_SOURCES
