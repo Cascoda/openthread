@@ -1223,14 +1223,14 @@ void Mac::BuildSecurityTable()
         mActiveNeighborCount++;
         nextHopForNeighbors = parent.GetRouterId();
     }
-
+    if (isFFD)
+    {
 #if OPENTHREAD_FTD
-    assert(isFFD == true && "Device should be an FTD, but it is not.");
-    BuildRouterDeviceDescriptors(devIndex, nextHopForNeighbors);
+        BuildRouterDeviceDescriptors(devIndex, nextHopForNeighbors);
 #else
-    assert(isFFD == false && "Device should not be an FTD, but it is.");
-    OT_UNUSED_VARIABLE(nextHopForNeighbors);
+        OT_UNUSED_VARIABLE(nextHopForNeighbors);
 #endif
+    }
 
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
     if (role == ot::Mle::kRoleDisabled && isJoining)
