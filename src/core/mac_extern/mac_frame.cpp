@@ -60,27 +60,6 @@ void HeaderIe::Init(uint16_t aId, uint8_t aLen)
 
 void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
 {
-    mLength = CalculateAddrFieldSize(aFcf);
-
-    OT_ASSERT(mLength != kInvalidSize);
-
-    WriteUint16(aFcf, mPsdu);
-
-    if (aFcf & kFcfSecurityEnabled)
-    {
-        mPsdu[mLength] = aSecurityControl;
-
-        mLength += CalculateSecurityHeaderSize(aSecurityControl);
-        mLength += CalculateMicSize(aSecurityControl);
-    }
-
-    if ((aFcf & kFcfFrameTypeMask) == kFcfFrameMacCmd)
-    {
-        mLength += kCommandIdSize;
-    }
-
-    mLength += GetFcsSize();
-
     SetAckRequest((aFcf & kFcfAckRequest) != 0);
 
     // Destination PAN + Address
