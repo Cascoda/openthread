@@ -45,6 +45,8 @@
 
 namespace ot {
 
+RegisterLogModule("IndirectSender");
+
 const Mac::Address &IndirectSender::ChildInfo::GetMacAddress(Mac::Address &aMacAddress) const
 {
     if (mUseShortAddress)
