@@ -302,7 +302,7 @@ public:
      * @returns A pointer to the IEEE 802.15.4 Extended Address.
      *
      */
-    const ExtAddress &GetExtAddress(void) const { return mExtAddress; }
+    const ExtAddress &GetExtAddress(void) const { return mLinks.GetExtAddress(); }
 
     /**
      * This method sets the IEEE 802.15.4 Extended Address.
@@ -310,7 +310,7 @@ public:
      * @param[in]  aExtAddress  A reference to the IEEE 802.15.4 Extended Address.
      *
      */
-    void SetExtAddress(const ExtAddress &aExtAddress);
+    void SetExtAddress(const ExtAddress &aExtAddress) { mLinks.SetExtAddress(aExtAddress); };
 
     /**
      * This method returns the IEEE 802.15.4 Short Address.
@@ -318,17 +318,15 @@ public:
      * @returns The IEEE 802.15.4 Short Address.
      *
      */
-    ShortAddress GetShortAddress(void) const { return mShortAddress; }
+    ShortAddress GetShortAddress(void) const { return mLinks.GetShortAddress(); }
 
     /**
      * This method sets the IEEE 802.15.4 Short Address.
      *
      * @param[in]  aShortAddress  The IEEE 802.15.4 Short Address.
      *
-     * @retval kErrorNone  Successfully set the IEEE 802.15.4 Short Address.
-     *
      */
-    Error SetShortAddress(ShortAddress aShortAddress);
+    void SetShortAddress(ShortAddress aShortAddress) { mLinks.SetShortAddress(aShortAddress); };
 
     /**
      * This method returns the IEEE 802.15.4 Channel.
@@ -608,7 +606,10 @@ public:
      * @param[in]  aCallbackContext  A pointer to application-specific context.
      *
      */
-    void SetPcapCallback(otLinkPcapCallback aPcapCallback, void *aCallbackContext);
+    void SetPcapCallback(otLinkPcapCallback aPcapCallback, void *aCallbackContext)
+    {
+        mLinks.SetPcapCallback(aPcapCallback, aCallbackContext);
+    };
 
     /**
      * This method indicates whether or not promiscuous mode is enabled at the link layer.
@@ -627,7 +628,7 @@ public:
      * @param[in]  aPromiscuous  true to enable promiscuous mode, or false otherwise.
      *
      */
-    void SetPromiscuous(bool aPromiscuous);
+    void SetPromiscuous(bool aPromiscuous) { mLinks.SetPromiscuous(aPromiscuous); }
 
     /**
      * This method fills network diagnostic MacCounterTlv.
@@ -657,7 +658,7 @@ public:
      * @returns The noise floor value in dBm.
      *
      */
-    int8_t GetNoiseFloor(void);
+    int8_t GetNoiseFloor(void) { return mLinks.GetNoiseFloor(); };
 
     /**
      * This method configures the external MAC for thread
@@ -965,21 +966,19 @@ private:
     bool mDelaySleep : 1;
 #endif
 
-    Operation    mOperation;
-    Address      mDirectDstAddress;
-    ExtAddress   mExtAddress;
-    ShortAddress mShortAddress;
-    PanId        mPanId;
-    uint16_t     mPendingOperations;
-    uint8_t      mChannel;
-    uint8_t      mTempRxChannel;
-    uint8_t      mTempTxChannel;
-    uint8_t      mNextMsduHandle;
-    uint8_t      mDirectMsduHandle;
-    uint8_t      mDynamicKeyIndex;
-    uint8_t      mMode2DevHandle;
-    uint8_t      mActiveNeighborCount;
-    ChannelMask  mSupportedChannelMask;
+    Operation   mOperation;
+    Address     mDirectDstAddress;
+    PanId       mPanId;
+    uint16_t    mPendingOperations;
+    uint8_t     mChannel;
+    uint8_t     mTempRxChannel;
+    uint8_t     mTempTxChannel;
+    uint8_t     mNextMsduHandle;
+    uint8_t     mDirectMsduHandle;
+    uint8_t     mDynamicKeyIndex;
+    uint8_t     mMode2DevHandle;
+    uint8_t     mActiveNeighborCount;
+    ChannelMask mSupportedChannelMask;
 
     uint8_t mDeviceCurrentKeys[OPENTHREAD_CONFIG_EXTERNAL_MAC_DEVICE_TABLE_SIZE];
 

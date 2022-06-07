@@ -45,9 +45,9 @@ namespace Mac {
 
 TxFrames::TxFrames(Instance &aInstance)
     : InstanceLocator(aInstance)
-// #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-//     , mTxFrame802154(aInstance.Get<SubMac>().GetTransmitFrame())
-// #endif
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+    , mTxFrame802154(nullptr)
+#endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     , mTxFrameTrel(aInstance.Get<Trel::Link>().GetTransmitFrame())
 #endif
@@ -122,22 +122,110 @@ TxFrame &TxFrames::GetBroadcastTxFrame(void)
 
 Links::Links(Instance &aInstance)
     : InstanceLocator(aInstance)
-// , mSubMac(aInstance)
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     , mTrel(aInstance)
 #endif
     , mTxFrames(aInstance)
-#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     , mShortAddress(kShortAddrInvalid)
-#endif
 {
-#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-    mExtAddress.Clear();
+    SetShortAddress(mShortAddress);
+}
+
+void Links::CopyReversedExtAddr(const ExtAddress &aExtAddrIn, uint8_t *aExtAddrOut)
+{
+    size_t len = sizeof(aExtAddrIn);
+    for (uint8_t i = 0; i < len; i++)
+    {
+        aExtAddrOut[i] = aExtAddrIn.m8[len - i - 1];
+    }
+}
+
+void Links::SetPanId(PanId aPanId)
+{
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+    uint8_t panId[2];
+    Encoding::LittleEndian::WriteUint16(aPanId, panId);
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_PAN_ID, 0, 2, panId);
+#endif
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
+    mTrel.SetPanId(aPanId);
+#endif
+}
+
+void Links::SetShortAddress(ShortAddress aShortAddress)
+{
+    uint8_t shortAddr[2];
+    mShortAddress = aShortAddress;
+    Encoding::LittleEndian::WriteUint16(mShortAddress, shortAddr);
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_SHORT_ADDRESS, 0, 2, shortAddr);
+}
+
+void Links::SetExtAddress(const ExtAddress &aExtAddress)
+{
+    otExtAddress address;
+
+    CopyReversedExtAddr(aExtAddress, address.m8);
+
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_IEEE_ADDRESS, 0, OT_EXT_ADDRESS_SIZE, address.m8);
+    mExtAddress = aExtAddress;
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
+    mTrel.HandleExtAddressChange();
+#endif
+}
+
+void Links::SetRxOnWhenBackoff(bool aRxOnWhenBackoff)
+{
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+    uint8_t setVal;
+    setVal = aRxOnWhenBackoff ? 1 : 0;
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_RX_ON_WHEN_IDLE, 0, 1, &setVal);
+#endif
+    OT_UNUSED_VARIABLE(aRxOnWhenBackoff);
+}
+
+bool Links::IsPromiscuous(void)
+{
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+    uint8_t len;
+    uint8_t promiscuous;
+
+    otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_PROMISCUOUS_MODE, 0, &len, &promiscuous);
+    assert(len == 1);
+
+    return promiscuous;
+#endif
+}
+
+void Links::SetPromiscuous(bool aPromiscuous)
+{
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+    uint8_t promiscuous = aPromiscuous ? 1 : 0;
+    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_PROMISCUOUS_MODE, 0, 1, &promiscuous);
+#endif
+    OT_UNUSED_VARIABLE(aPromiscuous);
+}
+
+void Links::Enable(void)
+{
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+    otPlatRadioEnable(&GetInstance());
+#endif
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
+    mTrel.Enable();
+#endif
+}
+
+int8_t Links::GetNoiseFloor(void)
+{
+    return
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+        otPlatRadioGetReceiveSensitivity(&GetInstance());
+#else
+        kDefaultNoiseFloor;
 #endif
 }
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
-
 void Links::Send(TxFrame &aFrame, RadioTypes aRadioTypes)
 {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE

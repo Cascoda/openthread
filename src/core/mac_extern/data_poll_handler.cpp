@@ -292,9 +292,9 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     VerifyOrExit(mIndirectTxChild != nullptr);
-    frame = &aTxFrames.GetTxFrame(mIndirectTxChild->GetLastPollRadioType());
+    frame = aTxFrames.GetTxFrame(mIndirectTxChild->GetLastPollRadioType());
 #else
-    frame = &aTxFrames.GetTxFrame();
+    frame = aTxFrames.GetTxFrame();
 #endif
 
     // First check if we need any frames regenerating

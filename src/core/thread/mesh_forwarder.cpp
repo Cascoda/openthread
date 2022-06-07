@@ -499,7 +499,7 @@ Mac::TxFrame *MeshForwarder::HandleFrameRequest(Mac::TxFrames &aTxFrames)
         addFragHeader = true;
     }
 #else
-    frame = &aTxFrames.GetTxFrame();
+    frame = aTxFrames.GetTxFrame();
 #endif
 
     mSendBusy = true;

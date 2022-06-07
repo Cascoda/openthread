@@ -218,16 +218,6 @@ public:
     {
     }
 
-#if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
-    /**
-     * This method gets the radio capabilities.
-     *
-     * @returns The radio capability bit vector (see `OT_RADIO_CAP_*` definitions).
-     *
-     */
-    otRadioCaps GetCaps(void);
-#endif
-
     /**
      * This method gets the radio version string.
      *
@@ -237,14 +227,6 @@ public:
     const char *GetVersionString(void);
 
     /**
-     * This method gets the radio receive sensitivity value.
-     *
-     * @returns The radio receive sensitivity value in dBm.
-     *
-     */
-    int8_t GetReceiveSensitivity(void);
-
-    /**
      * This method gets the factory-assigned IEEE EUI-64 for the device.
      *
      * @param[out] aIeeeEui64  A reference to `Mac::ExtAddress` to place the factory-assigned IEEE EUI-64.
@@ -252,7 +234,23 @@ public:
      */
     void GetIeeeEui64(Mac::ExtAddress &aIeeeEui64);
 
+    /**
+     * This method gets the radio receive sensitivity value.
+     *
+     * @returns The radio receive sensitivity value in dBm.
+     *
+     */
+    int8_t GetReceiveSensitivity(void);
+
 #if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    /**
+     * This method gets the radio capabilities.
+     *
+     * @returns The radio capability bit vector (see `OT_RADIO_CAP_*` definitions).
+     *
+     */
+    otRadioCaps GetCaps(void);
+
     /**
      * This method sets the PAN ID for address filtering.
      *

@@ -79,7 +79,6 @@ const char Mac::sDomainNameInit[] = "DefaultDomain";
 Mac::Mac(Instance &aInstance)
     : InstanceLocator(aInstance)
     , mOperation(kOperationIdle)
-    , mShortAddress(kShortAddrInvalid)
     , mPanId(kPanIdBroadcast)
     , mPendingOperations(0)
     , mChannel(OPENTHREAD_CONFIG_DEFAULT_CHANNEL)
@@ -100,8 +99,8 @@ Mac::Mac(Instance &aInstance)
     , mTxError(kErrorNone)
 #endif
 {
-    GenerateExtAddress(&mExtAddress);
-    otPlatRadioEnable(&GetInstance());
+    ExtAddress extAddress;
+    GenerateExtAddress(&extAddress);
 
     static const otMacKey sMode2Key = {
         {0x78, 0x58, 0x16, 0x86, 0xfd, 0xb4, 0x58, 0x0f, 0xb0, 0x92, 0x54, 0x6a, 0xec, 0xbd, 0x15, 0x66}};
@@ -116,8 +115,7 @@ Mac::Mac(Instance &aInstance)
     IgnoreError(SetDomainName(sDomainNameInit));
 #endif
     SetPanId(mPanId);
-    SetExtAddress(mExtAddress);
-    SetShortAddress(mShortAddress);
+    SetExtAddress(extAddress);
     mCcaSuccessRateTracker.Clear();
     ResetCounters();
 
@@ -356,12 +354,10 @@ exit:
 
 void Mac::SetRxOnWhenIdle(bool aRxOnWhenIdle)
 {
-    uint8_t setVal;
     VerifyOrExit(mRxOnWhenIdle != aRxOnWhenIdle);
-
     mRxOnWhenIdle = aRxOnWhenIdle;
-    setVal        = mRxOnWhenIdle ? 1 : 0;
-    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_RX_ON_WHEN_IDLE, 0, 1, &setVal);
+
+    mLinks.SetRxOnWhenBackoff(mRxOnWhenIdle);
 
 exit:
     return;
@@ -383,27 +379,6 @@ void Mac::GenerateExtAddress(ExtAddress *aExtAddress)
     otRandomNonCryptoFillBuffer(aExtAddress->m8, sizeof(ExtAddress));
     aExtAddress->SetGroup(false);
     aExtAddress->SetLocal(true);
-}
-
-void Mac::SetExtAddress(const ExtAddress &aExtAddress)
-{
-    otExtAddress address;
-
-    CopyReversedExtAddr(aExtAddress, address.m8);
-
-    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_IEEE_ADDRESS, 0, OT_EXT_ADDRESS_SIZE, address.m8);
-    mExtAddress = aExtAddress;
-}
-
-Error Mac::SetShortAddress(ShortAddress aShortAddress)
-{
-    Error error = kErrorNone;
-
-    uint8_t shortAddr[2];
-    mShortAddress = aShortAddress;
-    Encoding::LittleEndian::WriteUint16(mShortAddress, shortAddr);
-    error = otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_SHORT_ADDRESS, 0, 2, shortAddr);
-    return error;
 }
 
 Error Mac::SetPanChannel(uint8_t aChannel)
@@ -567,13 +542,12 @@ Error Mac::SetDomainName(const NameData &aNameData)
 
 Error Mac::SetPanId(PanId aPanId)
 {
-    uint8_t panId[2];
-    Error   error = kErrorNone;
+    Error error = kErrorNone;
 
     VerifyOrExit(mPanId != aPanId);
     mPanId = aPanId;
-    Encoding::LittleEndian::WriteUint16(mPanId, panId);
-    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_PAN_ID, 0, 2, panId);
+
+    mLinks.SetPanId(mPanId);
     BuildSecurityTable();
 
 exit:
@@ -1294,10 +1268,10 @@ void Mac::HandleBeginDirect(void)
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
-    txFrames.SetTxFrame(sendFrame);
+    txFrames.SetTxFrame(&sendFrame);
 
     frame = Get<MeshForwarder>().HandleFrameRequest(txFrames);
-    SuccessOrExit(frame != nullptr);
+    VerifyOrExit(frame != nullptr);
 
     if (sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
         Encoding::LittleEndian::ReadUint16(sendFrame.mDst.mAddress) == kShortAddrBroadcast)
@@ -1371,7 +1345,7 @@ void Mac::HandleBeginIndirect(void)
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
-    txFrames.SetTxFrame(sendFrame);
+    txFrames.SetTxFrame(&sendFrame);
     frame = Get<DataPollHandler>().HandleFrameRequest(txFrames);
     VerifyOrExit(frame != nullptr);
 
@@ -1726,7 +1700,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     }
 
     // Duplicate Address Protection
-    if (srcaddr.GetExtended() == mExtAddress)
+    if (srcaddr.GetExtended() == GetExtAddress())
     {
         ExitNow(error = kErrorInvalidSourceAddress);
     }
@@ -1893,28 +1867,11 @@ void Mac::ProcessPollIndication(otPollIndication *aPollIndication)
 #endif
 }
 
-void Mac::SetPcapCallback(otLinkPcapCallback aPcapCallback, void *aCallbackContext)
-{
-    (void)aPcapCallback;
-    (void)aCallbackContext;
-}
-
 bool Mac::IsPromiscuous(void)
 {
-    uint8_t len;
     uint8_t promiscuous;
-
-    otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_PROMISCUOUS_MODE, 0, &len, &promiscuous);
-    assert(len == 1);
-
+    promiscuous = mLinks.IsPromiscuous();
     return promiscuous;
-}
-
-void Mac::SetPromiscuous(bool aPromiscuous)
-{
-    uint8_t promiscuous = aPromiscuous ? 1 : 0;
-
-    otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_PROMISCUOUS_MODE, 0, 1, &promiscuous);
 }
 
 void Mac::FillMacCountersTlv(NetworkDiagnostic::MacCountersTlv &aMacCounters) const
@@ -1983,10 +1940,10 @@ Error Mac::Start()
     Encoding::LittleEndian::WriteUint16(mPanId, buf);
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_PAN_ID, 0, 2, buf);
 
-    Encoding::LittleEndian::WriteUint16(mShortAddress, buf);
+    Encoding::LittleEndian::WriteUint16(GetShortAddress(), buf);
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_SHORT_ADDRESS, 0, 2, buf);
 
-    CopyReversedExtAddr(mExtAddress, buf);
+    CopyReversedExtAddr(GetExtAddress(), buf);
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_IEEE_ADDRESS, 0, 8, buf);
 
     SetFrameCounter(Get<KeyManager>().GetCachedMacMaximumFrameCounter());
@@ -2053,11 +2010,6 @@ const char *Mac::OperationToString(Operation aOperation)
 #endif
 
     return kOperationStrings[aOperation];
-}
-
-int8_t Mac::GetNoiseFloor(void)
-{
-    return otPlatRadioGetReceiveSensitivity(&GetInstance());
 }
 
 Error FullAddr::GetAddress(Address &aAddress) const

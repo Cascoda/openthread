@@ -146,17 +146,17 @@ public:
     /**
      * This method gets the tx frame.
      *
-     * @returns A reference to `TxFrame`.
+     * @returns A pointer to `TxFrame`.
      *
      */
-    TxFrame &GetTxFrame(void) { return mTxFrame802154; }
+    TxFrame *GetTxFrame(void) { return mTxFrame802154; }
 
     /**
      * This method sets the tx frame.
      *
-     * @param[in] aTxFrame  A const reference to the `TxFrame`.
+     * @param[in] aTxFrame  A pointer to the `TxFrame`.
      */
-    void SetTxFrame(const TxFrame &aTxFrame) { mTxFrame802154 = aTxFrame; }
+    void SetTxFrame(TxFrame *aTxFrame) { mTxFrame802154 = aTxFrame; }
 #elif OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method gets the tx frame.
@@ -169,10 +169,10 @@ public:
     /**
      * This method gets a tx frame for sending a broadcast frame.
      *
-     * @returns A reference to a `TxFrame` for broadcast.
+     * @returns A pointer to a `TxFrame` for broadcast.
      *
      */
-    TxFrame &GetBroadcastTxFrame(void) { return GetTxFrame(); }
+    TxFrame *GetBroadcastTxFrame(void) { return GetTxFrame(); }
 
 #endif // #if OPENTHREAD_CONFIG_MULTI_RADIO
 
@@ -183,14 +183,14 @@ public:
     void Clear(void)
     {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154.SetLength(0);
-        mTxFrame802154.SetIsARetransmission(false);
-        mTxFrame802154.SetIsSecurityProcessed(false);
-        mTxFrame802154.SetCsmaCaEnabled(true); // Set to true by default, only set to `false` for CSL transmission
-        mTxFrame802154.SetIsHeaderUpdated(false);
+        mTxFrame802154->SetLength(0);
+        mTxFrame802154->SetIsARetransmission(false);
+        mTxFrame802154->SetIsSecurityProcessed(false);
+        mTxFrame802154->SetCsmaCaEnabled(true); // Set to true by default, only set to `false` for CSL transmission
+        mTxFrame802154->SetIsHeaderUpdated(false);
 #if OPENTHREAD_FTD && OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
-        mTxFrame802154.SetTxDelay(0);
-        mTxFrame802154.SetTxDelayBaseTime(0);
+        mTxFrame802154->SetTxDelay(0);
+        mTxFrame802154->SetTxDelayBaseTime(0);
 #endif
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
@@ -216,7 +216,7 @@ public:
     void SetChannel(uint8_t aChannel)
     {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154.SetChannel(aChannel);
+        mTxFrame802154->SetChannel(aChannel);
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTxFrameTrel.SetChannel(aChannel);
@@ -232,7 +232,7 @@ public:
     void SetSequence(uint8_t aSequence)
     {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154.SetSequence(aSequence);
+        mTxFrame802154->SetSequence(aSequence);
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTxFrameTrel.SetSequence(aSequence);
@@ -249,7 +249,7 @@ public:
     void SetMaxCsmaBackoffs(uint8_t aMaxCsmaBackoffs)
     {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154.SetMaxCsmaBackoffs(aMaxCsmaBackoffs);
+        mTxFrame802154->SetMaxCsmaBackoffs(aMaxCsmaBackoffs);
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTxFrameTrel.SetMaxCsmaBackoffs(aMaxCsmaBackoffs);
@@ -266,7 +266,7 @@ public:
     void SetMaxFrameRetries(uint8_t aMaxFrameRetries)
     {
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154.SetMaxFrameRetries(aMaxFrameRetries);
+        mTxFrame802154->SetMaxFrameRetries(aMaxFrameRetries);
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTxFrameTrel.SetMaxFrameRetries(aMaxFrameRetries);
@@ -277,7 +277,7 @@ private:
     explicit TxFrames(Instance &aInstance);
 
 #if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-    TxFrame mTxFrame802154;
+    TxFrame *mTxFrame802154;
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     TxFrame &mTxFrameTrel;
@@ -314,16 +314,7 @@ public:
      * @param[in] aPanId  The PAN ID.
      *
      */
-    void SetPanId(PanId aPanId)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        // mSubMac.SetPanId(aPanId);
-        (void)aPanId;
-#endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTrel.SetPanId(aPanId);
-#endif
-    }
+    void SetPanId(PanId aPanId);
 
     /**
      * This method gets the MAC Short Address.
@@ -339,7 +330,7 @@ public:
      * @param[in] aShortAddress   A MAC Short Address.
      *
      */
-    void SetShortAddress(ShortAddress aShortAddress) { mShortAddress = aShortAddress; }
+    void SetShortAddress(ShortAddress aShortAddress);
 
     /**
      * This method gets the MAC Extended Address.
@@ -355,13 +346,7 @@ public:
      * @param[in] aExtAddress  A MAC Extended Address.
      *
      */
-    void SetExtAddress(const ExtAddress &aExtAddress)
-    {
-        mExtAddress = aExtAddress;
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTrel.HandleExtAddressChange();
-#endif
-    }
+    void SetExtAddress(const ExtAddress &aExtAddress);
 
     /**
      * This method registers a callback to provide received packet capture for IEEE 802.15.4 frames.
@@ -383,18 +368,32 @@ public:
      * @param[in]  aRxOnWhenBackoff  TRUE to keep radio in Receive, FALSE to put to Sleep during CSMA backoff.
      *
      */
-    void SetRxOnWhenBackoff(bool aRxOnWhenBackoff) { OT_UNUSED_VARIABLE(aRxOnWhenBackoff); }
+    void SetRxOnWhenBackoff(bool aRxOnWhenBackoff);
+
+    /**
+     * This method indicates whether or not promiscuous mode is enabled at the link layer.
+     *
+     * @retval true   Promiscuous mode is enabled.
+     * @retval false  Promiscuous mode is not enabled.
+     *
+     */
+    bool IsPromiscuous(void);
+
+    /**
+     * This method enables or disables the link layer promiscuous mode.
+     *
+     * Promiscuous mode keeps the receiver enabled, overriding the value of mRxOnWhenIdle.
+     *
+     * @param[in]  aPromiscuous  true to enable promiscuous mode, or false otherwise.
+     *
+     */
+    void SetPromiscuous(bool aPromiscuous);
 
     /**
      * This method enables all radio links.
      *
      */
-    void Enable(void)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTrel.Enable();
-#endif
-    }
+    void Enable(void);
 
     /**
      * This method disables all radio links.
@@ -439,15 +438,21 @@ public:
     }
 #endif // OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method transitions all radio links to Receive.
      *
      * @param[in]  aChannel   The channel to use for receiving.
      *
      */
-    void Receive(uint8_t aChannel) { mTrel.Receive(aChannel); }
+    void Receive(uint8_t aChannel)
+    {
+#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
+        OT_UNUSED_VARIABLE(aChannel);
 #endif
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
+        mTrel.Receive(aChannel);
+#endif
+    }
 
     /**
      * This method gets the radio transmit frames.
@@ -459,15 +464,18 @@ public:
 
 #if !OPENTHREAD_CONFIG_MULTI_RADIO
 
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method sends a prepared frame.
      *
      * The prepared frame is from `GetTxFrames()`. This method is available only in single radio link mode.
      *
      */
-    void Send(void) { mTrel.Send(); }
+    void Send(void)
+    {
+#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
+        mTrel.Send();
 #endif
+    }
 
 #else // #if !OPENTHREAD_CONFIG_MULTI_RADIO
 
@@ -484,7 +492,6 @@ public:
 
 #endif // !OPENTHREAD_CONFIG_MULTI_RADIO
 
-#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     /**
      * This method gets the number of transmit retries for the last transmitted frame.
      *
@@ -492,9 +499,7 @@ public:
      *
      */
     uint8_t GetTransmitRetries(void) const { return 0; }
-#endif
 
-#if !OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
     /**
      * This method gets the most recent RSSI measurement from radio link.
      *
@@ -521,25 +526,14 @@ public:
 
         return kErrorNotImplemented;
     }
-#endif
-
-#if OPENTHREAD_RADIO || OPENTHREAD_CONFIG_LINK_RAW_ENABLE
-    /**
-     * This methods gets a reference to the `SubMac` instance.
-     *
-     * @returns A reference to the `SubMac` instance.
-     *
-     */
-    SubMac &GetSubMac(void) { return mSubMac; }
 
     /**
-     * This methods gets a reference to the `SubMac` instance.
+     * This method returns the noise floor value (currently use the radio receive sensitivity value).
      *
-     * @returns A reference to the `SubMac` instance.
+     * @returns The noise floor value in dBm.
      *
      */
-    const SubMac &GetSubMac(void) const { return mSubMac; }
-#endif
+    int8_t GetNoiseFloor(void);
 
 #if !OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
     /**
@@ -581,7 +575,8 @@ public:
 private:
     static constexpr int8_t kDefaultNoiseFloor = -100;
 
-    // SubMac mSubMac;
+    static void CopyReversedExtAddr(const ExtAddress &aExtAddrIn, uint8_t *aExtAddrOut);
+
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     Trel::Link mTrel;
 #endif
