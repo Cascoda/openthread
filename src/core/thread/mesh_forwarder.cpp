@@ -185,7 +185,7 @@ void MeshForwarder::PrepareEmptyFrame(Mac::TxFrame &aFrame, const Mac::Address &
 
     aFrame.InitMacHeader(fcf, Mac::Frame::kKeyIdMode1 | Mac::Frame::kSecEncMic32);
 
-    if (aFrame.IsDstPanIdPresent())
+    if (aFrame.IsDstPanIdPresent(fcf))
     {
         aFrame.SetDstPanId(Get<Mac::Mac>().GetPanId());
     }
@@ -694,7 +694,7 @@ start:
 
     aFrame.InitMacHeader(fcf, secCtl);
 
-    if (aFrame.IsDstPanIdPresent())
+    if (aFrame.IsDstPanIdPresent(fcf))
     {
         aFrame.SetDstPanId(dstpan);
     }
@@ -740,8 +740,7 @@ start:
         // then adding the fixed `kMeshHeaderFrameFcsSize` instead
         // (updating the FCS size in the calculation of footer length).
 
-        maxPayloadLength = kMeshHeaderFrameMtu - aFrame.GetHeaderLength() -
-                           (aFrame.GetFooterLength() - aFrame.GetFcsSize() + kMeshHeaderFrameFcsSize);
+        maxPayloadLength = aFrame.GetMaxPayloadLength();
 
         if (mle.IsChild())
         {

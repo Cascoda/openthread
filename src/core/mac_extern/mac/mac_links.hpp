@@ -114,7 +114,10 @@ public:
      * @returns The selected radio types.
      *
      */
-    RadioTypes GetSelectedRadioTypes(void) const { return mSelectedRadioTypes; }
+    RadioTypes GetSelectedRadioTypes(void) const
+    {
+        return mSelectedRadioTypes;
+    }
 
     /**
      * This method gets the required radio types.
@@ -128,7 +131,10 @@ public:
      * @returns The required radio types.
      *
      */
-    RadioTypes GetRequiredRadioTypes(void) const { return mRequiredRadioTypes; }
+    RadioTypes GetRequiredRadioTypes(void) const
+    {
+        return mRequiredRadioTypes;
+    }
 
     /**
      * This method sets the required types.
@@ -138,7 +144,10 @@ public:
      * @param[in] aRadioTypes   A set of radio link types.
      *
      */
-    void SetRequiredRadioTypes(RadioTypes aRadioTypes) { mRequiredRadioTypes = aRadioTypes; }
+    void SetRequiredRadioTypes(RadioTypes aRadioTypes)
+    {
+        mRequiredRadioTypes = aRadioTypes;
+    }
 
 #else // #if OPENTHREAD_CONFIG_MULTI_RADIO
 
@@ -149,14 +158,20 @@ public:
      * @returns A pointer to `TxFrame`.
      *
      */
-    TxFrame *GetTxFrame(void) { return mTxFrame802154; }
+    TxFrame *GetTxFrame(void)
+    {
+        return mTxFrame802154;
+    }
 
     /**
      * This method sets the tx frame.
      *
      * @param[in] aTxFrame  A pointer to the `TxFrame`.
      */
-    void SetTxFrame(TxFrame *aTxFrame) { mTxFrame802154 = aTxFrame; }
+    void SetTxFrame(TxFrame *aTxFrame)
+    {
+        mTxFrame802154 = aTxFrame;
+    }
 #elif OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     /**
      * This method gets the tx frame.
@@ -164,7 +179,10 @@ public:
      * @returns A reference to `TxFrame`.
      *
      */
-    TxFrame &GetTxFrame(void) { return mTxFrameTrel; }
+    TxFrame &GetTxFrame(void)
+    {
+        return mTxFrameTrel;
+    }
 #endif
     /**
      * This method gets a tx frame for sending a broadcast frame.
@@ -172,40 +190,12 @@ public:
      * @returns A pointer to a `TxFrame` for broadcast.
      *
      */
-    TxFrame *GetBroadcastTxFrame(void) { return GetTxFrame(); }
+    TxFrame *GetBroadcastTxFrame(void)
+    {
+        return GetTxFrame();
+    }
 
 #endif // #if OPENTHREAD_CONFIG_MULTI_RADIO
-
-    /**
-     * This method clears all supported radio tx frames (sets the PSDU length to zero and clears flags).
-     *
-     */
-    void Clear(void)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154->SetLength(0);
-        mTxFrame802154->SetIsARetransmission(false);
-        mTxFrame802154->SetIsSecurityProcessed(false);
-        mTxFrame802154->SetCsmaCaEnabled(true); // Set to true by default, only set to `false` for CSL transmission
-        mTxFrame802154->SetIsHeaderUpdated(false);
-#if OPENTHREAD_FTD && OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
-        mTxFrame802154->SetTxDelay(0);
-        mTxFrame802154->SetTxDelayBaseTime(0);
-#endif
-#endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTxFrameTrel.SetLength(0);
-        mTxFrameTrel.SetIsARetransmission(false);
-        mTxFrameTrel.SetIsSecurityProcessed(false);
-        mTxFrameTrel.SetCsmaCaEnabled(true);
-        mTxFrameTrel.SetIsHeaderUpdated(false);
-#endif
-
-#if OPENTHREAD_CONFIG_MULTI_RADIO
-        mSelectedRadioTypes.Clear();
-        mRequiredRadioTypes.Clear();
-#endif
-    }
 
     /**
      * This method sets the channel on all supported radio tx frames.
@@ -220,56 +210,6 @@ public:
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
         mTxFrameTrel.SetChannel(aChannel);
-#endif
-    }
-
-    /**
-     * This method sets the Sequence Number value on all supported radio tx frames.
-     *
-     * @param[in]  aSequence  The Sequence Number value.
-     *
-     */
-    void SetSequence(uint8_t aSequence)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154->SetSequence(aSequence);
-#endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTxFrameTrel.SetSequence(aSequence);
-#endif
-    }
-
-    /**
-     * This method sets the maximum number of the CSMA-CA backoffs on all supported radio tx
-     * frames.
-     *
-     * @param[in]  aMaxCsmaBackoffs  The maximum number of CSMA-CA backoffs.
-     *
-     */
-    void SetMaxCsmaBackoffs(uint8_t aMaxCsmaBackoffs)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154->SetMaxCsmaBackoffs(aMaxCsmaBackoffs);
-#endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTxFrameTrel.SetMaxCsmaBackoffs(aMaxCsmaBackoffs);
-#endif
-    }
-
-    /**
-     * This method sets the maximum number of retries allowed after a transmission failure on all supported radio tx
-     * frames.
-     *
-     * @param[in]  aMaxFrameRetries  The maximum number of retries allowed after a transmission failure.
-     *
-     */
-    void SetMaxFrameRetries(uint8_t aMaxFrameRetries)
-    {
-#if OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE
-        mTxFrame802154->SetMaxFrameRetries(aMaxFrameRetries);
-#endif
-#if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
-        mTxFrameTrel.SetMaxFrameRetries(aMaxFrameRetries);
 #endif
     }
 
@@ -460,7 +400,10 @@ public:
      * @returns The transmit frames.
      *
      */
-    TxFrames &GetTxFrames(void) { return mTxFrames; }
+    TxFrames &GetTxFrames(void)
+    {
+        return mTxFrames;
+    }
 
 #if !OPENTHREAD_CONFIG_MULTI_RADIO
 
@@ -498,7 +441,10 @@ public:
      * @returns Number of transmit retries.
      *
      */
-    uint8_t GetTransmitRetries(void) const { return 0; }
+    uint8_t GetTransmitRetries(void) const
+    {
+        return 0;
+    }
 
     /**
      * This method gets the most recent RSSI measurement from radio link.
@@ -506,7 +452,10 @@ public:
      * @returns The RSSI in dBm when it is valid. `kInvalidRssiValue` when RSSI is invalid.
      *
      */
-    int8_t GetRssi(void) const { return kInvalidRssiValue; }
+    int8_t GetRssi(void) const
+    {
+        return kInvalidRssiValue;
+    }
 
     /**
      * This method begins energy scan.
