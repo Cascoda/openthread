@@ -1271,7 +1271,12 @@ void Mac::HandleBeginDirect(void)
     txFrames.SetTxFrame(&sendFrame);
 
     frame = Get<MeshForwarder>().HandleFrameRequest(txFrames);
-    VerifyOrExit(frame != nullptr);
+    if (frame == nullptr)
+    {
+        error = kErrorAbort;
+    }
+
+    SuccessOrExit(error);
 
     if (sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_SHORT &&
         Encoding::LittleEndian::ReadUint16(sendFrame.mDst.mAddress) == kShortAddrBroadcast)
@@ -1347,7 +1352,12 @@ void Mac::HandleBeginIndirect(void)
     sendFrame.SetChannel(mChannel);
     txFrames.SetTxFrame(&sendFrame);
     frame = Get<DataPollHandler>().HandleFrameRequest(txFrames);
-    VerifyOrExit(frame != nullptr);
+    if (frame == nullptr)
+    {
+        error = kErrorAbort;
+    }
+
+    SuccessOrExit(error);
 
     mCounters.mTxUnicast++;
 
