@@ -1211,7 +1211,7 @@ void Mac::BuildSecurityTable()
     {
         ExtAddress counterpart;
         Get<MeshCoP::Joiner>().GetCounterpartAddress(counterpart);
-        Mac::BuildDeviceDescriptor(counterpart, 0, mPanId, 0xFFFF, devIndex++);
+        BuildDeviceDescriptor(counterpart, 0, mPanId, 0xFFFF, devIndex++);
     }
 #endif
 

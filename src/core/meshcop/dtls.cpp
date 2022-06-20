@@ -830,6 +830,9 @@ int Dtls::HandleMbedtlsExportKeys(const unsigned char *aMasterSecret,
 
     LogDebg("Generated KEK");
     Get<KeyManager>().SetKek(kek.GetBytes());
+#if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
+    Get<Mac::Mac>().BuildSecurityTable();
+#endif
 
 exit:
     return 0;
