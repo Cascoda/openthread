@@ -39,7 +39,11 @@ target_compile_options(openthread-cli-mtd PRIVATE
 
 target_include_directories(openthread-cli-mtd PUBLIC ${OT_PUBLIC_INCLUDES} PRIVATE ${COMMON_INCLUDES})
 
-target_sources(openthread-cli-mtd PRIVATE ${COMMON_SOURCES})
+target_sources(openthread-cli-mtd 
+    PRIVATE 
+        ${COMMON_SOURCES} 
+        ${PROJECT_SOURCE_DIR}/examples/apps/cli/cli_uart.cpp
+)
 
 target_link_libraries(openthread-cli-mtd
     PUBLIC
