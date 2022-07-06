@@ -380,7 +380,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetFrameCache(uint8_t aMsduHandle)
         if (fc.GetMsduHandle() == aMsduHandle)
             return &fc;
     }
-    return NULL;
+    return nullptr;
 }
 
 DataPollHandler::FrameCache *DataPollHandler::GetNextFrameCache(Child &aChild, FrameCache *aPrevCache)
@@ -400,7 +400,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetNextFrameCache(Child &aChild, F
         if (&(fc.GetChild()) == &aChild)
             return &fc;
     }
-    return NULL;
+    return nullptr;
 }
 
 uint8_t DataPollHandler::GetDoubleBufferCount()
@@ -435,7 +435,7 @@ DataPollHandler::FrameCache *DataPollHandler::GetEmptyFrameCache()
             return &fc;
     }
     LogWarn("Failed to GetEmptyFrameCache");
-    return NULL;
+    return nullptr;
 }
 
 void DataPollHandler::HandleSentFrame(otError aError, uint8_t aMsduHandle)

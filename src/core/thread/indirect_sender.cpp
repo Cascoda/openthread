@@ -227,6 +227,7 @@ Message *IndirectSender::FindIndirectMessage(Child &aChild, bool aSupervisionTyp
         if (message.GetChildMask(childIndex) &&
             (!aSupervisionTypeOnly || (message.GetType() == Message::kTypeSupervision)))
         {
+            msg = &message;
             RemoveMessageFromSleepyChild(*msg, aChild);
             break;
         }

@@ -269,7 +269,7 @@ public:
      * @param aMsduHandle The MSDU handle of the frame being purged.
      *
      * @retval kErrorNone Frame successfully purged from MAC
-     * @retval kErrorNotFound Frame not found in MAC
+     * @retval kErrorAlready Frame not found in MAC
      */
     Error PurgeIndirectFrame(uint8_t aMsduHandle);
 
