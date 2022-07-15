@@ -288,7 +288,7 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
     Mac::TxFrame *frame        = nullptr;
     Child        *pendingChild = nullptr;
     uint8_t       maxBufferCount;
-    Error         error = kErrorNone;
+    Error         error = kErrorNotFound;
 
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     VerifyOrExit(mIndirectTxChild != nullptr);
@@ -368,6 +368,10 @@ exit:
     if (!error && pendingChild)
     {
         HandleNewFrame(*pendingChild);
+    }
+    if (error)
+    {
+	frame = nullptr;
     }
     return frame;
 }
