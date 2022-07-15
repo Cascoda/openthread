@@ -371,7 +371,7 @@ exit:
     }
     if (error)
     {
-	frame = nullptr;
+        frame = nullptr;
     }
     return frame;
 }
