@@ -1245,6 +1245,7 @@ void Mac::ProcessTransmitSecurity(otSecSpec &aSecSpec)
     {
         const uint8_t keySource[] = {0xff, 0xff, 0xff, 0xff};
         memcpy(aSecSpec.mKeySource, keySource, sizeof(keySource));
+	aSecSpec.mKeyIndex = 0xff;
         break;
     }
 
