@@ -319,7 +319,7 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
         frame->mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = frame->GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : nullptr;
-        assert(error == kErrorNone);
+        OT_ASSERT(error == kErrorNone);
         fc.mPendingRetransmit = false;
         Get<Mac::Mac>().RequestIndirectFrameTransmission();
         ExitNow();
@@ -499,7 +499,7 @@ void DataPollHandler::HandleSentFrame(Error aError, FrameCache &aFrameCache)
         break;
 
     default:
-        assert(false);
+        OT_ASSERT(false);
         break;
     }
 

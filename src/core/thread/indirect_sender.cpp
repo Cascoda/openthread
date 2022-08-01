@@ -398,7 +398,7 @@ Error IndirectSender::RegenerateFrame(Mac::TxFrame &aFrame, FrameContext &aConte
         break;
 
     default:
-        assert(false);
+        OT_ASSERT(false);
         break;
     }
 

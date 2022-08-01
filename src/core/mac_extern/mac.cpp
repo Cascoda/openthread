@@ -883,7 +883,7 @@ void Mac::CacheDevice(Neighbor &aNeighbor)
     error =
         otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, index, &len, reinterpret_cast<uint8_t *>(&deviceDesc));
     VerifyOrExit(error == kErrorNone);
-    assert(len == sizeof(deviceDesc));
+    OT_ASSERT(len == sizeof(deviceDesc));
 
     CopyReversedExtAddr(deviceDesc.mExtAddress, addr);
     VerifyOrExit(memcmp(&addr, &(aNeighbor.GetExtAddress()), sizeof(addr)) == 0);
@@ -902,7 +902,7 @@ Error Mac::UpdateDevice(Neighbor &aNeighbor)
 {
     uint8_t               len;
     uint8_t               index = aNeighbor.GetDeviceTableIndex();
-    uint8_t               keyNum;
+    int32_t               keyNum;
     uint8_t               reps = 1;
     otPibDeviceDescriptor deviceDesc;
     ExtAddress            addr;
@@ -924,7 +924,7 @@ Error Mac::UpdateDevice(Neighbor &aNeighbor)
     error =
         otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, index, &len, reinterpret_cast<uint8_t *>(&deviceDesc));
     VerifyOrExit(error == kErrorNone);
-    assert(len == sizeof(deviceDesc));
+    OT_ASSERT(len == sizeof(deviceDesc));
 
     CopyReversedExtAddr(deviceDesc.mExtAddress, addr);
     VerifyOrExit(memcmp(&addr, &(aNeighbor.GetExtAddress()), sizeof(addr)) == 0, error = kErrorNotFound);
@@ -949,7 +949,7 @@ void Mac::CacheDeviceTable()
     uint8_t numDevices;
 
     otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE_ENTRIES, 0, &len, &numDevices);
-    assert(len == 1);
+    OT_ASSERT(len == 1);
 
     for (uint8_t i = 0; i < numDevices; i++)
     {
@@ -958,7 +958,7 @@ void Mac::CacheDeviceTable()
         Address               addr;
 
         otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, i, &len, reinterpret_cast<uint8_t *>(&deviceDesc));
-        assert(len == sizeof(deviceDesc));
+        OT_ASSERT(len == sizeof(deviceDesc));
 
         addr.SetShort(Encoding::LittleEndian::ReadUint16(deviceDesc.mShortAddress));
 
@@ -1308,7 +1308,7 @@ void Mac::HandleBeginDirect(void)
         if (!isJoining)
         {
             // Hotswap the kek descriptor into keytable for joiner entrust response
-            assert(sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT);
+            OT_ASSERT(sendFrame.mDst.mAddressMode == OT_MAC_ADDRESS_MODE_EXT);
             HotswapJoinerRouterKeyDescriptor(sendFrame.mDst.mAddress);
         }
     }
@@ -1316,7 +1316,7 @@ void Mac::HandleBeginDirect(void)
     sendFrame.GetDstAddr(dstAddr);
 
     error = SetTempTxChannel(sendFrame);
-    assert(error == kErrorNone);
+    OT_ASSERT(error == kErrorNone);
     LogDebg("calling otPlatRadioTransmit for direct");
     LogDebg("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
             sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
@@ -1324,7 +1324,7 @@ void Mac::HandleBeginDirect(void)
     mDirectAckRequested = sendFrame.GetAckRequest();
     sendFrame.GetDstAddr(mDirectDstAddress);
     error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
-    assert(error == kErrorNone);
+    OT_ASSERT(error == kErrorNone);
 
 exit:
     if (error != kErrorNone)
@@ -1373,7 +1373,7 @@ void Mac::HandleBeginIndirect(void)
     DumpDebg("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
 
-    assert(error == kErrorNone);
+    OT_ASSERT(error == kErrorNone);
 exit:
     LogDebg("HandleBeginIndirect: %s", otThreadErrorToString(error));
     return;
@@ -1450,7 +1450,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
         {
             // Failed without even hitting the air, retry silently.
             error = otPlatMcpsDataRequest(&GetInstance(), &mDirectDataReq);
-            assert(error == kErrorNone);
+            OT_ASSERT(error == kErrorNone);
             return;
         }
         if (mJoinerEntrustResponseRequested)
@@ -1678,7 +1678,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     int8_t rssi = OT_MAC_FILTER_FIXED_RSS_DISABLED;
 #endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
-    assert(aDataIndication != NULL);
+    OT_ASSERT(aDataIndication != NULL);
 
     dataInd.SetChannel(GetCurrentChannel());
     dataInd.GetSrcAddr(srcaddr);
@@ -1691,7 +1691,8 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
         mCounters.mRxUnicast++;
 
 #if OPENTHREAD_FTD
-    assert(Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice() == true && "Device should be an FTD, but it is not.");
+    OT_ASSERT(Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice() == true &&
+              "Device should be an FTD, but it is not.");
     // Allow  multicasts from neighbor routers if FFD
     if (neighbor == NULL && dstaddr.IsBroadcast())
         neighbor = Get<NeighborTable>().FindRxOnlyNeighborRouter(srcaddr);
@@ -1982,7 +1983,7 @@ uint32_t Mac::GetFrameCounter(void)
     uint8_t  len;
 
     otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_FRAME_COUNTER, 0, &len, leArray);
-    assert(len == 4);
+    OT_ASSERT(len == 4);
 
     frameCounter = Encoding::LittleEndian::ReadUint32(leArray);
 

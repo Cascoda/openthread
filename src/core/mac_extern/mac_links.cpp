@@ -190,7 +190,7 @@ bool Links::IsPromiscuous(void)
     uint8_t promiscuous;
 
     otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_PROMISCUOUS_MODE, 0, &len, &promiscuous);
-    assert(len == 1);
+    OT_ASSERT(len == 1);
 
     return promiscuous;
 #endif

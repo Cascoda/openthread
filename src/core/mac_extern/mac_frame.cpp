@@ -78,7 +78,7 @@ void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
         break;
 
     default:
-        assert(false);
+        OT_ASSERT(false);
     }
 
     // Source Address
@@ -97,7 +97,7 @@ void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
         break;
 
     default:
-        assert(false);
+        OT_ASSERT(false);
     }
 
     // Security Header
