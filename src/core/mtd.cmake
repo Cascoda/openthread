@@ -31,7 +31,7 @@ add_library(openthread-mtd-obj OBJECT)
 
 # Provide static library for non-cmake consumers
 add_library(openthread-mtd $<TARGET_OBJECTS:openthread-mtd-obj>)
-target_link_libraries(openthread-mtd PUBLIC openthread-ftd-obj)
+target_link_libraries(openthread-mtd PUBLIC openthread-mtd-obj)
 
 target_compile_definitions(openthread-mtd-obj PRIVATE
     OPENTHREAD_MTD=1
