@@ -1161,8 +1161,11 @@ void Mac::BuildSecurityTable()
     ot::Mle::DeviceRole role                = Get<Mle::Mle>().GetRole();
     uint8_t             devIndex            = 0;
     uint8_t             nextHopForNeighbors = Mle::kInvalidRouterId;
-    bool                isJoining           = false;
     bool                isFFD               = (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice());
+    
+#if OPENTHREAD_CONFIG_JOINER_ENABLE
+    bool                isJoining           = false
+#endif
 
     mActiveNeighborCount = 0;
     LogDebg("Current KeySequenceNumber: %d", Get<KeyManager>().GetCurrentKeySequence());
