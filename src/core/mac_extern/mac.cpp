@@ -1164,7 +1164,7 @@ void Mac::BuildSecurityTable()
     bool                isFFD               = (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice());
     
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
-    bool                isJoining           = false
+    bool                isJoining           = false;
 #endif
 
     mActiveNeighborCount = 0;
