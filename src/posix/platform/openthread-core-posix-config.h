@@ -105,7 +105,9 @@
  * The platform-specific string to insert into the OpenThread version string.
  *
  */
+#ifndef OPENTHREAD_CONFIG_PLATFORM_INFO
 #define OPENTHREAD_CONFIG_PLATFORM_INFO "POSIX"
+#endif
 
 /**
  * @def OPENTHREAD_CONFIG_IP6_SLAAC_ENABLE

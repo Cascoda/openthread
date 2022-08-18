@@ -38,10 +38,11 @@
 
 #include <stdint.h>
 
-#include <openthread-core-config.h>
-#include <openthread/error.h>
-#include <openthread/instance.h>
-#include <openthread/platform/radio.h>
+// #include "core/openthread-core-config.h"
+#include "openthread-core-config.h"
+#include "error.h"
+#include "../instance.h"
+#include "radio.h" 
 
 #ifdef __cplusplus
 extern "C" {

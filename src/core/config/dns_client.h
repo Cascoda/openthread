@@ -35,7 +35,7 @@
 #ifndef CONFIG_DNS_CLIENT_H_
 #define CONFIG_DNS_CLIENT_H_
 
-#include "config/srp_client.h"
+#include "srp_client.h"
 
 /**
  * @def OPENTHREAD_CONFIG_DNS_CLIENT_ENABLE

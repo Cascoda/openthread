@@ -34,8 +34,8 @@
 #ifndef CONFIG_MISC_H_
 #define CONFIG_MISC_H_
 
-#include "config/coap.h"
-#include "config/srp_server.h"
+#include "coap.h"
+#include "srp_server.h"
 
 /**
  * @def OPENTHREAD_CONFIG_STACK_VENDOR_OUI

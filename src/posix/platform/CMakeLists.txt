@@ -81,22 +81,22 @@ if(NOT OT_CONFIG)
 endif()
 
 add_library(openthread-posix
-    alarm.cpp
+    #alarm.cpp
     backbone.cpp
     daemon.cpp
-    entropy.cpp
+    #entropy.cpp
     firewall.cpp
     hdlc_interface.cpp
     infra_if.cpp
-    logging.cpp
+    #logging.cpp
     mainloop.cpp
     memory.cpp
-    misc.cpp
+    #misc.cpp
     multicast_routing.cpp
     netif.cpp
-    radio.cpp
+    #radio.cpp
     radio_url.cpp
-    settings.cpp
+    #settings.cpp
     spi_interface.cpp
     system.cpp
     trel.cpp

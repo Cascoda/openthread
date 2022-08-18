@@ -35,10 +35,10 @@
 #ifndef CONFIG_DTLS_H_
 #define CONFIG_DTLS_H_
 
-#include "config/border_router.h"
-#include "config/coap.h"
-#include "config/commissioner.h"
-#include "config/joiner.h"
+#include "border_router.h"
+#include "coap.h"
+#include "commissioner.h"
+#include "joiner.h"
 
 /**
  * @def OPENTHREAD_CONFIG_DTLS_MAX_CONTENT_LEN

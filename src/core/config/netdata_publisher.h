@@ -35,7 +35,7 @@
 #ifndef CONFIG_NETDATA_PUBLISHER_H_
 #define CONFIG_NETDATA_PUBLISHER_H_
 
-#include "config/srp_server.h"
+#include "srp_server.h"
 
 /**
  * @def OPENTHREAD_CONFIG_NETDATA_PUBLISHER_ENABLE

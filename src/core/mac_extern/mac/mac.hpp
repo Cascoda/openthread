@@ -948,7 +948,8 @@ public:
      */
     bool IsRadioFilterEnabled(void) const
     {
-        return mLinks.GetSubMac().IsRadioFilterEnabled();
+        //return mLinks.GetSubMac().IsRadioFilterEnabled();
+        return true;
     }
 #endif
 

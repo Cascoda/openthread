@@ -2905,7 +2905,9 @@ void MleRouter::SetSteeringData(const Mac::ExtAddress *aExtAddress)
     Mac::ExtAddress allowAnyExtAddr;
 
     nullExtAddr.Clear();
-    allowAnyExtAddr.Fill(0xff);
+    uint8_t any_addr[OT_EXT_ADDRESS_SIZE] = {0xff};
+    allowAnyExtAddr.Set(any_addr);
+
 
     if ((aExtAddress == nullptr) || (*aExtAddress == nullExtAddr))
     {
