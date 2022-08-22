@@ -366,15 +366,4 @@ Daemon &Daemon::Get(void)
 } // namespace Posix
 } // namespace ot
 
-extern "C" void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
-{
-    OT_UNUSED_VARIABLE(aBuf);
-    OT_UNUSED_VARIABLE(aBufLength);
-}
-
-extern "C" void otPlatUartSendDone(void)
-{
-    return;
-}
-
 #endif // OPENTHREAD_POSIX_CONFIG_DAEMON_ENABLE

@@ -59,6 +59,7 @@
 #include <openthread/tasklet.h>
 #include <openthread/thread.h>
 #include <openthread/platform/radio.h>
+#include <openthread/platform/radio-mac.h>
 #if !OPENTHREAD_POSIX_CONFIG_DAEMON_ENABLE
 #include <openthread/cli.h>
 #include "cli/cli_config.h"
@@ -404,6 +405,7 @@ int main(int argc, char *argv[])
 #if !OPENTHREAD_POSIX_CONFIG_DAEMON_ENABLE
             otAppCliProcess(&mainloop);
 #endif
+
         }
         else if (errno != EINTR)
         {
@@ -420,4 +422,16 @@ exit:
     otSysDeinit();
 
     return rval;
+}
+
+
+void otPlatUartReceived(const uint8_t *aBuf, uint16_t aBufLength)
+{
+    OT_UNUSED_VARIABLE(aBuf);
+    OT_UNUSED_VARIABLE(aBufLength);
+}
+
+void otPlatUartSendDone(void)
+{
+    return;
 }
