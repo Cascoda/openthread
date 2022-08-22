@@ -46,6 +46,7 @@ target_link_libraries(ot-daemon PRIVATE
     ${OT_MBEDTLS}
     ot-posix-config
     ot-config
+    ca821x-openthread-posix-ftd
 )
 
 add_executable(ot-ctl

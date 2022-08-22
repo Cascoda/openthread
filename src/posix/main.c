@@ -306,11 +306,7 @@ static otInstance *InitInstance(PosixConfig *aConfig)
     return instance;
 }
 
-void otTaskletsSignalPending(otInstance *aInstance)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-}
-
+/*
 void otPlatReset(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
@@ -322,6 +318,7 @@ void otPlatReset(otInstance *aInstance)
     longjmp(gResetJump, 1);
     assert(false);
 }
+*/
 
 static void ProcessNetif(void *aContext, uint8_t aArgsLength, char *aArgs[])
 {
