@@ -120,10 +120,10 @@ static const char *getTrelRadioUrl(otPlatformConfig *aPlatformConfig)
 }
 #endif
 
+
 void platformInit(otPlatformConfig *aPlatformConfig)
 {
-    platformAlarmInit(aPlatformConfig->mSpeedUpFactor, aPlatformConfig->mRealTimeSignal);
-    platformRadioInit(get802154RadioUrl(aPlatformConfig));
+    //platformRadioInit(get802154RadioUrl(aPlatformConfig));
 
     // For Dry-Run option, only init the radio.
     VerifyOrExit(!aPlatformConfig->mDryRun);
@@ -131,7 +131,6 @@ void platformInit(otPlatformConfig *aPlatformConfig)
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     platformTrelInit(getTrelRadioUrl(aPlatformConfig));
 #endif
-    platformRandomInit();
 
 #if OPENTHREAD_CONFIG_BACKBONE_ROUTER_ENABLE
     platformBackboneInit(aPlatformConfig->mBackboneInterfaceName);
@@ -229,7 +228,7 @@ void platformDeinit(void)
 #if OPENTHREAD_POSIX_VIRTUAL_TIME
     virtualTimeDeinit();
 #endif
-    platformRadioDeinit();
+    //platformRadioDeinit();
 #if OPENTHREAD_CONFIG_PLATFORM_UDP_ENABLE
     ot::Posix::Udp::Get().Deinit();
 #endif
@@ -296,7 +295,7 @@ void otSysMainloopUpdate(otInstance *aInstance, otSysMainloopContext *aMainloop)
 {
     ot::Posix::Mainloop::Manager::Get().Update(*aMainloop);
 
-    platformAlarmUpdateTimeout(&aMainloop->mTimeout);
+    //platformAlarmUpdateTimeout(&aMainloop->mTimeout);
 #if OPENTHREAD_CONFIG_PLATFORM_NETIF_ENABLE
     platformNetifUpdateFdSet(&aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mErrorFdSet,
                              &aMainloop->mMaxFd);
@@ -305,7 +304,7 @@ void otSysMainloopUpdate(otInstance *aInstance, otSysMainloopContext *aMainloop)
     virtualTimeUpdateFdSet(&aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mErrorFdSet, &aMainloop->mMaxFd,
                            &aMainloop->mTimeout);
 #else
-    platformRadioUpdateFdSet(&aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mMaxFd, &aMainloop->mTimeout);
+    //platformRadioUpdateFdSet(&aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mMaxFd, &aMainloop->mTimeout);
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     platformTrelUpdateFdSet(&aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mMaxFd, &aMainloop->mTimeout);
@@ -368,12 +367,12 @@ void otSysMainloopProcess(otInstance *aInstance, const otSysMainloopContext *aMa
 #if OPENTHREAD_POSIX_VIRTUAL_TIME
     virtualTimeProcess(aInstance, &aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mErrorFdSet);
 #else
-    platformRadioProcess(aInstance, &aMainloop->mReadFdSet, &aMainloop->mWriteFdSet);
+    //platformRadioProcess(aInstance, &aMainloop->mReadFdSet, &aMainloop->mWriteFdSet);
 #endif
 #if OPENTHREAD_CONFIG_RADIO_LINK_TREL_ENABLE
     platformTrelProcess(aInstance, &aMainloop->mReadFdSet, &aMainloop->mWriteFdSet);
 #endif
-    platformAlarmProcess(aInstance);
+    //platformAlarmProcess(aInstance);
 #if OPENTHREAD_CONFIG_PLATFORM_NETIF_ENABLE
     platformNetifProcess(&aMainloop->mReadFdSet, &aMainloop->mWriteFdSet, &aMainloop->mErrorFdSet);
 #endif

@@ -265,14 +265,11 @@ void Daemon::TearDown(void)
         mListenSocket = -1;
     }
 
-    if (gPlatResetReason != OT_PLAT_RESET_REASON_SOFTWARE)
-    {
-        Filename sockfile;
+    Filename sockfile;
 
-        GetFilename(sockfile, OPENTHREAD_POSIX_DAEMON_SOCKET_NAME);
-        otLogDebgPlat("Removing daemon socket: %s", sockfile);
-        (void)unlink(sockfile);
-    }
+    GetFilename(sockfile, OPENTHREAD_POSIX_DAEMON_SOCKET_NAME);
+    otLogDebgPlat("Removing daemon socket: %s", sockfile);
+    (void)unlink(sockfile);
 
     if (mDaemonLock != -1)
     {

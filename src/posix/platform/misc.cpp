@@ -43,18 +43,6 @@
 otPlatResetReason          gPlatResetReason   = OT_PLAT_RESET_REASON_POWER_ON;
 static otPlatMcuPowerState gPlatMcuPowerState = OT_PLAT_MCU_POWER_STATE_ON;
 
-otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-
-    return gPlatResetReason;
-}
-
-void otPlatWakeHost(void)
-{
-    // TODO: implement an operation to wake the host from sleep state.
-}
-
 otError otPlatSetMcuPowerState(otInstance *aInstance, otPlatMcuPowerState aState)
 {
     OT_UNUSED_VARIABLE(aInstance);
