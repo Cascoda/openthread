@@ -606,7 +606,7 @@ static otError DeleteExternalRoute(const otIp6Prefix &aPrefix)
     VerifyOrExit(netifIdx > 0, error = OT_ERROR_INVALID_STATE);
     VerifyOrExit(sNetlinkFd >= 0, error = OT_ERROR_INVALID_STATE);
 
-    req.header.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK | NLM_F_NONREC;
+    req.header.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
 
     req.header.nlmsg_len  = NLMSG_LENGTH(sizeof(rtmsg));
     req.header.nlmsg_type = RTM_DELROUTE;
