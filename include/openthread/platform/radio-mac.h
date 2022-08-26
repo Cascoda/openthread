@@ -40,7 +40,6 @@
 
 // #include "core/openthread-core-config.h"
 #include "openthread-core-config.h"
-#include "error.h"
 #include "../instance.h"
 #include "radio.h" 
 
