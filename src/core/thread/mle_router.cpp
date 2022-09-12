@@ -3097,7 +3097,9 @@ Error MleRouter::SendDiscoveryResponse(const Ip6::Address &aDestination, const M
     tlv.SetLength(static_cast<uint8_t>(message->GetLength() - startOffset));
     message->Write(startOffset - sizeof(tlv), tlv);
 
-    delay = Random::NonCrypto::GetUint16InRange(0, kDiscoveryMaxJitter + 1);
+    //delay = Random::NonCrypto::GetUint16InRange(0, kDiscoveryMaxJitter + 1);
+    delay = 0; // checking to see if the jitter breaks our joiner code
+
 
     SuccessOrExit(error = AddDelayedResponse(*message, aDestination, delay));
 
