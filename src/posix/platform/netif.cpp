@@ -1461,7 +1461,9 @@ static void platformConfigureTunDevice(const char *aInterfaceName, char *deviceN
     }
 
     VerifyOrDie(ioctl(sTunFd, TUNSETIFF, static_cast<void *>(&ifr)) == 0, OT_EXIT_ERROR_ERRNO);
+    sleep(1);
     VerifyOrDie(ioctl(sTunFd, TUNSETLINK, ARPHRD_VOID) == 0, OT_EXIT_ERROR_ERRNO);
+    sleep(1);
 
     strncpy(deviceName, ifr.ifr_name, deviceNameLen);
 
