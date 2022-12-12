@@ -166,7 +166,10 @@ void MeshForwarder::PrepareEmptyFrame(Mac::TxFrame &aFrame, const Mac::Address &
         macSource.SetExtended(Get<Mac::Mac>().GetExtAddress());
     }
 
-    fcf = Mac::Frame::kFcfFrameData | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfSecurityEnabled;
+
+    // Pan ID compression is disabled globally in order for Commissioning to work.
+    // The Data Request was sent with Pan ID compression enabled & it could not be responded to
+    fcf = Mac::Frame::kFcfFrameData /*| Mac::Frame::kFcfPanidCompression*/ | Mac::Frame::kFcfSecurityEnabled;
 
     if (iePresent)
     {
@@ -688,7 +691,9 @@ start:
             (fcf & Mac::Frame::kFcfSrcAddrMask) != Mac::Frame::kFcfSrcAddrExt)
 #endif
         {
-            fcf |= Mac::Frame::kFcfPanidCompression;
+            // Pan ID compression is disabled globally in order for Commissioning to work.
+            // The Data Request was sent with Pan ID compression enabled & it could not be responded to
+            // fcf |= Mac::Frame::kFcfPanidCompression;
         }
     }
 
