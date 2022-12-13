@@ -360,7 +360,9 @@ void MeshForwarder::SendMesh(Message &aMessage, Mac::TxFrame &aFrame)
     bool     iePresent = CalcIePresent(&aMessage);
 
     // initialize MAC header
-    fcf = Mac::Frame::kFcfFrameData | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfDstAddrShort |
+    // fcf = Mac::Frame::kFcfFrameData | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfDstAddrShort |
+    //       Mac::Frame::kFcfSrcAddrShort | Mac::Frame::kFcfAckRequest | Mac::Frame::kFcfSecurityEnabled;
+    fcf = Mac::Frame::kFcfFrameData | Mac::Frame::kFcfDstAddrShort |
           Mac::Frame::kFcfSrcAddrShort | Mac::Frame::kFcfAckRequest | Mac::Frame::kFcfSecurityEnabled;
 
     if (iePresent)

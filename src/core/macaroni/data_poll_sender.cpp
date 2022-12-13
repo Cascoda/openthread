@@ -580,7 +580,9 @@ Mac::TxFrame *DataPollSender::PrepareDataRequest(Mac::TxFrames &aTxFrames)
     frame = &aTxFrames.GetTxFrame();
 #endif
 
-    fcf = Mac::Frame::kFcfFrameMacCmd | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfAckRequest |
+    // fcf = Mac::Frame::kFcfFrameMacCmd | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfAckRequest |
+    //       Mac::Frame::kFcfSecurityEnabled;
+    fcf = Mac::Frame::kFcfFrameMacCmd | Mac::Frame::kFcfAckRequest |
           Mac::Frame::kFcfSecurityEnabled;
 
     iePresent = Get<MeshForwarder>().CalcIePresent(nullptr);
