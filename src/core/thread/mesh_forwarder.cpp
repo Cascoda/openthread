@@ -169,7 +169,8 @@ void MeshForwarder::PrepareEmptyFrame(Mac::TxFrame &aFrame, const Mac::Address &
 
     // Pan ID compression is disabled globally in order for Commissioning to work.
     // The Data Request was sent with Pan ID compression enabled & it could not be responded to
-    fcf = Mac::Frame::kFcfFrameData /*| Mac::Frame::kFcfPanidCompression*/ | Mac::Frame::kFcfSecurityEnabled;
+    //fcf = Mac::Frame::kFcfFrameData | Mac::Frame::kFcfPanidCompression | Mac::Frame::kFcfSecurityEnabled;
+    fcf = Mac::Frame::kFcfFrameData | Mac::Frame::kFcfSecurityEnabled;
 
     if (iePresent)
     {
