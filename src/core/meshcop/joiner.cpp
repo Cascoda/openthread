@@ -195,12 +195,13 @@ Error Joiner::Start(const char      *aPskd,
         SteeringData::CalculateHashBitIndexes(mId, filterIndexes);
     }
 
-    SuccessOrExit(error = Get<Mle::DiscoverScanner>().Discover(Mac::ChannelMask(0), Get<Mac::Mac>().GetPanId(),
-                                                               /* aJoiner */ true, /* aEnableFiltering */ true,
-                                                               &filterIndexes, HandleDiscoverResult, this));
     mCallback     = aCallback;
     mContext      = aContext;
     mRestorePanId = Get<Mac::Mac>().GetPanId();
+
+    SuccessOrExit(error = Get<Mle::DiscoverScanner>().Discover(Mac::ChannelMask(0), Get<Mac::Mac>().GetPanId(),
+                                                               /* aJoiner */ true, /* aEnableFiltering */ true,
+                                                               &filterIndexes, HandleDiscoverResult, this));
 
     SetState(kStateDiscover);
 
