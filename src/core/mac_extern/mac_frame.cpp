@@ -47,6 +47,8 @@
 namespace ot {
 namespace Mac {
 
+RegisterLogModule("mac_frame");
+
 using ot::Encoding::LittleEndian::ReadUint16;
 using ot::Encoding::LittleEndian::ReadUint32;
 using ot::Encoding::LittleEndian::WriteUint16;
@@ -61,6 +63,7 @@ void HeaderIe::Init(uint16_t aId, uint8_t aLen)
 
 void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
 {
+    LogInfo("TxFrame::InicMacHeader!!!!");
     SetAckRequest((aFcf & kFcfAckRequest) != 0);
 
     // Destination PAN + Address
@@ -117,6 +120,7 @@ void TxFrame::InitMacHeader(uint16_t aFcf, uint8_t aSecurityControl)
             break;
 
         case kKeyIdMode2:
+            LogInfo("ns_nonce hehe");
             mSecurity.mKeyIdMode = 2;
             mTxOptions |= OT_MAC_TX_OPTION_NS_NONCE;
             break;
