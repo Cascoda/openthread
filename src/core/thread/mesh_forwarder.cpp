@@ -84,7 +84,7 @@ void ThreadLinkInfo::SetFrom(const Mac::RxFrame &aFrame)
         // failure here.
         IgnoreError(aFrame.GetKeyIdMode(keyIdMode));
 
-        mLinkSecurity = (keyIdMode == Mac::Frame::kKeyIdMode0) || (keyIdMode == Mac::Frame::kKeyIdMode1);
+        mLinkSecurity = (keyIdMode == 0) || (keyIdMode == 1);
     }
 
     mChannel = aFrame.GetChannel();
