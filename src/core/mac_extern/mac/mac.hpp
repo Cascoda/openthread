@@ -59,6 +59,8 @@
 #include "thread/link_quality.hpp"
 #include "thread/network_diagnostic_tlvs.hpp"
 
+#include "assert.h"
+
 namespace ot {
 
 class MeshSender;

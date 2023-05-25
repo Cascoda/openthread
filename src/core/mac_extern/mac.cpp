@@ -954,7 +954,7 @@ void Mac::CacheDeviceTable()
     for (uint8_t i = 0; i < numDevices; i++)
     {
         otPibDeviceDescriptor deviceDesc;
-        Neighbor             *neighbor;
+        Neighbor *            neighbor;
         Address               addr;
 
         otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, i, &len, reinterpret_cast<uint8_t *>(&deviceDesc));
@@ -1263,8 +1263,8 @@ exit:
 void Mac::HandleBeginDirect(void)
 {
     TxFrames &txFrames  = mLinks.GetTxFrames();
-    TxFrame  &sendFrame = mDirectDataReq;
-    TxFrame  *frame     = nullptr;
+    TxFrame & sendFrame = mDirectDataReq;
+    TxFrame * frame     = nullptr;
     Error     error     = kErrorNone;
     Address   dstAddr;
 
@@ -1344,9 +1344,9 @@ exit:
 #if OPENTHREAD_FTD
 void Mac::HandleBeginIndirect(void)
 {
-    TxFrame  *frame     = nullptr;
+    TxFrame * frame     = nullptr;
     TxFrames &txFrames  = mLinks.GetTxFrames();
-    TxFrame  &sendFrame = mIndirectDataReq;
+    TxFrame & sendFrame = mIndirectDataReq;
     Error     error     = kErrorNone;
     Address   dstAddr;
 
@@ -1572,8 +1572,8 @@ Error Mac::ProcessEnhAckSecurity(TxFrame &aTxFrame, RxFrame &aAckFrame)
     uint32_t           frameCounter;
     Address            srcAddr;
     Address            dstAddr;
-    Neighbor          *neighbor   = nullptr;
-    KeyManager        &keyManager = Get<KeyManager>();
+    Neighbor *         neighbor   = nullptr;
+    KeyManager &       keyManager = Get<KeyManager>();
     const KeyMaterial *macKey;
 
     VerifyOrExit(aAckFrame.GetSecurityEnabled(), error = kErrorNone);
@@ -1673,10 +1673,12 @@ exit:
 
 void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 {
-    RxFrame  &dataInd = static_cast<RxFrame &>(*aDataIndication);
+    RxFrame & dataInd = static_cast<RxFrame &>(*aDataIndication);
     Address   srcaddr, dstaddr;
     Neighbor *neighbor;
     Error     error = kErrorNone;
+    bool      isFFD = Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice();
+
 #if OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
     int8_t rssi = OT_MAC_FILTER_FIXED_RSS_DISABLED;
 #endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
@@ -1693,13 +1695,14 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
     else
         mCounters.mRxUnicast++;
 
+    if (isFFD)
+    {
 #if OPENTHREAD_FTD
-    OT_ASSERT(Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice() == true &&
-              "Device should be an FTD, but it is not.");
-    // Allow  multicasts from neighbor routers if FFD
-    if (neighbor == NULL && dstaddr.IsBroadcast())
-        neighbor = Get<NeighborTable>().FindRxOnlyNeighborRouter(srcaddr);
+        // Allow  multicasts from neighbor routers if FFD
+        if (neighbor == NULL && dstaddr.IsBroadcast())
+            neighbor = Get<NeighborTable>().FindRxOnlyNeighborRouter(srcaddr);
 #endif
+    }
 
     // Source Address Filtering
     if (srcaddr.IsShort())
@@ -2174,8 +2177,8 @@ bool Mac::IsCslCapable(void) const
 void Mac::ProcessCsl(const RxFrame &aFrame, const Address &aSrcAddr)
 {
     const uint8_t *cur   = aFrame.GetHeaderIe(CslIe::kHeaderIeId);
-    Child         *child = Get<ChildTable>().FindChild(aSrcAddr, Child::kInStateAnyExceptInvalid);
-    const CslIe   *csl;
+    Child *        child = Get<ChildTable>().FindChild(aSrcAddr, Child::kInStateAnyExceptInvalid);
+    const CslIe *  csl;
 
     VerifyOrExit(cur != nullptr && child != nullptr && aFrame.GetSecurityEnabled());
 
