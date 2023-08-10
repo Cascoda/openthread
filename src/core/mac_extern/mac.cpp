@@ -779,6 +779,7 @@ Error Mac::BuildDeviceDescriptor(const ExtAddress &aExtAddress,
                                  uint16_t          shortAddr,
                                  uint8_t           aIndex)
 {
+    printf("BuildDeviceDescriptor long()\n");
     otPibDeviceDescriptor deviceDescriptor;
 
     memset(&deviceDescriptor, 0, sizeof(deviceDescriptor));
@@ -802,6 +803,7 @@ Error Mac::BuildDeviceDescriptor(const ExtAddress &aExtAddress,
 
 Error Mac::BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex)
 {
+    printf("BuildDeviceDescriptor()\n");
     Error   error     = kErrorNone;
     int32_t keyOffset = 0, keyNum = 0;
     uint8_t reps = 1;
@@ -844,6 +846,7 @@ exit:
 #if OPENTHREAD_FTD
 Error Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRouterId)
 {
+    printf("BuildRouterDeviceDescriptors()\n");
     Error error = kErrorNone;
 
     for (Child &child : Get<ChildTable>().Iterate(Child::kInStateValidOrRestoring))
@@ -954,7 +957,7 @@ void Mac::CacheDeviceTable()
     for (uint8_t i = 0; i < numDevices; i++)
     {
         otPibDeviceDescriptor deviceDesc;
-        Neighbor *            neighbor;
+        Neighbor             *neighbor;
         Address               addr;
 
         otPlatMlmeGet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, i, &len, reinterpret_cast<uint8_t *>(&deviceDesc));
@@ -978,6 +981,7 @@ void Mac::CacheDeviceTable()
 
 void Mac::BuildJoinerKeyDescriptor(uint8_t aIndex)
 {
+    printf("BuildJoinerKeyDescriptor()\n");
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
     otKeyTableEntry keyTableEntry;
     ExtAddress      counterpart;
@@ -1012,6 +1016,7 @@ void Mac::BuildJoinerKeyDescriptor(uint8_t aIndex)
 
 void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
 {
+    printf("BuildMainKeyDescriptors()\n");
     otKeyTableEntry keyTableEntry;
     uint32_t        keySequence = Get<KeyManager>().GetCurrentKeySequence() - 1;
     uint8_t         ddReps      = 3;
@@ -1077,6 +1082,7 @@ exit:
 
 void Mac::BuildMode2KeyDescriptor(uint8_t aIndex)
 {
+    printf("BuildMode2KeyDescriptor(), key index: %d\n", aIndex);
     otKeyTableEntry keyTableEntry;
     Key             key;
 
@@ -1134,6 +1140,7 @@ void Mac::HotswapJoinerRouterKeyDescriptor(uint8_t *aDstAddr)
 
 void Mac::BuildKeyTable()
 {
+    printf("BuildKeyTable()\n");
     uint8_t keyIndex  = 0;
     bool    isJoining = false;
 
@@ -1144,27 +1151,31 @@ void Mac::BuildKeyTable()
     if (isJoining)
     {
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
+        printf("isJoining\n");
         BuildJoinerKeyDescriptor(keyIndex++);
 #endif
     }
     else
     {
+        printf("is not joining\n");
         BuildMainKeyDescriptors(keyIndex);
     }
     BuildMode2KeyDescriptor(keyIndex++);
 
+    printf("Done building all key descriptors\n");
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_KEY_TABLE_ENTRIES, 0, 1, &keyIndex);
 }
 
 void Mac::BuildSecurityTable()
 {
+    printf("BuildSecurityTable()\n");
     ot::Mle::DeviceRole role                = Get<Mle::Mle>().GetRole();
     uint8_t             devIndex            = 0;
     uint8_t             nextHopForNeighbors = Mle::kInvalidRouterId;
     bool                isFFD               = (Get<Mle::Mle>().GetDeviceMode().IsFullThreadDevice());
-    
+
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
-    bool                isJoining           = false;
+    bool isJoining = false;
 #endif
 
     mActiveNeighborCount = 0;
@@ -1202,6 +1213,7 @@ void Mac::BuildSecurityTable()
     }
     if (isFFD)
     {
+        printf("isFFD\n");
 #if OPENTHREAD_FTD
         BuildRouterDeviceDescriptors(devIndex, nextHopForNeighbors);
 #else
@@ -1212,6 +1224,7 @@ void Mac::BuildSecurityTable()
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
     if (role == ot::Mle::kRoleDisabled && isJoining)
     {
+        printf("role disabled, and isJoining\n");
         ExtAddress counterpart;
         Get<MeshCoP::Joiner>().GetCounterpartAddress(counterpart);
         BuildDeviceDescriptor(counterpart, 0, mPanId, 0xFFFF, devIndex++);
@@ -1219,8 +1232,17 @@ void Mac::BuildSecurityTable()
 #endif
 
     // Set the mode 2 'device'
-    mMode2DevHandle = devIndex++;
-    BuildDeviceDescriptor(static_cast<const ExtAddress &>(sMode2ExtAddress), 0, 0xFFFF, 0xFFFF, mMode2DevHandle);
+    mMode2DevHandle = devIndex;
+    Error status =
+        BuildDeviceDescriptor(static_cast<const ExtAddress &>(sMode2ExtAddress), 0, 0xFFFF, 0xFFFF, mMode2DevHandle);
+    // Workaround for CA8212 using Thread1.1: The CA8212 does not store a device descriptor
+    // to represent the KIM2 "virtual device". If BuildDeviceDescriptor() returns a status
+    // of OT_ERROR_INVALID_ARGS, it means that the api has detected that a CA8212 is in use,
+    // and has therefore ignored the call to build a device descriptor for KIM2.
+    // So therefore, devIndex should not be incremented in that case.
+    if (status != OT_ERROR_INVALID_ARGS)
+        devIndex++;
+
     otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE_ENTRIES, 0, 1, &devIndex);
 
     BuildKeyTable();
@@ -1263,8 +1285,8 @@ exit:
 void Mac::HandleBeginDirect(void)
 {
     TxFrames &txFrames  = mLinks.GetTxFrames();
-    TxFrame & sendFrame = mDirectDataReq;
-    TxFrame * frame     = nullptr;
+    TxFrame  &sendFrame = mDirectDataReq;
+    TxFrame  *frame     = nullptr;
     Error     error     = kErrorNone;
     Address   dstAddr;
 
@@ -1344,9 +1366,9 @@ exit:
 #if OPENTHREAD_FTD
 void Mac::HandleBeginIndirect(void)
 {
-    TxFrame * frame     = nullptr;
+    TxFrame  *frame     = nullptr;
     TxFrames &txFrames  = mLinks.GetTxFrames();
-    TxFrame & sendFrame = mIndirectDataReq;
+    TxFrame  &sendFrame = mIndirectDataReq;
     Error     error     = kErrorNone;
     Address   dstAddr;
 
@@ -1572,8 +1594,8 @@ Error Mac::ProcessEnhAckSecurity(TxFrame &aTxFrame, RxFrame &aAckFrame)
     uint32_t           frameCounter;
     Address            srcAddr;
     Address            dstAddr;
-    Neighbor *         neighbor   = nullptr;
-    KeyManager &       keyManager = Get<KeyManager>();
+    Neighbor          *neighbor   = nullptr;
+    KeyManager        &keyManager = Get<KeyManager>();
     const KeyMaterial *macKey;
 
     VerifyOrExit(aAckFrame.GetSecurityEnabled(), error = kErrorNone);
@@ -1673,7 +1695,7 @@ exit:
 
 void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 {
-    RxFrame & dataInd = static_cast<RxFrame &>(*aDataIndication);
+    RxFrame  &dataInd = static_cast<RxFrame &>(*aDataIndication);
     Address   srcaddr, dstaddr;
     Neighbor *neighbor;
     Error     error = kErrorNone;
@@ -2177,8 +2199,8 @@ bool Mac::IsCslCapable(void) const
 void Mac::ProcessCsl(const RxFrame &aFrame, const Address &aSrcAddr)
 {
     const uint8_t *cur   = aFrame.GetHeaderIe(CslIe::kHeaderIeId);
-    Child *        child = Get<ChildTable>().FindChild(aSrcAddr, Child::kInStateAnyExceptInvalid);
-    const CslIe *  csl;
+    Child         *child = Get<ChildTable>().FindChild(aSrcAddr, Child::kInStateAnyExceptInvalid);
+    const CslIe   *csl;
 
     VerifyOrExit(cur != nullptr && child != nullptr && aFrame.GetSecurityEnabled());
 
