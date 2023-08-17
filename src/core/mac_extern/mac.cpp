@@ -809,6 +809,9 @@ Error Mac::BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex)
     uint8_t reps = 1;
 
     keyNum = 1 + aNeighbor.GetKeySequence() - Get<KeyManager>().GetCurrentKeySequence();
+    printf("aNeighbor.GetKeySequence(): %ld\n", aNeighbor.GetKeySequence());
+    printf("Get<KeyManager>().GetCurrentKeySequence(): %ld\n", Get<KeyManager>().GetCurrentKeySequence());
+    printf("keyNum: %ld\n", keyNum);
     VerifyOrExit(keyNum >= 0 && keyNum <= 2, error = kErrorSecurity);
 
 #if !OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
@@ -1021,6 +1024,8 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
     uint32_t        keySequence = Get<KeyManager>().GetCurrentKeySequence() - 1;
     uint8_t         ddReps      = 3;
 
+    printf("KeySequence at start of function: %ld\n", keySequence);
+
 #if OPENTHREAD_CONFIG_EXTERNAL_MAC_SHARED_DD
     ddReps = 1;
 #endif
@@ -1044,6 +1049,8 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
         const KeyMaterial *key = &Get<KeyManager>().GetTemporaryMacKey(keySequence);
         memcpy(keyTableEntry.mKey, key, sizeof(keyTableEntry.mKey));
         keyTableEntry.mKeyIdLookupDesc[0].mLookupData[0] = (keySequence & 0x7F) + 1;
+        printf("== KeySequence for iteration %d: %ld\n", i, keySequence);
+        printf("== lookupdata[0] for iteration %d: 0x%x\n", i, keyTableEntry.mKeyIdLookupDesc[0].mLookupData[0]);
 
         for (int j = 0; j < mActiveNeighborCount; j++)
         {
@@ -1232,6 +1239,7 @@ void Mac::BuildSecurityTable()
 #endif
 
     // Set the mode 2 'device'
+    printf("BuildDeviceDescriptor for KIM2\n");
     mMode2DevHandle = devIndex;
     Error status =
         BuildDeviceDescriptor(static_cast<const ExtAddress &>(sMode2ExtAddress), 0, 0xFFFF, 0xFFFF, mMode2DevHandle);
