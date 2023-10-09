@@ -2315,7 +2315,7 @@ void Mle::ScheduleMessageTransmissionTimer(void)
     if (IsChild() && IsRxOnWhenIdle())
     {
         interval =
-            Time::SecToMsec(mTimeout) - static_cast<uint32_t>(kUnicastRetransmissionDelay) * kMaxChildKeepAliveAttempts;
+            (Time::SecToMsec(mTimeout) - static_cast<uint32_t>(kUnicastRetransmissionDelay) * kMaxChildKeepAliveAttempts) / 10;
     }
 
 exit:
