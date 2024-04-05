@@ -322,6 +322,9 @@ private:
     TimerMilli   mRetransmissionTimer;
     uint8_t      mTimerExpirations;
 #endif // OPENTHREAD_FTD
+
+    otInstance *GetInstancePtr(void) { return reinterpret_cast<otInstance *>(&InstanceLocator::GetInstance()); }
+
 };
 
 /**

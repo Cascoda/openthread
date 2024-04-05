@@ -41,6 +41,8 @@
 #include "common/serial_number.hpp"
 #include "net/ip6.hpp"
 
+#include <openthread/thread.h>
+
 namespace ot {
 namespace Ip6 {
 
@@ -95,7 +97,13 @@ Error Mpl::ProcessOption(Message &aMessage, const Address &aAddress, bool aIsOut
     }
 
     // Check if the MPL Data Message is new.
-    error = UpdateSeedSet(option.GetSeedId(), option.GetSequence());
+    // NOTE: Don't maintain the seed set if the device is a rx-off-when-idle child,
+    //       because that causes the sleepy device to wake up periodically in order
+    //       to update the LifeTimes in the Seed Set.
+    if (otThreadGetLinkMode(GetInstancePtr()).mRxOnWhenIdle)
+        error = UpdateSeedSet(option.GetSeedId(), option.GetSequence());
+    else
+        error = kErrorNone;
 
     if (error == kErrorNone)
     {
