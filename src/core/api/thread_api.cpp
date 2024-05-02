@@ -43,6 +43,20 @@
 
 using namespace ot;
 
+otError otThreadSleepyChildResynchronize(otInstance *aInstance)
+{
+    Error     error    = kErrorNone;
+    Instance &instance = AsCoreType(aInstance);
+
+    VerifyOrExit(instance.Get<Mle::MleRouter>().IsChild(), error = kErrorRejected);
+    VerifyOrExit(instance.Get<MeshForwarder>().GetRxOnWhenIdle() == false, error = kErrorRejected);
+
+    error = AsCoreType(aInstance).Get<Mle::MleRouter>().SendChildUpdateRequest();
+
+exit:
+    return error;
+}
+
 uint32_t otThreadGetChildTimeout(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::MleRouter>().GetTimeout();
@@ -61,7 +75,7 @@ const otExtendedPanId *otThreadGetExtendedPanId(otInstance *aInstance)
 otError otThreadSetExtendedPanId(otInstance *aInstance, const otExtendedPanId *aExtendedPanId)
 {
     Error                     error    = kErrorNone;
-    Instance &                instance = AsCoreType(aInstance);
+    Instance                 &instance = AsCoreType(aInstance);
     const Mac::ExtendedPanId &extPanId = AsCoreType(aExtendedPanId);
     Mle::MeshLocalPrefix      prefix;
 
@@ -254,7 +268,7 @@ otError otThreadSetFixedDuaInterfaceIdentifier(otInstance *aInstance, const otIp
 
 const otIp6InterfaceIdentifier *otThreadGetFixedDuaInterfaceIdentifier(otInstance *aInstance)
 {
-    Instance &                      instance = AsCoreType(aInstance);
+    Instance                       &instance = AsCoreType(aInstance);
     const otIp6InterfaceIdentifier *iid      = nullptr;
 
     if (instance.Get<DuaManager>().IsFixedDuaInterfaceIdentifierSet())
@@ -433,20 +447,20 @@ bool otThreadIsSingleton(otInstance *aInstance)
     return AsCoreType(aInstance).Get<Mle::MleRouter>().IsSingleton();
 }
 
-otError otThreadDiscover(otInstance *             aInstance,
+otError otThreadDiscover(otInstance              *aInstance,
                          uint32_t                 aScanChannels,
                          uint16_t                 aPanId,
                          bool                     aJoiner,
                          bool                     aEnableEui64Filtering,
                          otHandleActiveScanResult aCallback,
-                         void *                   aCallbackContext)
+                         void                    *aCallbackContext)
 {
     return AsCoreType(aInstance).Get<Mle::DiscoverScanner>().Discover(
         Mac::ChannelMask(aScanChannels), aPanId, aJoiner, aEnableEui64Filtering,
         /* aFilterIndexes (use hash of factory EUI64) */ nullptr, aCallback, aCallbackContext);
 }
 
-otError otThreadSetJoinerAdvertisement(otInstance *   aInstance,
+otError otThreadSetJoinerAdvertisement(otInstance    *aInstance,
                                        uint32_t       aOui,
                                        const uint8_t *aAdvData,
                                        uint8_t        aAdvDataLength)
@@ -479,18 +493,18 @@ void otThreadResetMleCounters(otInstance *aInstance)
     AsCoreType(aInstance).Get<Mle::MleRouter>().ResetCounters();
 }
 
-void otThreadRegisterParentResponseCallback(otInstance *                   aInstance,
+void otThreadRegisterParentResponseCallback(otInstance                    *aInstance,
                                             otThreadParentResponseCallback aCallback,
-                                            void *                         aContext)
+                                            void                          *aContext)
 {
     AsCoreType(aInstance).Get<Mle::MleRouter>().RegisterParentResponseStatsCallback(aCallback, aContext);
 }
 
 #if OPENTHREAD_CONFIG_TMF_ANYCAST_LOCATOR_ENABLE
-otError otThreadLocateAnycastDestination(otInstance *                   aInstance,
-                                         const otIp6Address *           aAnycastAddress,
+otError otThreadLocateAnycastDestination(otInstance                    *aInstance,
+                                         const otIp6Address            *aAnycastAddress,
                                          otThreadAnycastLocatorCallback aCallback,
-                                         void *                         aContext)
+                                         void                          *aContext)
 {
     return AsCoreType(aInstance).Get<AnycastLocator>().Locate(AsCoreType(aAnycastAddress), aCallback, aContext);
 }
