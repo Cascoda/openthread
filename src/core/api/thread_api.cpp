@@ -43,7 +43,7 @@
 
 using namespace ot;
 
-uint32_t otError otThreadSleepyChildResynchronize(otInstance *aInstance)
+otError otThreadSleepyChildResynchronize(otInstance *aInstance)
 {
     Error     error    = kErrorNone;
     Instance &instance = AsCoreType(aInstance);
