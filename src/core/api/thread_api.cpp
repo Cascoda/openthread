@@ -43,7 +43,21 @@
 
 using namespace ot;
 
-uint32_t otThreadGetChildTimeout(otInstance *aInstance)
+uint32_t otError otThreadSleepyChildResynchronize(otInstance *aInstance)
+{
+    Error     error    = kErrorNone;
+    Instance &instance = AsCoreType(aInstance);
+
+    VerifyOrExit(instance.Get<Mle::MleRouter>().IsChild(), error = kErrorRejected);
+    VerifyOrExit(instance.Get<MeshForwarder>().GetRxOnWhenIdle() == false, error = kErrorRejected);
+
+    error = AsCoreType(aInstance).Get<Mle::MleRouter>().SendChildUpdateRequest();
+
+exit:
+    return error;
+}
+
+otThreadGetChildTimeout(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::MleRouter>().GetTimeout();
 }

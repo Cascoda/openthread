@@ -286,6 +286,22 @@ otError otThreadSetJoinerAdvertisement(otInstance *   aInstance,
 #define OT_JOINER_ADVDATA_MAX_LENGTH 64 ///< Maximum AdvData Length of Joiner Advertisement
 
 /**
+ * Resynchronize a sleepy child with its parent, in case the Keep-alives
+ * are getting erroneously acknowledged. This function will send a child
+ * update request to the parent, if the device is a rx-off-when-idle (i.e. sleepy)
+ * child.
+ *
+ * @param aInstance A pointer to an OpenThread instance.
+ *
+ * @retval OT_ERROR_NONE           Successfully attempted to resynchronize with the parent.
+ * @retval OT_ERROR_REJECTED       The device is not a rx-off-when-idle child, so
+ *                                 no attempt to resynchronize was made
+ * @retval OT_ERROR_NO_BUFS        Insufficient buffers to generate the MLE Child Update Request.
+ *
+ */
+otError otThreadSleepyChildResynchronize(otInstance *aInstance);
+
+/**
  * Get the Thread Child Timeout used when operating in the Child role.
  *
  * @param[in]  aInstance A pointer to an OpenThread instance.
