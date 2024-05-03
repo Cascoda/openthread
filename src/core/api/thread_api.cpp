@@ -57,7 +57,7 @@ exit:
     return error;
 }
 
-otThreadGetChildTimeout(otInstance *aInstance)
+uint32_t otThreadGetChildTimeout(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::MleRouter>().GetTimeout();
 }
