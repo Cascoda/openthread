@@ -315,11 +315,13 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
                 continue;
         }
 
-        error              = mCallbacks.RegenerateFrame(*frame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
+        error = mCallbacks.RegenerateFrame(*frame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
+        if (error)
+            goto exit;
+
         frame->mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = frame->GetFramePending();
         pendingChild       = fc.mFramePending ? &fc.GetChild() : nullptr;
-        OT_ASSERT(error == kErrorNone);
         fc.mPendingRetransmit = false;
         Get<Mac::Mac>().RequestIndirectFrameTransmission();
         ExitNow();
