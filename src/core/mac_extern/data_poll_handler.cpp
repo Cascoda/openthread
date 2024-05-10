@@ -316,8 +316,9 @@ Mac::TxFrame *DataPollHandler::HandleFrameRequest(Mac::TxFrames &aTxFrames)
         }
 
         error = mCallbacks.RegenerateFrame(*frame, fc.mContext, fc.GetChild(), fc.mUseExtAddr);
-        if (error)
-            goto exit;
+        // skip cache entry if not valid
+        if (error != OT_ERROR_NONE)
+            continue;
 
         frame->mMsduHandle = fc.GetMsduHandle();
         fc.mFramePending   = frame->GetFramePending();
