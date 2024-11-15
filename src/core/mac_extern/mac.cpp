@@ -1755,6 +1755,7 @@ void Mac::ProcessDataIndication(otDataIndication *aDataIndication)
 #endif // OPENTHREAD_CONFIG_MAC_FILTER_ENABLE
 
         neighbor->GetLinkInfo().AddRss(GetNoiseFloor(), dataInd.GetRssi());
+        neighbor->GetLinkInfo().SetCs(dataInd.GetCs());
 
         if (dataInd.GetSecurityEnabled())
         {

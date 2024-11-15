@@ -540,6 +540,14 @@ public:
     int8_t GetRssi(void) const { return mMpduLinkQuality; }
 
     /**
+     * This method returns the CS (Carrier Sense) used for reception.
+     *
+     * @returns The CS used for reception.
+     *
+     */
+    uint8_t GetCs(void) const { return mLinkCarrierSense; }
+
+    /**
      * This method sets the RSSI in dBm used for reception.
      *
      * @param[in]  aRssi  The RSSI in dBm used for reception.

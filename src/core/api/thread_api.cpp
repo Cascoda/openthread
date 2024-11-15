@@ -421,6 +421,20 @@ exit:
     return error;
 }
 
+otError otThreadGetParentLastCs(otInstance *aInstance, uint8_t *aLastCs)
+{
+    Error error = kErrorNone;
+
+    OT_ASSERT(aLastCs != nullptr);
+
+    *aLastCs = AsCoreType(aInstance).Get<Mle::MleRouter>().GetParent().GetLinkInfo().GetLastCs();
+
+    VerifyOrExit(*aLastCs != OT_RADIO_CS_INVALID, error = kErrorFailed);
+
+exit:
+    return error;
+}
+
 otError otThreadSetEnabled(otInstance *aInstance, bool aEnabled)
 {
     Error error = kErrorNone;

@@ -97,6 +97,7 @@ typedef struct
     uint8_t      mLinkQualityIn;        ///< Link Quality In
     int8_t       mAverageRssi;          ///< Average RSSI
     int8_t       mLastRssi;             ///< Last observed RSSI
+    uint8_t      mLastCs;               ///< Last observed CS 
     uint16_t     mFrameErrorRate;       ///< Frame error rate (0xffff->100%). Requires error tracking feature.
     uint16_t     mMessageErrorRate;     ///< (IPv6) msg error rate (0xffff->100%). Requires error tracking feature.
     bool         mRxOnWhenIdle : 1;     ///< rx-on-when-idle
@@ -848,6 +849,19 @@ otError otThreadGetParentAverageRssi(otInstance *aInstance, int8_t *aParentRssi)
  *
  */
 otError otThreadGetParentLastRssi(otInstance *aInstance, int8_t *aLastRssi);
+
+/**
+ * The function retrieves the Carrier Sense of the last packet from the Thread Parent.
+ *
+ * @param[in]   aInstance    A pointer to an OpenThread instance.
+ * @param[out]  aLastCs A pointer to where the last CS should be placed.
+ *
+ * @retval OT_ERROR_NONE          Successfully retrieved the CS data.
+ * @retval OT_ERROR_FAILED        Unable to get CS data.
+ * @retval OT_ERROR_INVALID_ARGS  @p aLastCs is NULL.
+ *
+ */
+otError otThreadGetParentLastCs(otInstance *aInstance, uint8_t *aLastCs);
 
 /**
  * Get the IPv6 counters.

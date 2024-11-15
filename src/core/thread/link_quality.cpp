@@ -133,6 +133,7 @@ void LinkQualityInfo::Clear(void)
     mRssAverager.Clear();
     SetLinkQuality(0);
     mLastRss = OT_RADIO_RSSI_INVALID;
+    mLastCs = OT_RADIO_CS_INVALID;
 
     mFrameErrorRate.Clear();
     mMessageErrorRate.Clear();
@@ -181,6 +182,18 @@ exit:
     return;
 }
 #endif
+
+void LinkQualityInfo::SetCs(uint8_t aCs)
+{
+    uint8_t oldLinkQuality = kNoLinkQuality;
+
+    VerifyOrExit(aCs != OT_RADIO_CS_INVALID);
+
+    mLastCs = aCs;
+
+exit:
+    return;
+}
 
 #if OPENTHREAD_CONFIG_USE_EXTERNAL_MAC
 uint8_t LinkQualityInfo::GetLinkMargin(int8_t aNoiseFloor) const

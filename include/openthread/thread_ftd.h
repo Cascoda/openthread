@@ -65,6 +65,7 @@ typedef struct
     uint8_t      mLinkQualityIn;        ///< Link Quality In
     int8_t       mAverageRssi;          ///< Average RSSI
     int8_t       mLastRssi;             ///< Last observed RSSI
+    uint8_t      mLastCs;               ///< Last observed CS 
     uint16_t     mFrameErrorRate;       ///< Frame error rate (0xffff->100%). Requires error tracking feature.
     uint16_t     mMessageErrorRate;     ///< (IPv6) msg error rate (0xffff->100%). Requires error tracking feature.
     uint16_t     mQueuedMessageCnt;     ///< Number of queued messages for the child.

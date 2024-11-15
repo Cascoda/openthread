@@ -276,6 +276,14 @@ public:
 #endif
 
     /**
+     * This method sets the Carrier Sense (CS) object mLastCs
+     *
+     * @param[in] aCs         A new received carrier sense value
+     *
+     */
+    void LinkQualityInfo::SetCs(uint8_t aCs);
+
+    /**
      * This method returns the current average received signal strength value.
      *
      * @returns The current average value or @c OT_RADIO_RSSI_INVALID if no average is available.
@@ -346,6 +354,14 @@ public:
      *
      */
     int8_t GetLastRss(void) const { return mLastRss; }
+
+    /**
+     * Returns the most recent CS (Carrier Sense) value.
+     *
+     * @returns The most recent CS 
+     *
+     */
+    uint8_t GetLastCs(void) const { return mLastCs; }
 
     /**
      * This method adds a MAC frame transmission status (success/failure) and updates the frame tx error rate.
@@ -464,6 +480,7 @@ private:
     RssAverager mRssAverager;
     uint8_t     mLinkQuality;
     int8_t      mLastRss;
+    uint8_t     mLastCs;
 
     SuccessRateTracker mFrameErrorRate;
     SuccessRateTracker mMessageErrorRate;

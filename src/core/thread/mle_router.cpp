@@ -668,6 +668,7 @@ void MleRouter::HandleLinkRequest(const Message &aMessage, const Ip6::MessageInf
                 neighbor->SetExtAddress(extAddr);
                 neighbor->GetLinkInfo().Clear();
                 neighbor->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+                neighbor->GetLinkInfo().SetCs(linkInfo->mCs);
                 neighbor->ResetLinkFailures();
                 neighbor->SetLastHeard(TimerMilli::GetNow());
                 neighbor->SetState(Neighbor::kStateLinkRequest);
@@ -1011,6 +1012,7 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
                                      DeviceMode::kModeFullNetworkData));
     router->GetLinkInfo().Clear();
     router->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+    router->GetLinkInfo().SetCs(linkInfo->mCs);
     router->SetLinkQualityOut(LinkQualityInfo::ConvertLinkMarginToLinkQuality(linkMargin));
     router->ResetLinkFailures();
     router->SetState(Neighbor::kStateValid);
@@ -1389,6 +1391,7 @@ Error MleRouter::HandleAdvertisement(const Message &aMessage, const Ip6::Message
                 router->SetExtAddress(extAddr);
                 router->GetLinkInfo().Clear();
                 router->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+                router->GetLinkInfo().SetCs(linkInfo->mCs);
                 router->ResetLinkFailures();
                 router->SetLastHeard(TimerMilli::GetNow());
                 router->SetState(Neighbor::kStateLinkRequest);
@@ -1436,6 +1439,7 @@ Error MleRouter::HandleAdvertisement(const Message &aMessage, const Ip6::Message
             router->SetExtAddress(extAddr);
             router->GetLinkInfo().Clear();
             router->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+            router->GetLinkInfo().SetCs(linkInfo->mCs);
             router->ResetLinkFailures();
             router->SetLastHeard(TimerMilli::GetNow());
             router->SetState(Neighbor::kStateLinkRequest);
@@ -1714,6 +1718,7 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
         child->SetExtAddress(extAddr);
         child->GetLinkInfo().Clear();
         child->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+        child->GetLinkInfo().SetCs(linkInfo->mCs);
         child->ResetLinkFailures();
         child->SetState(Neighbor::kStateParentRequest);
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
@@ -2386,6 +2391,7 @@ void MleRouter::HandleChildIdRequest(const Message          &aMessage,
     child->SetDeviceMode(mode);
     child->SetVersion(static_cast<uint8_t>(version));
     child->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+    child->GetLinkInfo().SetCs(linkInfo->mCs);
     child->SetTimeout(timeout);
 #if OPENTHREAD_CONFIG_MULTI_RADIO
     child->ClearLastRxFragmentTag();
@@ -2785,6 +2791,7 @@ void MleRouter::HandleChildUpdateResponse(const Message          &aMessage,
     child->SetLastHeard(TimerMilli::GetNow());
     child->SetKeySequence(aKeySequence);
     child->GetLinkInfo().AddRss(Get<Mac::Mac>().GetNoiseFloor(), linkInfo->mRss);
+    child->GetLinkInfo().SetCs(linkInfo->mCs);
 
 exit:
     LogProcessError(kTypeChildUpdateResponseOfChild, error);
