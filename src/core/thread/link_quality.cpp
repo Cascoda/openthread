@@ -185,8 +185,6 @@ exit:
 
 void LinkQualityInfo::SetCs(uint8_t aCs)
 {
-    uint8_t oldLinkQuality = kNoLinkQuality;
-
     VerifyOrExit(aCs != OT_RADIO_CS_INVALID);
 
     mLastCs = aCs;

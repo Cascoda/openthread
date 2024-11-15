@@ -281,7 +281,7 @@ public:
      * @param[in] aCs         A new received carrier sense value
      *
      */
-    void LinkQualityInfo::SetCs(uint8_t aCs);
+    void SetCs(uint8_t aCs);
 
     /**
      * This method returns the current average received signal strength value.
