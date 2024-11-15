@@ -89,6 +89,7 @@ void ThreadLinkInfo::SetFrom(const Mac::RxFrame &aFrame)
 
     mChannel = aFrame.GetChannel();
     mRss     = aFrame.GetRssi();
+    mCs      = aFrame.GetCs();
     mLqi     = aFrame.GetLqi();
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     if (aFrame.GetTimeIe() != nullptr)

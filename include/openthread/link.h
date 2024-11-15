@@ -63,6 +63,7 @@ typedef struct otThreadLinkInfo
     uint16_t mPanId;                   ///< Source PAN ID
     uint8_t  mChannel;                 ///< 802.15.4 Channel
     int8_t   mRss;                     ///< Received Signal Strength in dBm.
+    uint8_t  mCs;                      ///< Received Carrier Sense
     uint8_t  mLqi;                     ///< Link Quality Indicator for a received message.
     bool     mLinkSecurity : 1;        ///< Indicates whether or not link security is enabled.
     bool     mIsDstPanIdBroadcast : 1; ///< Indicates whether or not destination PAN ID is broadcast.
