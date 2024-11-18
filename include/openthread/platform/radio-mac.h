@@ -288,7 +288,9 @@ typedef struct otDataRequest
 
 /**
  * This structure represents the MCPS-Data.Indication as defined in IEEE 802.15.4-2006.
- *
+ * NOTE: There is one member of this structure, namely mLinkCarrierSense, which is not 
+ *       part of an MCPS-Data.Indication. It is included here as a convenient and immediate
+ *       way to provide information about the Carrier Sense of the received data indication.
  */
 typedef struct otDataIndication
 {
@@ -296,6 +298,7 @@ typedef struct otDataIndication
     struct otFullAddr mDst;                          ///< Dst Address information of received frame
     uint8_t           mMsduLength;                   ///< Length of the received MSDU
     int8_t            mMpduLinkQuality;              ///< LQI of received frame - MUST be RSSI for openthread
+    uint8_t           mLinkCarrierSense;             ///< Carrier Sense (CS) of the received frame (NOT PART OF MCPS-Data.Indication)
     uint8_t           mDSN;                          ///< DSN of received frame
     uint8_t           mIsFramePending;               ///< Value of 'frame pending' in received frame
     uint8_t           mTimeStamp[4];                 ///< Timestamp of received frame (optional)

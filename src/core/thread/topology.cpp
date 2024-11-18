@@ -75,6 +75,7 @@ void Neighbor::Info::SetFrom(const Neighbor &aNeighbor)
     mLinkQualityIn    = aNeighbor.GetLinkInfo().GetLinkQuality();
     mAverageRssi      = aNeighbor.GetLinkInfo().GetAverageRss();
     mLastRssi         = aNeighbor.GetLinkInfo().GetLastRss();
+    mLastCs           = aNeighbor.GetLinkInfo().GetLastCs();
     mFrameErrorRate   = aNeighbor.GetLinkInfo().GetFrameErrorRate();
     mMessageErrorRate = aNeighbor.GetLinkInfo().GetMessageErrorRate();
     mRxOnWhenIdle     = aNeighbor.IsRxOnWhenIdle();
@@ -249,6 +250,7 @@ void Child::Info::SetFrom(const Child &aChild)
     mLinkQualityIn      = aChild.GetLinkInfo().GetLinkQuality();
     mAverageRssi        = aChild.GetLinkInfo().GetAverageRss();
     mLastRssi           = aChild.GetLinkInfo().GetLastRss();
+    mLastCs             = aChild.GetLinkInfo().GetLastCs();
     mFrameErrorRate     = aChild.GetLinkInfo().GetFrameErrorRate();
     mMessageErrorRate   = aChild.GetLinkInfo().GetMessageErrorRate();
     mQueuedMessageCnt   = aChild.GetIndirectMessageCount();
