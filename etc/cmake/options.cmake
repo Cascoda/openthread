@@ -383,6 +383,13 @@ if(OT_FULL_LOGS)
     target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_LOG_PREPEND_LEVEL=1")
 endif()
 
+option(OT_PACKET_DUMP_LOGS "enable packet dump logs" ON)
+if(OT_PACKET_DUMP_LOGS)
+    target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_LOG_PKT_DUMP=1")
+else()
+    target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_LOG_PKT_DUMP=0")
+endif()
+
 option(OT_OTNS "enable OTNS support")
 if(OT_OTNS)
     target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_OTNS_ENABLE=1")
