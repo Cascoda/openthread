@@ -345,7 +345,7 @@ Error IndirectSender::PrepareFrameForChild(Mac::TxFrame &aFrame, FrameContext &a
         directTxOffset          = message->GetOffset();
         aContext.mMessageOffset = aChild.GetIndirectNextFragmentOffset();
         message->SetOffset(aContext.mMessageOffset);
-        LogDebg("Ind Frag offset %d", aContext.mMessageOffset);
+        // LogDebg("Ind Frag offset %d", aContext.mMessageOffset);
         aContext.mMessageNextOffset = PrepareDataFrame(aFrame, aChild, *message);
         message->SetOffset(directTxOffset);
         break;

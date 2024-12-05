@@ -788,13 +788,13 @@ Error Mac::BuildDeviceDescriptor(const ExtAddress &aExtAddress,
     Encoding::LittleEndian::WriteUint16(aPanId, deviceDescriptor.mPanId);
     Encoding::LittleEndian::WriteUint16(shortAddr, deviceDescriptor.mShortAddress);
 
-    LogDebg("Built device descriptor at index %d", aIndex);
-    LogDebg("Short Address: 0x%04x", shortAddr);
-    LogDebg("Ext Address: %02x%02x%02x%02x%02x%02x%02x%02x", deviceDescriptor.mExtAddress[0],
-            deviceDescriptor.mExtAddress[1], deviceDescriptor.mExtAddress[2], deviceDescriptor.mExtAddress[3],
-            deviceDescriptor.mExtAddress[4], deviceDescriptor.mExtAddress[5], deviceDescriptor.mExtAddress[6],
-            deviceDescriptor.mExtAddress[7]);
-    LogDebg("Frame Counter: 0x%08x", aFrameCounter);
+    // LogDebg("Built device descriptor at index %d", aIndex);
+    // LogDebg("Short Address: 0x%04x", shortAddr);
+    // LogDebg("Ext Address: %02x%02x%02x%02x%02x%02x%02x%02x", deviceDescriptor.mExtAddress[0],
+    //         deviceDescriptor.mExtAddress[1], deviceDescriptor.mExtAddress[2], deviceDescriptor.mExtAddress[3],
+    //         deviceDescriptor.mExtAddress[4], deviceDescriptor.mExtAddress[5], deviceDescriptor.mExtAddress[6],
+    //         deviceDescriptor.mExtAddress[7]);
+    // LogDebg("Frame Counter: 0x%08x", aFrameCounter);
 
     return otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_DEVICE_TABLE, aIndex, sizeof(deviceDescriptor),
                          reinterpret_cast<uint8_t *>(&deviceDescriptor));
@@ -828,7 +828,7 @@ Error Mac::BuildDeviceDescriptor(Neighbor &aNeighbor, uint8_t &aIndex)
             fc = 0xFFFFFFFF;
         }
         error = BuildDeviceDescriptor(aNeighbor.GetExtAddress(), fc, mPanId, aNeighbor.GetRloc16(), aIndex);
-        LogDebg("Key Sequence Number: %d", aNeighbor.GetKeySequence());
+        // LogDebg("Key Sequence Number: %d", aNeighbor.GetKeySequence());
         VerifyOrExit(error == kErrorNone);
         aIndex += 1;
     }
@@ -848,7 +848,7 @@ Error Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRoute
 
     for (Child &child : Get<ChildTable>().Iterate(Child::kInStateValidOrRestoring))
     {
-        LogDebg("Building Child DD...");
+        // LogDebg("Building Child DD...");
         BuildDeviceDescriptor(child, aDevIndex);
         mActiveNeighborCount++;
     }
@@ -861,7 +861,7 @@ Error Mac::BuildRouterDeviceDescriptors(uint8_t &aDevIndex, uint8_t aIgnoreRoute
         if (Get<NeighborTable>().FindNeighbor(router.GetRloc16()) == NULL)
             continue; // Ignore non-neighbors
 
-        LogDebg("Building Router DD...");
+        // LogDebg("Building Router DD...");
         error = BuildDeviceDescriptor(router, aDevIndex);
         VerifyOrExit(error == kErrorNone);
         mActiveNeighborCount++;
@@ -1168,7 +1168,7 @@ void Mac::BuildSecurityTable()
 #endif
 
     mActiveNeighborCount = 0;
-    LogDebg("Current KeySequenceNumber: %d", Get<KeyManager>().GetCurrentKeySequence());
+    // LogDebg("Current KeySequenceNumber: %d", Get<KeyManager>().GetCurrentKeySequence());
 
 #if OPENTHREAD_CONFIG_JOINER_ENABLE
     isJoining = (Get<MeshCoP::Joiner>().GetState() == ot::MeshCoP::Joiner::kStateConnect);
@@ -1187,7 +1187,7 @@ void Mac::BuildSecurityTable()
     if (Get<Mle::Mle>().GetParentCandidate().IsStateValidOrRestoring())
     {
         Router &parent = Get<Mle::Mle>().GetParentCandidate();
-        LogDebg("Building Parent Candidate DD...");
+        // LogDebg("Building Parent Candidate DD...");
         BuildDeviceDescriptor(parent, devIndex);
         mActiveNeighborCount++;
     }
@@ -1195,7 +1195,7 @@ void Mac::BuildSecurityTable()
         Get<Mle::Mle>().GetParent().IsStateValidOrRestoring())
     {
         Router &parent = Get<Mle::Mle>().GetParent();
-        LogDebg("Building Parent DD...");
+        // LogDebg("Building Parent DD...");
         BuildDeviceDescriptor(parent, devIndex);
         mActiveNeighborCount++;
         nextHopForNeighbors = parent.GetRouterId();
@@ -1268,7 +1268,7 @@ void Mac::HandleBeginDirect(void)
     Error     error     = kErrorNone;
     Address   dstAddr;
 
-    LogDebg("Mac::HandleBeginDirect");
+    // LogDebg("Mac::HandleBeginDirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
@@ -1320,10 +1320,10 @@ void Mac::HandleBeginDirect(void)
 
     error = SetTempTxChannel(sendFrame);
     OT_ASSERT(error == kErrorNone);
-    LogDebg("calling otPlatRadioTransmit for direct");
-    LogDebg("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
-            sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
-    DumpDebg("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
+    // LogDebg("calling otPlatRadioTransmit for direct");
+    // LogDebg("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
+    //         sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
+    // DumpDebg("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     mDirectAckRequested = sendFrame.GetAckRequest();
     sendFrame.GetDstAddr(mDirectDstAddress);
     error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
@@ -1350,7 +1350,7 @@ void Mac::HandleBeginIndirect(void)
     Error     error     = kErrorNone;
     Address   dstAddr;
 
-    LogDebg("Mac::HandleBeginIndirect");
+    // LogDebg("Mac::HandleBeginIndirect");
     memset(&sendFrame, 0, sizeof(sendFrame));
 
     sendFrame.SetChannel(mChannel);
@@ -1370,10 +1370,10 @@ void Mac::HandleBeginIndirect(void)
     sendFrame.mTxOptions |= OT_MAC_TX_OPTION_NS_SECURE_IND;
 
     sendFrame.GetDstAddr(dstAddr);
-    LogDebg("calling otPlatRadioTransmit for indirect");
-    LogDebg("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
-            sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
-    DumpDebg("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
+    // LogDebg("calling otPlatRadioTransmit for indirect");
+    // LogDebg("Sam %x; Dam %x; MH %x; DstAddr %s;", sendFrame.mSrcAddrMode, sendFrame.mDst.mAddressMode,
+    //         sendFrame.mMsduHandle, dstAddr.ToString().AsCString());
+    // DumpDebg("Msdu", sendFrame.mMsdu, sendFrame.mMsduLength);
     error = otPlatMcpsDataRequest(&GetInstance(), &sendFrame);
 
     OT_ASSERT(error == kErrorNone);
@@ -1933,7 +1933,7 @@ uint8_t Mac::GetValidMsduHandle(void)
         break;
     }
 
-    LogDebg("Allocated MSDU Handle %x", mNextMsduHandle);
+    // LogDebg("Allocated MSDU Handle %x", mNextMsduHandle);
     return mNextMsduHandle;
 }
 

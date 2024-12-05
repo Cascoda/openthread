@@ -87,7 +87,7 @@ void DataPollHandler::FrameCache::Allocate(Child &aChild, uint8_t aMsduHandle)
     mPendingRetransmit      = false;
     mUseExtAddr             = false;
     aChild.IncrementFrameCount();
-    LogDebg("Allocated FrameCache %x", mMsduHandle);
+    // LogDebg("Allocated FrameCache %x", mMsduHandle);
 }
 
 void DataPollHandler::FrameCache::Free()
