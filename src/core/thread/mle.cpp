@@ -460,7 +460,7 @@ Error Mle::Store(void)
     Get<KeyManager>().SetStoredMleFrameCounter(networkInfo.GetMleFrameCounter());
     Get<KeyManager>().SetStoredMacFrameCounter(networkInfo.GetMacFrameCounter());
 
-    LogDebg("Store Network Information");
+    // LogDebg("Store Network Information");
 
 exit:
     return error;

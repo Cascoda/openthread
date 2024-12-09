@@ -628,7 +628,7 @@ void Mac::StartOperation(Operation aOperation)
     {
         SetPending(aOperation);
 
-        LogDebg("Request to start operation \"%s\"", OperationToString(aOperation));
+        // LogDebg("Request to start operation \"%s\"", OperationToString(aOperation));
 
         if (!mEnabled)
         {
@@ -671,7 +671,7 @@ void Mac::StartOperation(Operation aOperation)
 
     if (mOperation != kOperationIdle)
     {
-        LogDebg("Starting operation \"%s\"", OperationToString(mOperation));
+        // LogDebg("Starting operation \"%s\"", OperationToString(mOperation));
     }
 
     if (mOperation == kOperationTransmitDataDirect || mOperation == kOperationTransmitDataIndirect)
@@ -686,7 +686,7 @@ exit:
 void Mac::FinishOperation(void)
 {
     // Clear the current operation and start any pending ones.
-    LogDebg("Finishing operation \"%s\"", OperationToString(mOperation));
+    // LogDebg("Finishing operation \"%s\"", OperationToString(mOperation));
 
     mOperation = kOperationIdle;
     StartOperation(kOperationIdle);
@@ -1057,11 +1057,11 @@ void Mac::BuildMainKeyDescriptors(uint8_t &aIndex)
 #endif
         }
 
-        LogDebg("Built Key at index %d", aIndex);
+        // LogDebg("Built Key at index %d", aIndex);
         for (int j = 0; j < mActiveNeighborCount; j++)
         {
-            LogDebg("Device Desc handle %d, blacklisted %d", keyTableEntry.mKeyDeviceDesc[j].mDeviceDescriptorHandle,
-                    keyTableEntry.mKeyDeviceDesc[j].mBlacklisted);
+            // LogDebg("Device Desc handle %d, blacklisted %d", keyTableEntry.mKeyDeviceDesc[j].mDeviceDescriptorHandle,
+            //         keyTableEntry.mKeyDeviceDesc[j].mBlacklisted);
         }
 
         otPlatMlmeSet(&GetInstance(), OT_PIB_MAC_KEY_TABLE, aIndex, sizeof(keyTableEntry),
