@@ -106,7 +106,6 @@ void MessagePool::Free(Message *aMessage)
 
 Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
 {
-    LogInfo("NewBuffer");
     Buffer *buffer = nullptr;
 
     while ((
@@ -120,14 +119,13 @@ Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
                    ) == nullptr)
     {
         SuccessOrExit(ReclaimBuffers(aPriority));
-        LogInfo("NewBuffer, while loop");
     }
 
 #if !OPENTHREAD_CONFIG_PLATFORM_MESSAGE_MANAGEMENT && !OPENTHREAD_CONFIG_MESSAGE_USE_HEAP_ENABLE
     mNumFreeBuffers--;
 #endif
 
-    LogInfo("NewBuffer: free: %d, total: %d", GetFreeBufferCount(), GetTotalBufferCount());
+    printf("NewBuffer f:%d\n", mNumFreeBuffers);
 
     buffer->SetNextBuffer(nullptr);
 
