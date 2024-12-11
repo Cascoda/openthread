@@ -142,7 +142,6 @@ exit:
 
 void MessagePool::FreeBuffers(Buffer *aBuffer)
 {
-    LogInfo("Freebuffers: outside, free: %d, total %d", GetFreeBufferCount(), GetTotalBufferCount());
     while (aBuffer != nullptr)
     {
         Buffer *next = aBuffer->GetNextBuffer();
