@@ -154,7 +154,7 @@ void MessagePool::FreeBuffers(Buffer *aBuffer)
         mNumFreeBuffers++;
 #endif
         aBuffer = next;
-        LogInfo("Freebuffers: inside, free: %d, total %d", GetFreeBufferCount(), GetTotalBufferCount());
+        printf("@f:%d\n", mNumFreeBuffers);
     }
 }
 
