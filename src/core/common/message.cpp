@@ -106,6 +106,7 @@ void MessagePool::Free(Message *aMessage)
 
 Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
 {
+    LogInfo("NewBuffer");
     Buffer *buffer = nullptr;
 
     while ((
@@ -119,11 +120,14 @@ Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
                    ) == nullptr)
     {
         SuccessOrExit(ReclaimBuffers(aPriority));
+        LogInfo("NewBuffer, while loop");
     }
 
 #if !OPENTHREAD_CONFIG_PLATFORM_MESSAGE_MANAGEMENT && !OPENTHREAD_CONFIG_MESSAGE_USE_HEAP_ENABLE
     mNumFreeBuffers--;
 #endif
+
+    LogInfo("NewBuffer: free: %d, total: %d", GetFreeBufferCount(), GetTotalBufferCount());
 
     buffer->SetNextBuffer(nullptr);
 
@@ -138,6 +142,7 @@ exit:
 
 void MessagePool::FreeBuffers(Buffer *aBuffer)
 {
+    LogInfo("Freebuffers: outside, free: %d, total %d", GetFreeBufferCount(), GetTotalBufferCount());
     while (aBuffer != nullptr)
     {
         Buffer *next = aBuffer->GetNextBuffer();
@@ -150,6 +155,7 @@ void MessagePool::FreeBuffers(Buffer *aBuffer)
         mNumFreeBuffers++;
 #endif
         aBuffer = next;
+        LogInfo("Freebuffers: inside, free: %d, total %d", GetFreeBufferCount(), GetTotalBufferCount());
     }
 }
 
