@@ -125,7 +125,7 @@ Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
     mNumFreeBuffers--;
 #endif
 
-    printf("NewBuffer f:%d\n", mNumFreeBuffers);
+    LogInfo("NewBuffer f:%d", mNumFreeBuffers);
 
     buffer->SetNextBuffer(nullptr);
 
@@ -152,7 +152,7 @@ void MessagePool::FreeBuffers(Buffer *aBuffer)
         mNumFreeBuffers++;
 #endif
         aBuffer = next;
-        printf("@f:%d\n", mNumFreeBuffers);
+        LogInfo("@f:%d", mNumFreeBuffers);
     }
 }
 
