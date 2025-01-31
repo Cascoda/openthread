@@ -104,7 +104,6 @@ void MessagePool::Free(Message *aMessage)
     FreeBuffers(static_cast<Buffer *>(aMessage));
 }
 
-static bool printBufs = false;
 Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
 {
     Buffer *buffer = nullptr;
@@ -126,13 +125,7 @@ Buffer *MessagePool::NewBuffer(Message::Priority aPriority)
     mNumFreeBuffers--;
 #endif
 
-    if (!printBufs) {
-      if (mNumFreeBuffers <= 20) {
-        printBufs = true;
-      }
-    } else {
-      LogNote("NewBuffer f:%d", mNumFreeBuffers);
-    }
+    LogNote("NewBuffer f:%d, &:%p", mNumFreeBuffers, buffer);
 
     buffer->SetNextBuffer(nullptr);
 
@@ -147,6 +140,7 @@ exit:
 
 void MessagePool::FreeBuffers(Buffer *aBuffer)
 {
+  Buffer *forLogging;
     while (aBuffer != nullptr)
     {
         Buffer *next = aBuffer->GetNextBuffer();
@@ -158,10 +152,9 @@ void MessagePool::FreeBuffers(Buffer *aBuffer)
         mBufferPool.Free(*aBuffer);
         mNumFreeBuffers++;
 #endif
+        forLogging = aBuffer;
         aBuffer = next;
-        if (printBufs) {
-          LogNote("@f:%d", mNumFreeBuffers);
-        }
+        LogNote("@f:%d, &:%p", mNumFreeBuffers, forLogging);
     }
 }
 
