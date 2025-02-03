@@ -1394,12 +1394,14 @@ void Mac::HandleNotifierEvents(Events aEvents)
 
 extern "C" void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle, Error aError)
 {
+    printf("otPlatMcpsDataConfirm()\n");
     Instance *instance = static_cast<Instance *>(aInstance);
     VerifyOrExit(instance->IsInitialized());
-
+    print("Calling TransmitDoneTask\n");
     instance->Get<Mac>().TransmitDoneTask(aMsduHandle, aError);
 
 exit:
+    printf("exit");
     return;
 }
 
@@ -1440,15 +1442,16 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
 {
     Error error = ProcessTransmitStatus(aError);
 
-    LogDebg("TransmitDoneTask Called");
+    printf("TransmitDoneTask Called\n");
 
     if (error != kErrorNone)
     {
-        LogDebg("Transmit Error: %s", otThreadErrorToString(aError));
+        printf("Transmit Error: %s\n", otThreadErrorToString(aError));
     }
 
     if (aMsduHandle == mDirectMsduHandle)
     {
+        printf("in first if\n");
         if (aError == kErrorChannelAccessFailure || aError == kErrorFailed)
         {
             // Failed without even hitting the air, retry silently.
@@ -1461,6 +1464,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
                 // aborted, forward the error back up.
                 Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
             }
+            printf("RETRYING SILENTLY, MCPS DATA REQUEST DIDN'T FAIL");
             return;
         }
         if (mJoinerEntrustResponseRequested)
