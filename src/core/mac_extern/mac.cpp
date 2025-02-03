@@ -1401,7 +1401,7 @@ extern "C" void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle
     instance->Get<Mac>().TransmitDoneTask(aMsduHandle, aError);
 
 exit:
-    printf("exit");
+    printf("exit\n");
     return;
 }
 
@@ -1452,7 +1452,9 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
     if (aMsduHandle == mDirectMsduHandle)
     {
         printf("in first if\n");
-        if (aError == kErrorChannelAccessFailure || aError == kErrorFailed)
+        // if (aError == kErrorChannelAccessFailure || aError == kErrorFailed)
+        // TEST just to see what happens...
+        if (aError == kErrorChannelAccessFailure)
         {
             // Failed without even hitting the air, retry silently.
             error = otPlatMcpsDataRequest(&GetInstance(), &mDirectDataReq);
@@ -1464,8 +1466,12 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
                 // aborted, forward the error back up.
                 Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
             }
-            printf("RETRYING SILENTLY, MCPS DATA REQUEST DIDN'T FAIL");
+            printf("RETRYING SILENTLY, MCPS DATA REQUEST DIDN'T FAIL\n");
             return;
+        }
+        if (aError == kErrorFailed)
+        {
+          printf("kErrorFailed, but NOT RETRYING (this is a test)\n");
         }
         if (mJoinerEntrustResponseRequested)
         {
