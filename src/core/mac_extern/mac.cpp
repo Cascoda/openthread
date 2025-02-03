@@ -1454,6 +1454,12 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
             // Failed without even hitting the air, retry silently.
             error = otPlatMcpsDataRequest(&GetInstance(), &mDirectDataReq);
             OT_ASSERT(error == kErrorNone);
+            if (error != kErrorNone)
+            {
+                // If the frame could not be prepared and the tx is being
+                // aborted, forward the error back up.
+                Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
+            }
             return;
         }
         if (mJoinerEntrustResponseRequested)
