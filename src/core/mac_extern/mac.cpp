@@ -1449,7 +1449,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
 
     if (aMsduHandle == mDirectMsduHandle)
     {
-        if (aError == kErrorChannelAccessFailure || aError == kErrorFailed)
+        if (aError == kErrorChannelAccessFailure)
         {
             // Failed without even hitting the air, retry silently.
             error = otPlatMcpsDataRequest(&GetInstance(), &mDirectDataReq);
