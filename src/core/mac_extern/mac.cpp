@@ -1397,7 +1397,7 @@ extern "C" void otPlatMcpsDataConfirm(otInstance *aInstance, uint8_t aMsduHandle
     printf("otPlatMcpsDataConfirm()\n");
     Instance *instance = static_cast<Instance *>(aInstance);
     VerifyOrExit(instance->IsInitialized());
-    print("Calling TransmitDoneTask\n");
+    printf("Calling TransmitDoneTask\n");
     instance->Get<Mac>().TransmitDoneTask(aMsduHandle, aError);
 
 exit:
