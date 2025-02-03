@@ -1456,6 +1456,7 @@ void Mac::TransmitDoneTask(uint8_t aMsduHandle, Error aError)
             OT_ASSERT(error == kErrorNone);
             if (error != kErrorNone)
             {
+                printf("FIX IS HEREEEE!!!\n");
                 // If the frame could not be prepared and the tx is being
                 // aborted, forward the error back up.
                 Get<MeshForwarder>().HandleSentFrame(mDirectAckRequested, error, mDirectDstAddress);
