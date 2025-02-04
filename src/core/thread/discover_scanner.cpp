@@ -179,7 +179,7 @@ exit:
     return error;
 }
 
-Mac::TxFrame *DiscoverScanner::PrepareDiscoveryRequestFrame(Mac::TxFrame &aFrame)
+Mac::TxFrame *DiscoverScanner::PrepareDiscoveryRequestFrame(Mac::TxFrame &aFrame, Error aError)
 {
     Mac::TxFrame *frame = &aFrame;
 
@@ -202,7 +202,7 @@ Mac::TxFrame *DiscoverScanner::PrepareDiscoveryRequestFrame(Mac::TxFrame &aFrame
     return frame;
 }
 
-void DiscoverScanner::HandleDiscoveryRequestFrameTxDone(Message &aMessage)
+void DiscoverScanner::HandleDiscoveryRequestFrameTxDone(Message &aMessage, Error aError)
 {
     switch (mState)
     {
@@ -210,14 +210,27 @@ void DiscoverScanner::HandleDiscoveryRequestFrameTxDone(Message &aMessage)
         break;
 
     case kStateScanning:
-        // Mark the Discovery Request message for direct tx to ensure it
-        // is not dequeued and freed by `MeshForwarder` and is ready for
-        // the next scan channel. Also pause message tx on `MeshForwarder`
-        // while listening to receive Discovery Responses.
-        aMessage.SetDirectTransmission();
-        Get<MeshForwarder>().PauseMessageTransmissions();
-        mTimer.Start(kDefaultScanDuration);
-        break;
+        if ((aError == kErrorNone) || (aError == kErrorChannelAccessFailure))
+        {
+            // Mark the Discovery Request message for direct tx to ensure it
+            // is not dequeued and freed by `MeshForwarder` and is ready for
+            // the next scan channel. Also pause message tx on `MeshForwarder`
+            // while listening to receive Discovery Responses.
+            aMessage.SetDirectTransmission();
+            Get<MeshForwarder>().PauseMessageTransmissions();
+            mTimer.Start(kDefaultScanDuration);
+            break;
+        }
+
+        // If we encounter other error failures (e.g., `kErrorDrop` due
+        // to message being evicted for example), `aMessage` may be
+        // immediately freed. This prevents us from reusing it to request
+        // a scan on the next scan channel. As a result, we stop the scan
+        // operation in such cases.
+
+        mState = kStateScanDone;
+
+        OT_FALL_THROUGH;
 
     case kStateScanDone:
         HandleDiscoverComplete();

@@ -215,7 +215,7 @@ void MeshForwarder::PrepareEmptyFrame(Mac::TxFrame &aFrame, const Mac::Address &
     aFrame.SetPayloadLength(0);
 }
 
-void MeshForwarder::RemoveMessage(Message &aMessage)
+void MeshForwarder::EvictMessage(Message &aMessage)
 {
     PriorityQueue *queue = aMessage.GetPriorityQueue();
 
@@ -229,6 +229,8 @@ void MeshForwarder::RemoveMessage(Message &aMessage)
             IgnoreError(mIndirectSender.RemoveMessageFromSleepyChild(aMessage, child));
         }
 #endif
+
+        FinalizeMessageDirectTx(aMessage, kErrorNoBufs);
 
         if (mSendMessage == &aMessage)
         {
@@ -333,6 +335,7 @@ Message *MeshForwarder::PrepareNextDirectTransmission(void)
 
         default:
             LogMessage(kMessageDrop, *curMessage, nullptr, error);
+            FinalizeMessageDirectTx(*curMessage, error);
             mSendQueue.DequeueAndFree(*curMessage);
             continue;
         }
@@ -1049,9 +1052,6 @@ void MeshForwarder::UpdateSendMessage(Error aFrameTxError, const Mac::Address &a
 
     txError = aFrameTxError;
 
-    mSendMessage->ClearDirectTransmission();
-    mSendMessage->SetOffset(0);
-
     if (aNeighbor != nullptr)
     {
         aNeighbor->GetLinkInfo().AddMessageTxStatus(mSendMessage->GetTxSuccess());
@@ -1077,29 +1077,45 @@ void MeshForwarder::UpdateSendMessage(Error aFrameTxError, const Mac::Address &a
 #endif
 
     LogMessage(kMessageTransmit, *mSendMessage, &aMacDest, txError);
+    FinalizeMessageDirectTx(*mSendMessage, txError);
+    RemoveMessageIfNoPendingTx(*mSendMessage);
 
-    if (mSendMessage->GetType() == Message::kTypeIp6)
+exit:
+    mScheduleTransmissionTask.Post();
+}
+
+void MeshForwarder::FinalizeMessageDirectTx(Message &aMessage, Error aError)
+{
+    // Finalizes the direct transmission of `aMessage`. This can be
+    // triggered by successful delivery (all fragments reaching the
+    // destination), failure of any fragment or eviction of message
+    // to accommodate higher priority messages.
+
+    VerifyOrExit(aMessage.IsDirectTransmission());
+
+    aMessage.ClearDirectTransmission();
+    aMessage.SetOffset(0);
+    
+    if (aError != kErrorNone)
     {
-        if (mSendMessage->GetTxSuccess())
-        {
-            mIpCounters.mTxSuccess++;
-        }
-        else
-        {
-            mIpCounters.mTxFailure++;
-        }
+      aMessage.SetTxSuccess(false);
+    }
+    
+    if (aMessage.GetType() == Message::kTypeIp6)
+    {
+        aMessage.GetTxSuccess() ? mIpCounters.mTxSuccess++ : mIpCounters.mTxFailure++;
     }
 
-    switch (mSendMessage->GetSubType())
+    switch (aMessage.GetSubType())
     {
     case Message::kSubTypeMleDiscoverRequest:
         // Note that `HandleDiscoveryRequestFrameTxDone()` may update
-        // `mSendMessage` and mark it again for direct transmission.
-        Get<Mle::DiscoverScanner>().HandleDiscoveryRequestFrameTxDone(*mSendMessage);
+        // `aMessage` and mark it again for direct transmission.
+        Get<Mle::DiscoverScanner>().HandleDiscoveryRequestFrameTxDone(aMessage);
         break;
 
     case Message::kSubTypeMleChildIdRequest:
-        if (mSendMessage->IsLinkSecurityEnabled())
+        if (aMessage.IsLinkSecurityEnabled())
         {
             // If the Child ID Request requires fragmentation and therefore
             // link layer security, the frame transmission will be aborted.
@@ -1110,17 +1126,14 @@ void MeshForwarder::UpdateSendMessage(Error aFrameTxError, const Mac::Address &a
             LogInfo("Requesting shorter `Child ID Request`");
             Get<Mle::Mle>().RequestShorterChildIdRequest();
         }
-
         break;
 
     default:
         break;
     }
 
-    RemoveMessageIfNoPendingTx(*mSendMessage);
-
 exit:
-    mScheduleTransmissionTask.Post();
+    return;
 }
 
 bool MeshForwarder::RemoveMessageIfNoPendingTx(Message &aMessage)
