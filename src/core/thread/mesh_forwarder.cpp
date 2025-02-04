@@ -1111,7 +1111,7 @@ void MeshForwarder::FinalizeMessageDirectTx(Message &aMessage, Error aError)
     case Message::kSubTypeMleDiscoverRequest:
         // Note that `HandleDiscoveryRequestFrameTxDone()` may update
         // `aMessage` and mark it again for direct transmission.
-        Get<Mle::DiscoverScanner>().HandleDiscoveryRequestFrameTxDone(aMessage);
+        Get<Mle::DiscoverScanner>().HandleDiscoveryRequestFrameTxDone(aMessage, aError);
         break;
 
     case Message::kSubTypeMleChildIdRequest:

@@ -179,7 +179,7 @@ exit:
     return error;
 }
 
-Mac::TxFrame *DiscoverScanner::PrepareDiscoveryRequestFrame(Mac::TxFrame &aFrame, Error aError)
+Mac::TxFrame *DiscoverScanner::PrepareDiscoveryRequestFrame(Mac::TxFrame &aFrame)
 {
     Mac::TxFrame *frame = &aFrame;
 
