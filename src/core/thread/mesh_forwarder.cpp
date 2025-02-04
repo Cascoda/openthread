@@ -1123,8 +1123,10 @@ exit:
     mScheduleTransmissionTask.Post();
 }
 
-void MeshForwarder::RemoveMessageIfNoPendingTx(Message &aMessage)
+bool MeshForwarder::RemoveMessageIfNoPendingTx(Message &aMessage)
 {
+    bool didRemove = false;
+
     VerifyOrExit(!aMessage.IsDirectTransmission() && !aMessage.IsChildPending());
 
     if (mSendMessage == &aMessage)
@@ -1134,9 +1136,10 @@ void MeshForwarder::RemoveMessageIfNoPendingTx(Message &aMessage)
     }
 
     mSendQueue.DequeueAndFree(aMessage);
+    didRemove = true;
 
 exit:
-    return;
+    return didRemove;
 }
 
 void MeshForwarder::HandleReceivedFrame(Mac::RxFrame &aFrame)

@@ -133,8 +133,17 @@ Error MeshForwarder::SendMessage(Message &aMessage)
         break;
     }
 
+    // Ensure that the message is marked for direct tx and/or for indirect tx
+    // to a sleepy child. Otherwise, remove the message.
+
+    if (RemoveMessageIfNoPendingTx(aMessage))
+    {
+        ExitNow();
+    }
+
     mScheduleTransmissionTask.Post();
 
+exit:
     return error;
 }
 
