@@ -533,7 +533,7 @@ Error MleRouter::SendLinkRequest(Neighbor *aNeighbor)
     static const uint8_t routerTlvs[]        = {Tlv::kLinkMargin};
     static const uint8_t validNeighborTlvs[] = {Tlv::kLinkMargin, Tlv::kRoute};
     Error                error               = kErrorNone;
-    Message             *message;
+    Message             *message             = nullptr;
     Ip6::Address         destination;
 
     destination.Clear();
