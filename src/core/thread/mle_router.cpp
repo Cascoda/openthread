@@ -853,7 +853,7 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
     uint32_t              mleFrameCounter;
     uint8_t               routerId;
     uint16_t              address16;
-    RouteTlv              route;
+    RouteTlv              routeTlv;
     LeaderData            leaderData;
     uint8_t               linkMargin;
 
@@ -935,10 +935,8 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
         SetLeaderData(leaderData.GetPartitionId(), leaderData.GetWeighting(), leaderData.GetLeaderRouterId());
 
         // Route
-        SuccessOrExit(error = Tlv::FindTlv(aMessage, Tlv::kRoute, sizeof(route), route));
-        VerifyOrExit(route.IsValid(), error = kErrorParse);
         mRouterTable.Clear();
-        SuccessOrExit(error = ProcessRouteTlv(route));
+        SuccessOrExit(error = ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor));
         router = mRouterTable.GetRouter(routerId);
         VerifyOrExit(router != nullptr);
 
@@ -980,14 +978,21 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
         }
 
         // Route (optional)
-        if (Tlv::FindTlv(aMessage, route) == kErrorNone)
+        switch (error = ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor, routeTlv))
         {
-            VerifyOrExit(route.IsValid(), error = kErrorParse);
-            SuccessOrExit(error = ProcessRouteTlv(route));
-            UpdateRoutes(route, routerId);
-            // need to update router after ProcessRouteTlv
+        case kErrorNone:
+            UpdateRoutes(routeTlv, routerId);
+            // Need to update router after ProcessRouteTlv
             router = mRouterTable.GetRouter(routerId);
             OT_ASSERT(router != nullptr);
+            break;
+        
+        case kErrorNotFound:
+            error = kErrorNone;
+            break;
+
+        default:
+            ExitNow();
         }
 
         // update routing table
@@ -1104,18 +1109,55 @@ exit:
     return error;
 }
 
-Error MleRouter::ProcessRouteTlv(const RouteTlv &aRoute)
+Error MleRouter::ProcessRouteTlv(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor)
 {
-    Error error = kErrorNone;
+    RouteTlv routeTlv;
 
-    mRouterTable.UpdateRouterIdSet(aRoute.GetRouterIdSequence(), aRoute.GetRouterIdMask());
+    return ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor, routeTlv);
+}
 
-    if (IsRouter() && !mRouterTable.IsAllocated(mRouterId))
+Error MleRouter::ProcessRouteTlv(const Message &aMessage, 
+                                 const Ip6::MessageInfo &aMessageInfo, 
+                                 Neighbor *aNeighbor, 
+                                 RouteTlv &aRouteTlv)
+{
+    // This method processes Route TLV in a received MLE message.
+    // In case of success, `aRouteTlv` is updated to return the
+    // read/processed route TLV from the message. If the message
+    // contains no Route TLV, `kErrorNotFound` is returned.
+    //
+    // During processing of Route TLV, the entries in the router table
+    // may shuffle. This method ensures that the `aNeighbor` (which
+    // indicates the neighbor from which the MLE message was received)
+    // is correctly updated to point to the same neighbor (in case
+    // `aNeighbor` was pointing to a router entry from the `RouterTable`).
+
+    Error error;
+    uint16_t neighborRloc16 = Mac::kShortAddrInvalid;
+
+    if ((aNeighbor != nullptr) && Get<RouterTable>().Contains(*aNeighbor))
+    {
+        neighborRloc16 = aNeighbor->GetRloc16();
+    }
+
+    SuccessOrExit(error = Tlv::FindTlv(aMessage, aRouteTlv));
+
+    VerifyOrExit(aRouteTlv.IsValid(), error = kErrorParse);
+
+    Get<RouterTable>().UpdateRouterIdSet(aRouteTlv.GetRouterIdSequence(), aRouteTlv.GetRouterIdMask());
+
+    if (IsRouter() && !Get<RouterTable>.IsAllocated(mRouterId))
     {
         IgnoreError(BecomeDetached());
         error = kErrorNoRoute;
     }
 
+    if (neighborRloc16 != Mac::kShortAddrInvalid)
+    {
+        aNeighbor = Get<RouterTable>().GetNeighbor(neighborRloc16);
+    }
+
+exit:
     return error;
 }
 
@@ -1309,11 +1351,7 @@ Error MleRouter::HandleAdvertisement(const Message &aMessage, const Ip6::Message
 
         if (processRouteTlv)
         {
-            SuccessOrExit(error = ProcessRouteTlv(route));
-            if (Get<RouterTable>().Contains(*aNeighbor))
-            {
-                aNeighbor = nullptr; // aNeighbor is no longer valid after `ProcessRouteTlv`
-            }
+            SuccessOrExit(error = ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor));
         }
     }
 

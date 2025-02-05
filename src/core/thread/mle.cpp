@@ -3115,12 +3115,13 @@ void Mle::HandleAdvertisement(const Message &aMessage, const Ip6::MessageInfo &a
 #if OPENTHREAD_FTD
             if (IsFullThreadDevice())
             {
-                RouteTlv route;
-
-                if ((Tlv::FindTlv(aMessage, route) == kErrorNone) && route.IsValid())
+                switch (Get<MleRouter>().ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor))
                 {
-                    // Overwrite Route Data
-                    IgnoreError(Get<MleRouter>().ProcessRouteTlv(route));
+                case kErrorNone:
+                case kErrorNotFound:
+                    break;
+                default:
+                    ExitNow(error = kErrorParse);
                 }
             }
 #endif
@@ -3764,11 +3765,13 @@ void Mle::HandleChildIdResponse(const Message          &aMessage,
 #if OPENTHREAD_FTD
     if (IsFullThreadDevice())
     {
-        RouteTlv route;
-
-        if (Tlv::FindTlv(aMessage, route) == kErrorNone)
+        switch (Get<MleRouter>().ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor))
         {
-            SuccessOrExit(error = Get<MleRouter>().ProcessRouteTlv(route));
+        case kErrorNone:
+        case kErrorNotFound:
+            break;
+        default:
+            ExitNow(error = kErrorParse);
         }
     }
 #endif
