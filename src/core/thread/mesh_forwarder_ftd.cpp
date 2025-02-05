@@ -133,8 +133,17 @@ Error MeshForwarder::SendMessage(Message &aMessage)
         break;
     }
 
+    // Ensure that the message is marked for direct tx and/or for indirect tx
+    // to a sleepy child. Otherwise, remove the message.
+
+    if (RemoveMessageIfNoPendingTx(aMessage))
+    {
+        ExitNow();
+    }
+
     mScheduleTransmissionTask.Post();
 
+exit:
     return error;
 }
 
@@ -169,8 +178,9 @@ void MeshForwarder::HandleResolved(const Ip6::Address &aEid, Error aError)
             }
             else
             {
-                LogMessage(kMessageDrop, message, nullptr, aError);
-                message.Free();
+                LogMessage(kMessageDrop, message, nullptr, kErrorAddressQuery);
+                FinalizeMessageDirectTx(message, kErrorAddressQuery);
+                mSendQueue.DequeueAndFree(message);
             }
         }
     }
@@ -265,9 +275,9 @@ Error MeshForwarder::EvictMessage(Message::Priority aPriority)
 
 exit:
 
-    if (error == kErrorNone)
+    if (error == kErrorNone && evict != nullptr)
     {
-        RemoveMessage(*evict);
+        EvictMessage(*evict);
     }
 
     return error;
@@ -350,6 +360,7 @@ void MeshForwarder::RemoveDataResponseMessages(void)
         }
 
         LogMessage(kMessageDrop, message, nullptr, kErrorNone);
+        FinalizeMessageDirectTx(message, kErrorDrop);
         mSendQueue.DequeueAndFree(message);
     }
 }

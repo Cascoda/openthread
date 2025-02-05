@@ -468,7 +468,7 @@ private:
                                  Message::Priority       aPriority);
     Error HandleDatagram(Message &aMessage, const ThreadLinkInfo &aLinkInfo, const Mac::Address &aMacSource);
     void  ClearReassemblyList(void);
-    void  RemoveMessage(Message &aMessage);
+    void  EvictMessage(Message &aMessage);
     void  HandleDiscoverComplete(void);
 
     void          HandleReceivedFrame(Mac::RxFrame &aFrame);
@@ -483,7 +483,8 @@ private:
                                              uint8_t   aFailLimit = Mle::kFailedRouterTransmissions);
     void          HandleSentFrame(bool aAckRequested, Error aError, const Mac::Address &aMacDest);
     void          UpdateSendMessage(Error aFrameTxError, const Mac::Address &aMacDest, Neighbor *aNeighbor);
-    void          RemoveMessageIfNoPendingTx(Message &aMessage);
+    void          FinalizeMessageDirectTx(Message &aMessage, Error aError);
+    bool          RemoveMessageIfNoPendingTx(Message &aMessage);
 
     void        HandleTimeTick(void);
     static void ScheduleTransmissionTask(Tasklet &aTasklet);
