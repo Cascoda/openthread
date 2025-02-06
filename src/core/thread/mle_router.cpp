@@ -4410,7 +4410,7 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
             continue;
         }
 
-        localLinkQuality = router->GetTwoWayLinkQuality();
+        localLinkQuality = Min(router->GetLinkInfo().GetLinkQuality(), router->GetLinkQualityOut());
 
         if (localLinkQuality < kLinkQuality2)
         {
