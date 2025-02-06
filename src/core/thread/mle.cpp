@@ -2545,7 +2545,7 @@ Error Mle::SendChildUpdateResponse(const uint8_t *aTlvs,
         }
     }
 
-    SuccessOrExit(error = SendMessage(*message, destination));
+    SuccessOrExit(error = SendMessage(*message, aDestination));
 
     Log(kMessageSend, kTypeChildUpdateResponseAsChild, aDestination);
 

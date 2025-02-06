@@ -4395,8 +4395,8 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
          index += aRouteTlv.IsRouterIdSet(routerId) ? 1 : 0, routerId++)
     {
         const Router *router;
-        LinkQuality   localLinkQuality;
-        LinkQuality   peerLinkQuality;
+        uint8_t       localLinkQuality;
+        uint8_t       peerLinkQuality;
 
         if ((routerId == mRouterId) || (routerId == aNeighborId))
         {
