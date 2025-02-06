@@ -3124,7 +3124,7 @@ void Mle::HandleAdvertisement(const Message &aMessage, const Ip6::MessageInfo &a
 #if OPENTHREAD_FTD
             if (IsFullThreadDevice())
             {
-                switch (Get<MleRouter>().ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor))
+                switch (Get<MleRouter>().ProcessRouteTlv(aMessage, aNeighbor))
                 {
                 case kErrorNone:
                 case kErrorNotFound:
@@ -3774,7 +3774,7 @@ void Mle::HandleChildIdResponse(const Message          &aMessage,
 #if OPENTHREAD_FTD
     if (IsFullThreadDevice())
     {
-        switch (Get<MleRouter>().ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor))
+        switch (Get<MleRouter>().ProcessRouteTlv(aMessage, aNeighbor))
         {
         case kErrorNone:
         case kErrorNotFound:

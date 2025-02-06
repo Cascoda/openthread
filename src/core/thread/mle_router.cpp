@@ -936,7 +936,7 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
 
         // Route
         mRouterTable.Clear();
-        SuccessOrExit(error = ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor));
+        SuccessOrExit(error = ProcessRouteTlv(aMessage, aNeighbor));
         router = mRouterTable.GetRouter(routerId);
         VerifyOrExit(router != nullptr);
 
@@ -978,7 +978,7 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
         }
 
         // Route (optional)
-        switch (error = ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor, routeTlv))
+        switch (error = ProcessRouteTlv(aMessage, aNeighbor, routeTlv))
         {
         case kErrorNone:
             UpdateRoutes(routeTlv, routerId);
@@ -1109,17 +1109,14 @@ exit:
     return error;
 }
 
-Error MleRouter::ProcessRouteTlv(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor)
+Error MleRouter::ProcessRouteTlv(const Message &aMessage, Neighbor *aNeighbor)
 {
     RouteTlv routeTlv;
 
-    return ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor, routeTlv);
+    return ProcessRouteTlv(aMessage, aNeighbor, routeTlv);
 }
 
-Error MleRouter::ProcessRouteTlv(const Message &aMessage, 
-                                 const Ip6::MessageInfo &aMessageInfo, 
-                                 Neighbor *aNeighbor, 
-                                 RouteTlv &aRouteTlv)
+Error MleRouter::ProcessRouteTlv(const Message &aMessage, Neighbor *aNeighbor, RouteTlv &aRouteTlv)
 {
     // This method processes Route TLV in a received MLE message.
     // In case of success, `aRouteTlv` is updated to return the
@@ -1351,7 +1348,7 @@ Error MleRouter::HandleAdvertisement(const Message &aMessage, const Ip6::Message
 
         if (processRouteTlv)
         {
-            SuccessOrExit(error = ProcessRouteTlv(aMessage, aMessageInfo, aNeighbor));
+            SuccessOrExit(error = ProcessRouteTlv(aMessage, aNeighbor));
         }
     }
 
