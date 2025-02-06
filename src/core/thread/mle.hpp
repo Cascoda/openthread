@@ -665,13 +665,19 @@ public:
      * @returns A reference to the MLE counters.
      *
      */
-    const otMleCounters &GetCounters(void) const { return mCounters; }
+    const Counters &GetCounters(void)
+    { 
+#if OPENTHREAD_CONFIG_UPTIME_ENABLE
+        UpdateRoleTimeCounters(mRole);
+#endif
+        return mCounters; 
+    }
 
     /**
      * This method resets the MLE counters.
      *
      */
-    void ResetCounters(void) { memset(&mCounters, 0, sizeof(mCounters)); }
+    void ResetCounters(void);
 
     /**
      * This function registers the client callback that is called when processing an MLE Parent Response message.
@@ -1941,7 +1947,7 @@ private:
     ServiceAloc mServiceAlocs[kMaxServiceAlocs];
 #endif
 
-    otMleCounters mCounters;
+    Counters mCounters;
 
     Ip6::Netif::UnicastAddress   mLinkLocal64;
     Ip6::Netif::UnicastAddress   mMeshLocal64;

@@ -263,6 +263,14 @@ exit:
     return;
 }
 
+void Mle::ResetCounters(void)
+{
+    memset(&mCounters, 0, sizeof(mCounters));
+#if OPENTHREAD_CONFIG_UPTIME_ENABLE
+    mLastUpdatedTimestamp = Get<Uptime>().GetUptime();
+#endif
+}
+
 void Mle::SetRole(DeviceRole aRole)
 {
     DeviceRole oldRole = mRole;
