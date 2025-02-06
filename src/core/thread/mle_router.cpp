@@ -4411,9 +4411,9 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
         }
 
         localLinkQuality = router->GetLinkInfo().GetLinkQuality();
-        if (localLinkQuality > router.GetLinkQualityOut())
+        if (localLinkQuality > router->GetLinkQualityOut())
         {
-            localLinkQuality = router.GetLinkQualityOut();
+            localLinkQuality = router->GetLinkQualityOut();
         }
 
         if (localLinkQuality < kLinkQuality2)
