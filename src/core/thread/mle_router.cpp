@@ -2755,7 +2755,7 @@ void MleRouter::HandleChildUpdateResponse(const Message          &aMessage,
     }
 
     // Status
-    switch (Tlv::Find<ThreadStatusTlv>(aMessage, status))
+    switch (Tlv::Find<StatusTlv>(aMessage, status))
     {
     case kErrorNone:
         VerifyOrExit(status != StatusTlv::kError, RemoveNeighbor(*child));
