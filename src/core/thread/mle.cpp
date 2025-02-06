@@ -4079,7 +4079,7 @@ void Mle::HandleAnnounce(const Message &aMessage, const Ip6::MessageInfo &aMessa
         SendAnnounce(channel, aMessageInfo.GetPeerAddr());
 #endif
     }
-    else if (MeshCop::Timestamp::Compare(&timestamp, localTimestamp) > 0)
+    else if (MeshCoP::Timestamp::Compare(&timestamp, localTimestamp) > 0)
     {
         // No action is required if device is detached, and current
         // channel and pan-id match the values from the received MLE
@@ -4485,8 +4485,8 @@ const char *Mle::MessageTypeToString(MessageType aType)
     static_assert(kTypeChildIdRequest == 2, "kTypeChildIdRequest value is incorrect");
     static_assert(kTypeChildIdRequestShort == 3, "kTypeChildIdRequestShort value is incorrect");
     static_assert(kTypeChildIdResponse == 4, "kTypeChildIdResponse value is incorrect");
-    static_assert(kTypeChildUpdateRequestOfParent == 5, "kTypeChildUpdateRequestAsChild value is incorrect");
-    static_assert(kTypeChildUpdateResponseOfParent == 6, "kTypeChildUpdateResponseAsChild value is incorrect");
+    static_assert(kTypeChildUpdateRequestAsChild == 5, "kTypeChildUpdateRequestAsChild value is incorrect");
+    static_assert(kTypeChildUpdateResponseAsChild == 6, "kTypeChildUpdateResponseAsChild value is incorrect");
     static_assert(kTypeDataRequest == 7, "kTypeDataRequest value is incorrect");
     static_assert(kTypeDataResponse == 8, "kTypeDataResponse value is incorrect");
     static_assert(kTypeDiscoveryRequest == 9, "kTypeDiscoveryRequest value is incorrect");
