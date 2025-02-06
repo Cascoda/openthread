@@ -667,7 +667,7 @@ private:
     bool    HasChildren(void);
     void    RemoveChildren(void);
     bool    HasMinDowngradeNeighborRouters(void);
-    bool    HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId);
+    bool    NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uint8_t aNeighborId) const;
     bool    HasSmallNumberOfChildren(void);
     uint8_t GetSleepyChildrenCount();
 
