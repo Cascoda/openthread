@@ -863,8 +863,8 @@ protected:
         kTypeChildIdRequest,
         kTypeChildIdRequestShort,
         kTypeChildIdResponse,
-        kTypeChildUpdateRequestOfParent,
-        kTypeChildUpdateResponseOfParent,
+        kTypeChildUpdateRequestAsChild,
+        kTypeChildUpdateResponseAsChild,
         kTypeDataRequest,
         kTypeDataResponse,
         kTypeDiscoveryRequest,
@@ -1415,12 +1415,16 @@ protected:
      * @param[in]  aTlvs         A pointer to requested TLV types.
      * @param[in]  aNumTlvs      The number of TLV types in @p aTlvs.
      * @param[in]  aChallenge    The Challenge for the response.
+     * @param[in]  aDestination  The destination for the response
      *
      * @retval kErrorNone     Successfully generated an MLE Child Update Response message.
      * @retval kErrorNoBufs   Insufficient buffers to generate the MLE Child Update Response message.
      *
      */
-    Error SendChildUpdateResponse(const uint8_t *aTlvs, uint8_t aNumTlvs, const Challenge &aChallenge);
+    Error SendChildUpdateResponse(const uint8_t *aTlvs, 
+                                  uint8_t aNumTlvs, 
+                                  const Challenge &aChallenge,
+                                  const Ip6::Address &aDestination);
 
     /**
      * This method submits an MLE message to the UDP socket.
