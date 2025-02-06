@@ -1826,7 +1826,7 @@ private:
     void HandleAdvertisement(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
     void HandleChildIdResponse(const Message &         aMessage,
                                const Ip6::MessageInfo &aMessageInfo,
-                               const Neighbor *        aNeighbor);
+                               Neighbor *        aNeighbor);
     void HandleChildUpdateRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
     void HandleChildUpdateResponse(const Message &         aMessage,
                                    const Ip6::MessageInfo &aMessageInfo,

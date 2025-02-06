@@ -3680,7 +3680,7 @@ exit:
 
 void Mle::HandleChildIdResponse(const Message          &aMessage,
                                 const Ip6::MessageInfo &aMessageInfo,
-                                const Neighbor         *aNeighbor)
+                                Neighbor         *aNeighbor)
 {
     Error              error = kErrorNone;
     LeaderData         leaderData;
