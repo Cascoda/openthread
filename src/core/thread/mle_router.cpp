@@ -4410,7 +4410,11 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
             continue;
         }
 
-        localLinkQuality = Min(router->GetLinkInfo().GetLinkQuality(), router->GetLinkQualityOut());
+        localLinkQuality = router->GetLinkInfo().GetLinkQuality();
+        if (localLinkQuality > router.GetLinkQualityOut())
+        {
+            localLinkQuality = router.GetLinkQualityOut();
+        }
 
         if (localLinkQuality < kLinkQuality2)
         {
@@ -4426,7 +4430,11 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
             ExitNow(isComparable = false);
         }
 
-        peerLinkQuality = Min(aRouteTlv.GetLinkQualityIn(index), aRouteTlv.GetLinkQualityOut(index));
+        peerLinkQuality = aRouteTlv.GetLinkQualityIn(index);
+        if (peerLinkQuality > aRouteTlv.GetLinkQualityOut(index))
+        {
+            peerLinkQuality = aRouteTlv.GetLinkQualityOut(index);
+        }
 
         if (peerLinkQuality < localLinkQuality)
         {
