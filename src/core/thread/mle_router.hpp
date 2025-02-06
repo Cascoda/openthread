@@ -611,11 +611,11 @@ private:
     void HandleTimeSync(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, const Neighbor *aNeighbor);
 #endif
 
-    Error MleRouter::ProcessRouteTlv(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
-    Error MleRouter::ProcessRouteTlv(const Message &aMessage, 
-                                     const Ip6::MessageInfo &aMessageInfo, 
-                                     Neighbor *aNeighbor, 
-                                     RouteTlv &aRouteTlv);
+    Error ProcessRouteTlv(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
+    Error ProcessRouteTlv(const Message &aMessage, 
+                          const Ip6::MessageInfo &aMessageInfo, 
+                          Neighbor *aNeighbor, 
+                          RouteTlv &aRouteTlv);
     void  StopAdvertiseTrickleTimer(void);
     Error SendAddressSolicit(ThreadStatusTlv::Status aStatus);
     void  SendAddressRelease(void);

@@ -1146,7 +1146,7 @@ Error MleRouter::ProcessRouteTlv(const Message &aMessage,
 
     Get<RouterTable>().UpdateRouterIdSet(aRouteTlv.GetRouterIdSequence(), aRouteTlv.GetRouterIdMask());
 
-    if (IsRouter() && !Get<RouterTable>.IsAllocated(mRouterId))
+    if (IsRouter() && !Get<RouterTable>().IsAllocated(mRouterId))
     {
         IgnoreError(BecomeDetached());
         error = kErrorNoRoute;
