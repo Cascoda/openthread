@@ -2484,7 +2484,7 @@ exit:
 
 Error Mle::SendChildUpdateResponse(const uint8_t *aTlvs,
                                    uint8_t aNumTlvs, 
-                                   const Challenge &aChallenge
+                                   const Challenge &aChallenge,
                                    const Ip6::Address &aDestination)
 {
     Error        error = kErrorNone;
