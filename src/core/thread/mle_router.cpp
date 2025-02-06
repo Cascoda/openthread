@@ -4403,7 +4403,7 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
             continue;
         }
 
-        router = mRouterTable.FindRouterById(routerId);
+        router = mRouterTable.GetRouter(routerId);
 
         if ((router == nullptr) || !router->IsStateValid())
         {
