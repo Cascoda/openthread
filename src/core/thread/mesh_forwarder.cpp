@@ -336,7 +336,7 @@ Message *MeshForwarder::PrepareNextDirectTransmission(void)
         default:
             LogMessage(kMessageDrop, *curMessage, nullptr, error);
             FinalizeMessageDirectTx(*curMessage, error);
-            mSendQueue.DequeueAndFree(*curMessage);
+            RemoveMessageIfNoPendingTx(*curMessage);
             continue;
         }
     }
