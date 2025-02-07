@@ -4416,7 +4416,7 @@ bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uin
             localLinkQuality = router->GetLinkQualityOut();
         }
 
-        if (localLinkQuality < kLinkQuality2)
+        if (localLinkQuality < 2)
         {
             continue;
         }
