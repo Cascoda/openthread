@@ -1634,6 +1634,7 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
 #endif
 
     Log(kMessageReceive, kTypeParentRequest, aMessageInfo.GetPeerAddr());
+    LogNote("SSSEEEDDD: %d", OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS);
 
     VerifyOrExit(IsRouterEligible(), error = kErrorInvalidState);
 
