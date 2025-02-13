@@ -1640,7 +1640,7 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
     // A Router/REED MUST NOT send an MLE Parent Response if:
 
     // 0. It is detached or attempting to another partition
-    VerifyOrExit(!IsDetached() && !IsAttaching(), error = kErrorDrop);
+    VerifyOrExit(!IsDetached() && !IsAttaching(), error = kErrorIp6AddressCreationFailure);
 
     // 1. It has no available Child capacity (if Max Child Count minus
     // Child Count would be equal to zero)
@@ -1653,14 +1653,14 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
     VerifyOrExit(mode.IsValid(), error = OT_ERROR_PARSE);
     if (!(mode.IsRxOnWhenIdle()))
     {
-        VerifyOrExit(GetSleepyChildrenCount() < OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS, error = OT_ERROR_DROP);
+        VerifyOrExit(GetSleepyChildrenCount() < OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS, error = kErrorNotTmf);
     }
 #endif
 
     // 2. It is disconnected from its Partition (that is, it has not
     // received an updated ID sequence number within LEADER_TIMEOUT
     // seconds)
-    VerifyOrExit(mRouterTable.GetLeaderAge() < mNetworkIdTimeout, error = kErrorDrop);
+    VerifyOrExit(mRouterTable.GetLeaderAge() < mNetworkIdTimeout, error = kErrorLinkMarginLow);
 
     // 3. Its current routing path cost to the Leader is infinite.
     leader = mRouterTable.GetLeader();
@@ -1669,7 +1669,7 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
     VerifyOrExit(IsLeader() || GetLinkCost(GetLeaderId()) < kMaxRouteCost ||
                      (IsChild() && leader->GetCost() + 1 < kMaxRouteCost) ||
                      (leader->GetCost() + GetLinkCost(leader->GetNextHop()) < kMaxRouteCost),
-                 error = kErrorDrop);
+                 error = kErrorInvalidSourceAddress);
 
     // 4. It is a REED and there are already `kMaxRouters` active routers in
     // the network (because Leader would reject any further address solicit).
@@ -1692,7 +1692,7 @@ void MleRouter::HandleParentRequest(const Message &aMessage, const Ip6::MessageI
 
     case kRoleChild:
         VerifyOrExit(ScanMaskTlv::IsEndDeviceFlagSet(scanMask));
-        VerifyOrExit(mRouterTable.GetActiveRouterCount() < kMaxRouters, error = kErrorDrop);
+        VerifyOrExit(mRouterTable.GetActiveRouterCount() < kMaxRouters, error = kErrorNotLowpanDataFrame);
         break;
 
     case kRoleRouter:
