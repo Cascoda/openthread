@@ -390,6 +390,11 @@ else()
     target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_LOG_PKT_DUMP=0")
 endif()
 
+option(OT_EXTERNAL_MAC_MAX_SEDS "Set maximum number of sleepy end devices per router")
+if (OT_EXTERNAL_MAC_MAX_SEDS)
+    target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_EXTERNAL_MAC_MAX_SEDS=${OT_EXTERNAL_MAC_MAX_SEDS}")
+endif()
+
 option(OT_OTNS "enable OTNS support")
 if(OT_OTNS)
     target_compile_definitions(ot-config INTERFACE "OPENTHREAD_CONFIG_OTNS_ENABLE=1")
