@@ -611,7 +611,8 @@ private:
     void HandleTimeSync(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, const Neighbor *aNeighbor);
 #endif
 
-    Error ProcessRouteTlv(const RouteTlv &aRoute);
+    Error ProcessRouteTlv(const Message &aMessage, Neighbor *aNeighbor);
+    Error ProcessRouteTlv(const Message &aMessage, Neighbor *aNeighbor, RouteTlv &aRouteTlv);
     void  StopAdvertiseTrickleTimer(void);
     Error SendAddressSolicit(ThreadStatusTlv::Status aStatus);
     void  SendAddressRelease(void);
@@ -663,7 +664,7 @@ private:
     bool    HasChildren(void);
     void    RemoveChildren(void);
     bool    HasMinDowngradeNeighborRouters(void);
-    bool    HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId);
+    bool    NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uint8_t aNeighborId) const;
     bool    HasSmallNumberOfChildren(void);
     uint8_t GetSleepyChildrenCount();
 

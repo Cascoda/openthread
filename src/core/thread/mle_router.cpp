@@ -533,7 +533,7 @@ Error MleRouter::SendLinkRequest(Neighbor *aNeighbor)
     static const uint8_t routerTlvs[]        = {Tlv::kLinkMargin};
     static const uint8_t validNeighborTlvs[] = {Tlv::kLinkMargin, Tlv::kRoute};
     Error                error               = kErrorNone;
-    Message             *message;
+    Message             *message             = nullptr;
     Ip6::Address         destination;
 
     destination.Clear();
@@ -853,7 +853,7 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
     uint32_t              mleFrameCounter;
     uint8_t               routerId;
     uint16_t              address16;
-    RouteTlv              route;
+    RouteTlv              routeTlv;
     LeaderData            leaderData;
     uint8_t               linkMargin;
 
@@ -935,10 +935,8 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
         SetLeaderData(leaderData.GetPartitionId(), leaderData.GetWeighting(), leaderData.GetLeaderRouterId());
 
         // Route
-        SuccessOrExit(error = Tlv::FindTlv(aMessage, Tlv::kRoute, sizeof(route), route));
-        VerifyOrExit(route.IsValid(), error = kErrorParse);
         mRouterTable.Clear();
-        SuccessOrExit(error = ProcessRouteTlv(route));
+        SuccessOrExit(error = ProcessRouteTlv(aMessage, aNeighbor));
         router = mRouterTable.GetRouter(routerId);
         VerifyOrExit(router != nullptr);
 
@@ -980,14 +978,21 @@ Error MleRouter::HandleLinkAccept(const Message          &aMessage,
         }
 
         // Route (optional)
-        if (Tlv::FindTlv(aMessage, route) == kErrorNone)
+        switch (error = ProcessRouteTlv(aMessage, aNeighbor, routeTlv))
         {
-            VerifyOrExit(route.IsValid(), error = kErrorParse);
-            SuccessOrExit(error = ProcessRouteTlv(route));
-            UpdateRoutes(route, routerId);
-            // need to update router after ProcessRouteTlv
+        case kErrorNone:
+            UpdateRoutes(routeTlv, routerId);
+            // Need to update router after ProcessRouteTlv
             router = mRouterTable.GetRouter(routerId);
             OT_ASSERT(router != nullptr);
+            break;
+        
+        case kErrorNotFound:
+            error = kErrorNone;
+            break;
+
+        default:
+            ExitNow();
         }
 
         // update routing table
@@ -1104,18 +1109,52 @@ exit:
     return error;
 }
 
-Error MleRouter::ProcessRouteTlv(const RouteTlv &aRoute)
+Error MleRouter::ProcessRouteTlv(const Message &aMessage, Neighbor *aNeighbor)
 {
-    Error error = kErrorNone;
+    RouteTlv routeTlv;
 
-    mRouterTable.UpdateRouterIdSet(aRoute.GetRouterIdSequence(), aRoute.GetRouterIdMask());
+    return ProcessRouteTlv(aMessage, aNeighbor, routeTlv);
+}
 
-    if (IsRouter() && !mRouterTable.IsAllocated(mRouterId))
+Error MleRouter::ProcessRouteTlv(const Message &aMessage, Neighbor *aNeighbor, RouteTlv &aRouteTlv)
+{
+    // This method processes Route TLV in a received MLE message.
+    // In case of success, `aRouteTlv` is updated to return the
+    // read/processed route TLV from the message. If the message
+    // contains no Route TLV, `kErrorNotFound` is returned.
+    //
+    // During processing of Route TLV, the entries in the router table
+    // may shuffle. This method ensures that the `aNeighbor` (which
+    // indicates the neighbor from which the MLE message was received)
+    // is correctly updated to point to the same neighbor (in case
+    // `aNeighbor` was pointing to a router entry from the `RouterTable`).
+
+    Error error;
+    uint16_t neighborRloc16 = Mac::kShortAddrInvalid;
+
+    if ((aNeighbor != nullptr) && Get<RouterTable>().Contains(*aNeighbor))
+    {
+        neighborRloc16 = aNeighbor->GetRloc16();
+    }
+
+    SuccessOrExit(error = Tlv::FindTlv(aMessage, aRouteTlv));
+
+    VerifyOrExit(aRouteTlv.IsValid(), error = kErrorParse);
+
+    Get<RouterTable>().UpdateRouterIdSet(aRouteTlv.GetRouterIdSequence(), aRouteTlv.GetRouterIdMask());
+
+    if (IsRouter() && !Get<RouterTable>().IsAllocated(mRouterId))
     {
         IgnoreError(BecomeDetached());
         error = kErrorNoRoute;
     }
 
+    if (neighborRloc16 != Mac::kShortAddrInvalid)
+    {
+        aNeighbor = Get<RouterTable>().GetNeighbor(neighborRloc16);
+    }
+
+exit:
     return error;
 }
 
@@ -1309,11 +1348,7 @@ Error MleRouter::HandleAdvertisement(const Message &aMessage, const Ip6::Message
 
         if (processRouteTlv)
         {
-            SuccessOrExit(error = ProcessRouteTlv(route));
-            if (Get<RouterTable>().Contains(*aNeighbor))
-            {
-                aNeighbor = nullptr; // aNeighbor is no longer valid after `ProcessRouteTlv`
-            }
+            SuccessOrExit(error = ProcessRouteTlv(aMessage, aNeighbor));
         }
     }
 
@@ -1421,7 +1456,7 @@ Error MleRouter::HandleAdvertisement(const Message &aMessage, const Ip6::Message
 
         if (routerCount > mRouterDowngradeThreshold && mRouterSelectionJitterTimeout == 0 &&
             HasMinDowngradeNeighborRouters() && HasSmallNumberOfChildren() &&
-            HasOneNeighborWithComparableConnectivity(route, routerId))
+            NeighborHasComparableConnectivity(route, routerId))
         {
             mRouterSelectionJitterTimeout = 1 + Random::NonCrypto::GetUint8InRange(0, mRouterSelectionJitter);
         }
@@ -2717,7 +2752,7 @@ void MleRouter::HandleChildUpdateResponse(const Message          &aMessage,
     }
 
     // Status
-    switch (Tlv::Find<ThreadStatusTlv>(aMessage, status))
+    switch (Tlv::Find<StatusTlv>(aMessage, status))
     {
     case kErrorNone:
         VerifyOrExit(status != StatusTlv::kError, RemoveNeighbor(*child));
@@ -2831,7 +2866,10 @@ void MleRouter::HandleDataRequest(const Message          &aMessage,
         OT_FALL_THROUGH;
 
     case kErrorNotFound:
-        tlvs[numTlvs++] = Tlv::kActiveDataset;
+        if (numTlvs < sizeof(tlvs))
+        {
+            tlvs[numTlvs++] = Tlv::kActiveDataset;
+        }
         break;
 
     default:
@@ -2850,7 +2888,10 @@ void MleRouter::HandleDataRequest(const Message          &aMessage,
         OT_FALL_THROUGH;
 
     case kErrorNotFound:
-        tlvs[numTlvs++] = Tlv::kPendingDataset;
+        if (numTlvs < sizeof(tlvs))
+        {
+            tlvs[numTlvs++] = Tlv::kPendingDataset;
+        }
         break;
 
     default:
@@ -4341,72 +4382,68 @@ bool MleRouter::HasMinDowngradeNeighborRouters(void)
     return routerCount >= kMinDowngradeNeighbors;
 }
 
-bool MleRouter::HasOneNeighborWithComparableConnectivity(const RouteTlv &aRoute, uint8_t aRouterId)
+bool MleRouter::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uint8_t aNeighborId) const
 {
-    bool rval = true;
+    // Check whether the neighboring router with Router ID `aNeighborId`
+    // (along with its `aRouteTlv`) has as good or better-quality links
+    // to all our neighboring routers which have a two-way link quality
+    // of two or better.
 
-    // process local neighbor routers
-    for (Router &router : Get<RouterTable>().Iterate())
+    bool isComparable = true;
+
+    for (uint8_t routerId = 0, index = 0; routerId <= kMaxRouterId;
+         index += aRouteTlv.IsRouterIdSet(routerId) ? 1 : 0, routerId++)
     {
-        uint8_t localLinkQuality = 0;
-        uint8_t peerLinkQuality  = 0;
-        uint8_t routerCount      = 0;
+        const Router *router;
+        uint8_t       localLinkQuality;
+        uint8_t       peerLinkQuality;
 
-        if (router.GetRouterId() == mRouterId)
+        if ((routerId == mRouterId) || (routerId == aNeighborId))
         {
-            routerCount++;
             continue;
         }
 
-        // check if neighbor is valid
-        if (router.IsStateValid())
+        router = mRouterTable.GetRouter(routerId);
+
+        if ((router == nullptr) || !router->IsStateValid())
         {
-            // if neighbor is just peer
-            if (router.GetRouterId() == aRouterId)
-            {
-                routerCount++;
-                continue;
-            }
-
-            localLinkQuality = router.GetLinkInfo().GetLinkQuality();
-
-            if (localLinkQuality > router.GetLinkQualityOut())
-            {
-                localLinkQuality = router.GetLinkQualityOut();
-            }
-
-            if (localLinkQuality >= 2)
-            {
-                // check if this neighbor router is in peer Route64 TLV
-                if (!aRoute.IsRouterIdSet(router.GetRouterId()))
-                {
-                    ExitNow(rval = false);
-                }
-
-                // get the peer's two-way link quality to this router
-                peerLinkQuality = aRoute.GetLinkQualityIn(routerCount);
-
-                if (peerLinkQuality > aRoute.GetLinkQualityOut(routerCount))
-                {
-                    peerLinkQuality = aRoute.GetLinkQualityOut(routerCount);
-                }
-
-                // compare local link quality to this router with peer's
-                if (peerLinkQuality >= localLinkQuality)
-                {
-                    routerCount++;
-                    continue;
-                }
-
-                ExitNow(rval = false);
-            }
+            continue;
         }
 
-        routerCount++;
+        localLinkQuality = router->GetLinkInfo().GetLinkQuality();
+        if (localLinkQuality > router->GetLinkQualityOut())
+        {
+            localLinkQuality = router->GetLinkQualityOut();
+        }
+
+        if (localLinkQuality < 2)
+        {
+            continue;
+        }
+
+        // `router` is our neighbor with two-way link quality of
+        // at least two. Check that `aRouteTlv` has as good or
+        // better-quality link to it as well.
+
+        if (!aRouteTlv.IsRouterIdSet(routerId))
+        {
+            ExitNow(isComparable = false);
+        }
+
+        peerLinkQuality = aRouteTlv.GetLinkQualityIn(index);
+        if (peerLinkQuality > aRouteTlv.GetLinkQualityOut(index))
+        {
+            peerLinkQuality = aRouteTlv.GetLinkQualityOut(index);
+        }
+
+        if (peerLinkQuality < localLinkQuality)
+        {
+            ExitNow(isComparable = false);
+        }
     }
 
 exit:
-    return rval;
+    return isComparable;
 }
 
 void MleRouter::SetChildStateToValid(Child &aChild)

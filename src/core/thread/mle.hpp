@@ -665,13 +665,19 @@ public:
      * @returns A reference to the MLE counters.
      *
      */
-    const otMleCounters &GetCounters(void) const { return mCounters; }
+    const Counters &GetCounters(void)
+    { 
+#if OPENTHREAD_CONFIG_UPTIME_ENABLE
+        UpdateRoleTimeCounters(mRole);
+#endif
+        return mCounters; 
+    }
 
     /**
      * This method resets the MLE counters.
      *
      */
-    void ResetCounters(void) { memset(&mCounters, 0, sizeof(mCounters)); }
+    void ResetCounters(void);
 
     /**
      * This function registers the client callback that is called when processing an MLE Parent Response message.
@@ -857,8 +863,8 @@ protected:
         kTypeChildIdRequest,
         kTypeChildIdRequestShort,
         kTypeChildIdResponse,
-        kTypeChildUpdateRequestOfParent,
-        kTypeChildUpdateResponseOfParent,
+        kTypeChildUpdateRequestAsChild,
+        kTypeChildUpdateResponseAsChild,
         kTypeDataRequest,
         kTypeDataResponse,
         kTypeDiscoveryRequest,
@@ -1409,12 +1415,16 @@ protected:
      * @param[in]  aTlvs         A pointer to requested TLV types.
      * @param[in]  aNumTlvs      The number of TLV types in @p aTlvs.
      * @param[in]  aChallenge    The Challenge for the response.
+     * @param[in]  aDestination  The destination for the response
      *
      * @retval kErrorNone     Successfully generated an MLE Child Update Response message.
      * @retval kErrorNoBufs   Insufficient buffers to generate the MLE Child Update Response message.
      *
      */
-    Error SendChildUpdateResponse(const uint8_t *aTlvs, uint8_t aNumTlvs, const Challenge &aChallenge);
+    Error SendChildUpdateResponse(const uint8_t *aTlvs, 
+                                  uint8_t aNumTlvs, 
+                                  const Challenge &aChallenge,
+                                  const Ip6::Address &aDestination);
 
     /**
      * This method submits an MLE message to the UDP socket.
@@ -1816,7 +1826,7 @@ private:
     void HandleAdvertisement(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
     void HandleChildIdResponse(const Message &         aMessage,
                                const Ip6::MessageInfo &aMessageInfo,
-                               const Neighbor *        aNeighbor);
+                               Neighbor *        aNeighbor);
     void HandleChildUpdateRequest(const Message &aMessage, const Ip6::MessageInfo &aMessageInfo, Neighbor *aNeighbor);
     void HandleChildUpdateResponse(const Message &         aMessage,
                                    const Ip6::MessageInfo &aMessageInfo,
@@ -1941,7 +1951,7 @@ private:
     ServiceAloc mServiceAlocs[kMaxServiceAlocs];
 #endif
 
-    otMleCounters mCounters;
+    Counters mCounters;
 
     Ip6::Netif::UnicastAddress   mLinkLocal64;
     Ip6::Netif::UnicastAddress   mMeshLocal64;

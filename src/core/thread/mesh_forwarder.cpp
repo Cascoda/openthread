@@ -336,7 +336,7 @@ Message *MeshForwarder::PrepareNextDirectTransmission(void)
         default:
             LogMessage(kMessageDrop, *curMessage, nullptr, error);
             FinalizeMessageDirectTx(*curMessage, error);
-            mSendQueue.DequeueAndFree(*curMessage);
+            RemoveMessageIfNoPendingTx(*curMessage);
             continue;
         }
     }
@@ -1658,7 +1658,7 @@ uint16_t MeshForwarder::CalcFrameVersion(const Neighbor *aNeighbor, bool aIePres
     }
 #if OPENTHREAD_FTD && OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE
     else if (aNeighbor != nullptr && !Mle::MleRouter::IsActiveRouter(aNeighbor->GetRloc16()) &&
-             static_cast<const Child *>(aNeighbor)->IsCslSynchronized())
+             Get<Mle::MleRouter>().IsRouterOrLeader() && static_cast<const Child *>(aNeighbor)->IsCslSynchronized())
     {
         version = Mac::Frame::kFcfFrameVersion2015;
     }
